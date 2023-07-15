@@ -10,10 +10,15 @@
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
 
-#include "User.h"
+#include <user.hpp>
+#include <drogon_wrappers/model.hpp>
+
+using namespace crudpp::wrapper;
+
+//#include "User.h"
 using namespace drogon;
 using namespace drogon::orm;
-using namespace drogon_model::example;
+//using namespace drogon_model::example;
 /**
  * @brief this class is created by the drogon_ctl command.
  * this class is a restful API controller for reading and writing the user table.
@@ -24,13 +29,13 @@ class RestfulUserCtrlBase : public RestfulController
   public:
     void getOne(const HttpRequestPtr &req,
                 std::function<void(const HttpResponsePtr &)> &&callback,
-                User::PrimaryKeyType &&id);
+                model<user>::PrimaryKeyType &&id);
     void updateOne(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback,
-                   User::PrimaryKeyType &&id);
+                   model<user>::PrimaryKeyType &&id);
     void deleteOne(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback,
-                   User::PrimaryKeyType &&id);
+                   model<user>::PrimaryKeyType &&id);
     void get(const HttpRequestPtr &req,
              std::function<void(const HttpResponsePtr &)> &&callback);
     void create(const HttpRequestPtr &req,

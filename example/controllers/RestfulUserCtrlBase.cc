@@ -11,17 +11,17 @@
 
 void RestfulUserCtrlBase::getOne(const HttpRequestPtr &req,
                                  std::function<void(const HttpResponsePtr &)> &&callback,
-                                 User::PrimaryKeyType &&id)
+                                 model<user>::PrimaryKeyType &&id)
 {
 
     auto dbClientPtr = getDbClient();
     auto callbackPtr =
         std::make_shared<std::function<void(const HttpResponsePtr &)>>(
             std::move(callback));
-    drogon::orm::Mapper<User> mapper(dbClientPtr);
+    drogon::orm::Mapper<model<user>> mapper(dbClientPtr);
     mapper.findByPrimaryKey(
         id,
-        [req, callbackPtr, this](User r) {
+        [req, callbackPtr, this](model<user> r) {
             (*callbackPtr)(HttpResponse::newHttpJsonResponse(makeJson(req, r)));
         },
         [callbackPtr](const DrogonDbException &e) {
@@ -45,7 +45,7 @@ void RestfulUserCtrlBase::getOne(const HttpRequestPtr &req,
 
 void RestfulUserCtrlBase::updateOne(const HttpRequestPtr &req,
                                     std::function<void(const HttpResponsePtr &)> &&callback,
-                                    User::PrimaryKeyType &&id)
+                                    model<user>::PrimaryKeyType &&id)
 {
     auto jsonPtr=req->jsonObject();
     if(!jsonPtr)
@@ -57,7 +57,7 @@ void RestfulUserCtrlBase::updateOne(const HttpRequestPtr &req,
         callback(resp);
         return;
     }
-    User object;
+    model<user> object;
     std::string err;
     if(!doCustomValidations(*jsonPtr, err))
     {
@@ -72,7 +72,7 @@ void RestfulUserCtrlBase::updateOne(const HttpRequestPtr &req,
     {
         if(isMasquerading())
         {
-            if(!User::validateMasqueradedJsonForUpdate(*jsonPtr, masqueradingVector(), err))
+            if(!model<user>::validateMasqueradedJsonForUpdate(*jsonPtr, masqueradingVector(), err))
             {
                 Json::Value ret;
                 ret["error"] = err;
@@ -85,7 +85,7 @@ void RestfulUserCtrlBase::updateOne(const HttpRequestPtr &req,
         }
         else
         {
-            if(!User::validateJsonForUpdate(*jsonPtr, err))
+            if(!model<user>::validateJsonForUpdate(*jsonPtr, err))
             {
                 Json::Value ret;
                 ret["error"] = err;
@@ -121,7 +121,7 @@ void RestfulUserCtrlBase::updateOne(const HttpRequestPtr &req,
     auto callbackPtr =
         std::make_shared<std::function<void(const HttpResponsePtr &)>>(
             std::move(callback));
-    drogon::orm::Mapper<User> mapper(dbClientPtr);
+    drogon::orm::Mapper<model<user>> mapper(dbClientPtr);
 
     mapper.update(
         object,
@@ -164,14 +164,14 @@ void RestfulUserCtrlBase::updateOne(const HttpRequestPtr &req,
 
 void RestfulUserCtrlBase::deleteOne(const HttpRequestPtr &req,
                                     std::function<void(const HttpResponsePtr &)> &&callback,
-                                    User::PrimaryKeyType &&id)
+                                    model<user>::PrimaryKeyType &&id)
 {
 
     auto dbClientPtr = getDbClient();
     auto callbackPtr =
         std::make_shared<std::function<void(const HttpResponsePtr &)>>(
             std::move(callback));
-    drogon::orm::Mapper<User> mapper(dbClientPtr);
+    drogon::orm::Mapper<model<user>> mapper(dbClientPtr);
     mapper.deleteByPrimaryKey(
         id,
         [callbackPtr](const size_t count) {
@@ -213,7 +213,7 @@ void RestfulUserCtrlBase::get(const HttpRequestPtr &req,
                               std::function<void(const HttpResponsePtr &)> &&callback)
 {
     auto dbClientPtr = getDbClient();
-    drogon::orm::Mapper<User> mapper(dbClientPtr);
+    drogon::orm::Mapper<model<user>> mapper(dbClientPtr);
     auto &parameters = req->parameters();
     auto iter = parameters.find("sort");
     if(iter != parameters.end())
@@ -278,7 +278,7 @@ void RestfulUserCtrlBase::get(const HttpRequestPtr &req,
         try{
             auto criteria = makeCriteria((*jsonPtr)["filter"]);
             mapper.findBy(criteria,
-                [req, callbackPtr, this](const std::vector<User> &v) {
+                [req, callbackPtr, this](const std::vector<model<user>> &v) {
                     Json::Value ret;
                     ret.resize(0);
                     for (auto &obj : v)
@@ -309,7 +309,7 @@ void RestfulUserCtrlBase::get(const HttpRequestPtr &req,
     }
     else
     {
-        mapper.findAll([req, callbackPtr, this](const std::vector<User> &v) {
+        mapper.findAll([req, callbackPtr, this](const std::vector<model<user>> &v) {
                 Json::Value ret;
                 ret.resize(0);
                 for (auto &obj : v)
@@ -354,7 +354,7 @@ void RestfulUserCtrlBase::create(const HttpRequestPtr &req,
     }
     if(isMasquerading())
     {
-        if(!User::validateMasqueradedJsonForCreation(*jsonPtr, masqueradingVector(), err))
+        if(!model<user>::validateMasqueradedJsonForCreation(*jsonPtr, masqueradingVector(), err))
         {
             Json::Value ret;
             ret["error"] = err;
@@ -366,7 +366,7 @@ void RestfulUserCtrlBase::create(const HttpRequestPtr &req,
     }
     else
     {
-        if(!User::validateJsonForCreation(*jsonPtr, err))
+        if(!model<user>::validateJsonForCreation(*jsonPtr, err))
         {
             Json::Value ret;
             ret["error"] = err;
@@ -378,18 +378,18 @@ void RestfulUserCtrlBase::create(const HttpRequestPtr &req,
     }   
     try 
     {
-        User object = 
+        model<user> object =
             (isMasquerading()? 
-             User(*jsonPtr, masqueradingVector()) : 
-             User(*jsonPtr));
+             model<user>(*jsonPtr, masqueradingVector()) :
+             model<user>(*jsonPtr));
         auto dbClientPtr = getDbClient();
         auto callbackPtr =
             std::make_shared<std::function<void(const HttpResponsePtr &)>>(
                 std::move(callback));
-        drogon::orm::Mapper<User> mapper(dbClientPtr);
+        drogon::orm::Mapper<model<user>> mapper(dbClientPtr);
         mapper.insert(
             object,
-            [req, callbackPtr, this](User newObject){
+            [req, callbackPtr, this](model<user> newObject){
                 (*callbackPtr)(HttpResponse::newHttpJsonResponse(
                     makeJson(req, newObject)));
             },
