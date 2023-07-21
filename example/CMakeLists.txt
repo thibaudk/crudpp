@@ -18,12 +18,7 @@ aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
 
-set(CRUDPP
-    drogon_wrappers/model.hpp
-    drogon_visitors/json_reader.hpp
-    drogon_visitors/row_reader.hpp
-    concepts/required.hpp
-    user.hpp)
+list(PREPEND ${SRC} user.hpp)
 
 #drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
 #                    ${CMAKE_CURRENT_BINARY_DIR})
@@ -36,22 +31,18 @@ set(CRUDPP
 #                     ${CMAKE_CURRENT_BINARY_DIR} TRUE CHANGE_ME)
 
 target_include_directories(${PROJECT_NAME}
-                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/models
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/drogon_wrappers
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/drogon_visitors
-                                   ${CMAKE_CURRENT_SOURCE_DIR}/concepts)
+                           PRIVATE
+                           ${CMAKE_CURRENT_SOURCE_DIR}
+                           ${CMAKE_CURRENT_SOURCE_DIR}/models)
 
 target_sources(${PROJECT_NAME}
                PRIVATE
-               ${SRC_DIR}
+               ${SRC}
                ${CTL_SRC}
-               ${FILTER_SRC}
-               ${PLUGIN_SRC}
-               ${MODEL_SRC}
-               ${CRUDPP})
+               ${MODEL_SRC})
+
 # ##############################################################################
-# uncomment the following line for dynamically loading views 
+# uncomment the following line for dynamically loading views
 # set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
 
 # ##############################################################################

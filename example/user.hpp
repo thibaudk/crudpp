@@ -2,27 +2,24 @@
 
 struct user
 {
-    static const constexpr auto table{"user"};
+    static consteval auto table() { return "user"; };
 
     struct id
     {
-        static const constexpr auto name{"id"};
+        static const constexpr auto c_name() { return "id"; };
         int32_t value{0};
-        bool updated{false};
-        static const constexpr auto property{"primary"};
+        static consteval auto property() { return "primary"; };
     } id;
 
     struct username
     {
-        static const constexpr auto name{"username"};
+        static const constexpr auto c_name() { return "username"; };
         std::string value{};
-        bool updated{false};
     } username;
 
     struct passsword
     {
-        static const constexpr auto name{"password"};
+        static const constexpr auto c_name() { return "password"; };
         std::string value{};
-        bool updated;
     } password;
 };

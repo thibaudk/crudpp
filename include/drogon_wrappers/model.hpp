@@ -11,12 +11,12 @@
 #ifdef __cpp_impl_coroutine
 #include <drogon/orm/CoroMapper.h>
 #endif
-#include <drogon/orm/Mapper.h>
 #include <json/value.h>
 
-#include <required.hpp>
-#include <drogon_visitors/json_reader.hpp>
+#include <concepts/required.hpp>
 #include <drogon_visitors/row_reader.hpp>
+#include <drogon_visitors/json_handler.hpp>
+#include <drogon_visitors/m_vector_handler.hpp>
 
 namespace crudpp
 {
@@ -43,19 +43,19 @@ class model
     static const constexpr std::string get_primary_key_name()
     {
         if constexpr(has_primary_key<T>)
-            if constexpr(requires { r_name<typename T::id>; })
-                return T::id::name;
+            if constexpr(requires { r_c_name<typename T::id>; })
+                return T::id::c_name();
 
         return "";
     }
 
 public:
-    static const constexpr std::string tableName = T::table;
+    static const constexpr std::string tableName = T::table();
     static const constexpr bool hasPrimaryKey = has_primary_key<T>;
     static const constexpr std::string primaryKeyName = get_primary_key_name();
     using PrimaryKeyType = typename internal::trait<T, has_primary_key<T>>::type;
 
-    const PrimaryKeyType& getPrimaryKey() const
+    const PrimaryKeyType getPrimaryKey() const
     {
         if constexpr(has_primary_key<T>)
             return aggregate.id.value;
@@ -84,7 +84,8 @@ public:
 
     explicit model(const Json::Value& pJson) noexcept(false)
     {
-        boost::pfr::for_each_field(aggregate, visitor::json_reader<>{.json = pJson});
+        using namespace visitor;
+        boost::pfr::for_each_field(aggregate, json_handler{dirtyFlag_, pJson});
     }
 
     model(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
@@ -96,15 +97,14 @@ public:
         }
 
         boost::pfr::for_each_field(aggregate,
-                                   visitor::m_vector_reader<>{.json = pJson,
-                                                              .m_vector = pMasqueradingVector});
+                                   visitor::m_vector_handler{dirtyFlag_, pJson, pMasqueradingVector});
     }
 
     model() = default;
 
     void updateByJson(const Json::Value &pJson) noexcept(false)
     {
-        boost::pfr::for_each_field(aggregate, visitor::json_reader<true>{.json = pJson});
+        boost::pfr::for_each_field(aggregate, visitor::json_handler<true>{dirtyFlag_, pJson});
     }
 
     void updateByMasqueradedJson(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
@@ -116,8 +116,8 @@ public:
         }
 
         boost::pfr::for_each_field(aggregate,
-                                   visitor::m_vector_reader<true>{.json = pJson,
-                                                                  .m_vector = pMasqueradingVector});
+                                   visitor::m_vector_handler<true>{dirtyFlag_, pJson, pMasqueradingVector});
+
     }
 
 //    TODO : re-impelement checks
@@ -142,7 +142,7 @@ public:
         Json::Value ret;
 
         boost::pfr::for_each_field(aggregate,
-                                   [&ret](r_name auto& f) { ret[f.name] = f.value; });
+                                   [&ret](r_c_name auto& f) { ret[f.c_name()] = f.value; });
         return ret;
     }
 
@@ -154,7 +154,7 @@ public:
         if(pMasqueradingVector.size() == getColumnNumber())
         {
             boost::pfr::for_each_field(aggregate,
-                                       [&ret, &index, &pMasqueradingVector](r_name auto& f)
+                                       [&ret, &index, &pMasqueradingVector](r_c_name auto& f)
                                        {
                                            if(!pMasqueradingVector[index].empty())
                                                ret[pMasqueradingVector[index]] = f.value;
@@ -180,24 +180,26 @@ public:
         return sql;
     }
 
-    std::string sqlForInserting(bool& needSelection) const
+    constexpr std::string sqlForInserting(bool& needSelection) const
     {
         std::string sql="insert into " + tableName + " (";
         size_t parametersCount = 0;
         needSelection = false;
 
-        boost::pfr::for_each_field(aggregate,
-                                   [&sql, &parametersCount](r_name auto& f)
-                                   {
-                                       if constexpr(is_primary_key<decltype(f)>)
-                                           return;
+        using namespace boost::pfr;
 
-                                       if constexpr(r_updated<decltype(f)>)
-                                           if (!f.updated) return;
+        for_each_field(aggregate,
+                       [this, &sql, &parametersCount](r_c_name auto& f)
+                       {
+                           if constexpr(is_primary_key<decltype(f)>)
+                               return;
 
-                                       sql += f.name;
-                                       ++parametersCount;
-                                   });
+//                           if (get<(int)parametersCount>(prev_aggregate).value == f.value)
+//                               return;
+
+                           sql += f.c_name();
+                           ++parametersCount;
+                       });
 
         needSelection = true;
 
@@ -210,18 +212,20 @@ public:
             sql += ") values (";
 
         sql +="default,";
+        parametersCount = 0;
 
-        boost::pfr::for_each_field(aggregate,
-                                   [&sql](r_name auto& f)
-                                   {
-                                       if constexpr(is_primary_key<decltype(f)>)
-                                           return;
+        for_each_field(aggregate,
+                       [this, &sql, &parametersCount](r_c_name auto& f)
+                       {
+                           if constexpr(is_primary_key<decltype(f)>)
+                               return;
 
-                                       if constexpr(r_updated<decltype(f)>)
-                                           if (!f.updated) return;
+//                           if (get<decltype(f)>(prev_aggregate).value == f.value)
+//                               return;
 
-                                       sql.append("?,");
-                                   });
+                           sql.append("?,");
+                           ++parametersCount;
+                       });
 
         if(parametersCount > 0)
             sql.resize(sql.length() - 1);
@@ -248,7 +252,7 @@ private:
         std::vector<std::string> ret;
 
         boost::pfr::for_each_field(aggregate,
-                                   [&ret](r_name auto& f)
+                                   [&ret](r_c_name auto& f)
                                    {
                                        if constexpr(is_primary_key<decltype(f)>)
                                            return;
@@ -256,7 +260,7 @@ private:
                                        if constexpr(r_updated<decltype(f)>)
                                            if (!f.updated) return;
 
-                                        ret.push_back(f.name);
+                                       ret.push_back(f.c_name());
                                    });
         return ret;
     }
@@ -290,7 +294,10 @@ private:
         assert(false);
     }
 
+    bool dirtyFlag_[boost::pfr::tuple_size<T>::value] = { false };
+
     T aggregate{};
+    T prev_aggregate{};
 };
 } // namespace wrapper
 } // namespace crudpp

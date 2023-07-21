@@ -9,13 +9,19 @@ namespace crudpp
 template <typename T>
 concept r_table = requires()
 {
-    { T::table } -> std::same_as<const char* const&>;
+    { T::table() } -> std::same_as<const char*>;
+};
+
+template <typename T>
+concept r_c_name = requires()
+{
+    { T::c_name() } -> std::same_as<const char*>;
 };
 
 template <typename T>
 concept r_name = requires()
 {
-    { T::name } -> std::same_as<const char* const&>;
+    { T::name() } -> std::same_as<const char*>;
 };
 
 template <typename T, typename Value_T>
@@ -32,21 +38,15 @@ concept r_name_and_value = requires(T t)
 };
 
 template <typename T>
-concept r_updated = requires(T t)
-{
-    { t.updated } -> std::same_as<bool>;
-};
-
-template <typename T>
 concept has_primary_key = requires()
 {
-    T::id::property == "primary";
+    T::id::property() == "primary";
 };
 
 template <typename T>
 concept is_primary_key = requires()
 {
-    T::property == "primary";
+    T::property() == "primary";
 };
 } // namespace crudpp
 
