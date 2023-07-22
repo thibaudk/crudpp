@@ -107,7 +107,8 @@ public:
         boost::pfr::for_each_field(aggregate, visitor::json_handler<true>{dirtyFlag_, pJson});
     }
 
-    void updateByMasqueradedJson(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
+    void updateByMasqueradedJson(const Json::Value &pJson,
+                                 const std::vector<std::string> &pMasqueradingVector) noexcept(false)
     {
         if(pMasqueradingVector.size() != getColumnNumber())
         {
@@ -116,8 +117,9 @@ public:
         }
 
         boost::pfr::for_each_field(aggregate,
-                                   visitor::m_vector_handler<true>{dirtyFlag_, pJson, pMasqueradingVector});
-
+                                   visitor::m_vector_handler<true>{dirtyFlag_,
+                                                                   pJson,
+                                                                   pMasqueradingVector});
     }
 
 //    TODO : re-impelement checks
@@ -149,17 +151,14 @@ public:
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const
     {
         Json::Value ret;
-        ssize_t index{0};
 
         if(pMasqueradingVector.size() == getColumnNumber())
         {
             boost::pfr::for_each_field(aggregate,
-                                       [&ret, &index, &pMasqueradingVector](r_c_name auto& f)
+                                       [&ret, &pMasqueradingVector](r_c_name auto& f, size_t i)
                                        {
-                                           if(!pMasqueradingVector[index].empty())
-                                               ret[pMasqueradingVector[index]] = f.value;
-
-                                           index++;
+                                           if(!pMasqueradingVector[i].empty())
+                                               ret[pMasqueradingVector[i]] = f.value;
                                        });
             return ret;
         }
@@ -189,16 +188,17 @@ public:
         using namespace boost::pfr;
 
         for_each_field(aggregate,
-                       [this, &sql, &parametersCount](r_c_name auto& f)
+                       [this, &sql, &parametersCount](r_c_name auto& f, size_t i)
                        {
                            if constexpr(is_primary_key<decltype(f)>)
                                return;
 
-//                           if (get<(int)parametersCount>(prev_aggregate).value == f.value)
-//                               return;
+                           if (dirtyFlag_[i])
+                           {
+                               sql += f.c_name();
+                               ++parametersCount;
+                           }
 
-                           sql += f.c_name();
-                           ++parametersCount;
                        });
 
         needSelection = true;
@@ -212,19 +212,15 @@ public:
             sql += ") values (";
 
         sql +="default,";
-        parametersCount = 0;
 
         for_each_field(aggregate,
-                       [this, &sql, &parametersCount](r_c_name auto& f)
+                       [this, &sql](auto& f, size_t i)
                        {
                            if constexpr(is_primary_key<decltype(f)>)
                                return;
 
-//                           if (get<decltype(f)>(prev_aggregate).value == f.value)
-//                               return;
-
-                           sql.append("?,");
-                           ++parametersCount;
+                           if (dirtyFlag_[i])
+                               sql.append("?,");
                        });
 
         if(parametersCount > 0)
@@ -246,21 +242,27 @@ private:
 #ifdef __cpp_impl_coroutine
     friend drogon::orm::CoroMapper<model<T>>;
 #endif
+    static const std::vector<std::string>& insertColumns() noexcept
+    {
+        static std::vector<std::string> inCols;
+        boost::pfr::for_each_field(T{},
+                                   [](r_c_name auto& f)
+                                   { inCols.push_back(f.c_name()); });
+        return inCols;
+    }
 
     const std::vector<std::string> updateColumns() const
     {
         std::vector<std::string> ret;
 
         boost::pfr::for_each_field(aggregate,
-                                   [&ret](r_c_name auto& f)
+                                   [this, &ret](r_c_name auto& f, size_t i)
                                    {
                                        if constexpr(is_primary_key<decltype(f)>)
                                            return;
 
-                                       if constexpr(r_updated<decltype(f)>)
-                                           if (!f.updated) return;
-
-                                       ret.push_back(f.c_name());
+                                       if (dirtyFlag_[i])
+                                           ret.push_back(f.c_name());
                                    });
         return ret;
     }
@@ -268,15 +270,13 @@ private:
     void outputArgs(drogon::orm::internal::SqlBinder& binder) const
     {
         boost::pfr::for_each_field(aggregate,
-                                   [&binder](auto& f)
+                                   [this, &binder](auto& f, size_t i)
                                    {
                                        if constexpr(is_primary_key<decltype(f)>)
                                            return;
 
-                                       if constexpr(r_updated<decltype(f)>)
-                                           if (!f.updated) return;
-
-                                       binder << f.value;
+                                       if (dirtyFlag_[i])
+                                           binder << f.value;
                                    });
     }
 
@@ -295,9 +295,7 @@ private:
     }
 
     bool dirtyFlag_[boost::pfr::tuple_size<T>::value] = { false };
-
     T aggregate{};
-    T prev_aggregate{};
 };
 } // namespace wrapper
 } // namespace crudpp
