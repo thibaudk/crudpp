@@ -10,6 +10,7 @@ set(example ON CACHE BOOL "building example")
 set(SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/concepts/required.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_wrappers/model.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_wrappers/restful_ctrl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/row_reader.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/json_handler.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/json_reader.hpp
