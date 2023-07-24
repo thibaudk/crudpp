@@ -2,6 +2,7 @@
 #include <drogon/orm/RestfulController.h>
 
 #include <drogon_wrappers/model.hpp>
+#include <concepts/required.hpp>
 
 using namespace crudpp::wrapper;
 
@@ -13,20 +14,10 @@ class restful_ctrl : public drogon::HttpController<restful_ctrl<T>>
                    , public RestfulController
 {
 public:
-    METHOD_LIST_BEGIN
-    ADD_METHOD_TO(restful_ctrl::getOne, "/" + T::table + "/{1}", Get, Options);
-    ADD_METHOD_TO(restful_ctrl::updateOne, "/" + T::table + "/{1}", Put, Options);
-    ADD_METHOD_TO(restful_ctrl::deleteOne, "/" + T::table + "/{1}", Delete, Options);
-    ADD_METHOD_TO(restful_ctrl::get, "/" + T::table, Get, Options);
-    ADD_METHOD_TO(restful_ctrl::create, "/" + T::table, Post, Options);
-    //ADD_METHOD_TO(restful_ctrl::update, "/" + T::table, Put, Options);
-    METHOD_LIST_END
-
     void getOne(const HttpRequestPtr &req,
                 std::function<void(const HttpResponsePtr &)> &&callback,
                 typename model<T>::PrimaryKeyType &&id)
     {
-
         auto dbClientPtr = getDbClient();
         auto callbackPtr =
             std::make_shared<std::function<void(const HttpResponsePtr &)>>(
@@ -177,7 +168,6 @@ public:
                    std::function<void(const HttpResponsePtr &)> &&callback,
                    typename model<T>::PrimaryKeyType &&id)
     {
-
         auto dbClientPtr = getDbClient();
         auto callbackPtr =
             std::make_shared<std::function<void(const HttpResponsePtr &)>>(
