@@ -17,6 +17,7 @@
 #include <drogon_visitors/row_reader.hpp>
 #include <drogon_visitors/json_handler.hpp>
 #include <drogon_visitors/m_vector_handler.hpp>
+#include <drogon_visitors/row_handler.hpp>
 
 namespace crudpp
 {
@@ -78,7 +79,7 @@ public:
                 return;
             }
 
-            for_each_field(aggregate, visitor::offset_row_reader{.row = r, .offset = indexOffset});
+            for_each_field(aggregate, visitor::row_handler{r, indexOffset});
         }
     }
 
@@ -236,6 +237,10 @@ public:
     static const std::vector<std::string>& insertColumns() noexcept
     {
         static std::vector<std::string> inCols;
+
+        if (!inCols.empty())
+            return inCols;
+
         boost::pfr::for_each_field(T{},
                                    [](r_c_name auto& f)
                                    { inCols.push_back(f.c_name()); });

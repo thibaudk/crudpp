@@ -17,15 +17,15 @@ struct row_reader
     void operator()(r_c_name auto& f) noexcept
         requires std::same_as<decltype(f.value), int32_t>
     {
-        if (row[f.c_name()].isNull()) return;
-        f.value = row[f.c_name()].template as<int32_t>();
+        if (!row[f.c_name()].isNull())
+            f.value = row[f.c_name()].template as<int32_t>();
     }
 
     void operator()(r_c_name auto& f) noexcept
         requires std::same_as<decltype(f.value), std::string>
     {
-        if (row[f.c_name()].isNull()) return;
-        f.value = row[f.c_name()].template as<std::string>();
+        if (!row[f.c_name()].isNull())
+            f.value = row[f.c_name()].template as<std::string>();
     }
 };
 
