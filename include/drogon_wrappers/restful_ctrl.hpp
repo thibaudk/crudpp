@@ -10,8 +10,7 @@ using namespace drogon;
 using namespace drogon::orm;
 
 template <typename T>
-class restful_ctrl : public drogon::HttpController<restful_ctrl<T>>
-                   , public RestfulController
+class restful_ctrl : public RestfulController
 {
 public:
     void getOne(const HttpRequestPtr &req,
@@ -423,7 +422,7 @@ public:
         return drogon::app().getDbClient(dbClientName_);
     }
 
-protected:
+//protected:
     /// Ensure that subclasses inherited from this class are instantiated.
     restful_ctrl()
         : RestfulController{ model<T>::insertColumns() }

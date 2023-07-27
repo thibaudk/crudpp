@@ -233,6 +233,15 @@ public:
 
     T& get_aggregate() { return aggregate; };
 
+    static const std::vector<std::string>& insertColumns() noexcept
+    {
+        static std::vector<std::string> inCols;
+        boost::pfr::for_each_field(T{},
+                                   [](r_c_name auto& f)
+                                   { inCols.push_back(f.c_name()); });
+        return inCols;
+    }
+
 private:
     friend drogon::orm::Mapper<model<T>>;
     friend drogon::orm::BaseBuilder<model<T>, true, true>;
@@ -242,14 +251,6 @@ private:
 #ifdef __cpp_impl_coroutine
     friend drogon::orm::CoroMapper<model<T>>;
 #endif
-    static const std::vector<std::string>& insertColumns() noexcept
-    {
-        static std::vector<std::string> inCols;
-        boost::pfr::for_each_field(T{},
-                                   [](r_c_name auto& f)
-                                   { inCols.push_back(f.c_name()); });
-        return inCols;
-    }
 
     const std::vector<std::string> updateColumns() const
     {

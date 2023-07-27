@@ -2,7 +2,7 @@
 
 struct user
 {
-    static const constexpr auto table() { return "user"; };
+    static consteval auto table() { return "user"; };
 
     struct id
     {
