@@ -18,7 +18,7 @@ aux_source_directory(controllers CTL_SRC)
 #aux_source_directory(plugins PLUGIN_SRC)
 #aux_source_directory(models MODEL_SRC)
 
-list(PREPEND ${SRC}
+list(APPEND ${SRC}
     user.hpp
     carts_products.hpp)
 

@@ -55,8 +55,9 @@ public:
     static const constexpr bool hasPrimaryKey = has_primary_key<T>;
     static const constexpr std::string primaryKeyName = get_primary_key_name();
     using PrimaryKeyType = typename internal::trait<T, has_primary_key<T>>::type;
+    using mapper_key_type = typename drogon::orm::internal::Traits<model<T>, has_primary_key<T>>::type;
 
-    const PrimaryKeyType getPrimaryKey() const
+    const mapper_key_type getPrimaryKey() const
     {
         if constexpr(has_primary_key<T>)
             return aggregate.id.value;
