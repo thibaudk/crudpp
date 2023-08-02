@@ -7,7 +7,6 @@
 using namespace crudpp::wrapper;
 
 using namespace drogon;
-using namespace drogon::orm;
 
 template <typename T>
 class restful_ctrl_base : public RestfulController

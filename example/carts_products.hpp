@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <vector>
 
 struct carts_products
 {

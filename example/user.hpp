@@ -2,13 +2,13 @@
 
 struct user
 {
-    static consteval auto table() { return "user"; };
+    static const constexpr auto table() { return "user"; };
+    static const constexpr auto primary_key() { return &user::id; };
 
     struct id
     {
         static const constexpr auto c_name() { return "id"; };
         int32_t value{0};
-        static consteval auto property() { return "primary"; };
     } id;
 
     struct username

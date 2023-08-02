@@ -40,13 +40,13 @@ concept r_name_and_value = requires(T t)
 template <typename T>
 concept has_primary_key = requires()
 {
-    T::id::property() == "primary";
+    std::is_aggregate<decltype(T::primary_key())>();
 };
 
-template <typename T>
-concept is_primary_key = requires()
+template <typename T, typename Agg>
+concept is_primary_key = requires(const Agg& a)
 {
-    T::property() == "primary";
+    { a.*Agg::primary_key() } -> std::same_as<T>;
 };
 } // namespace crudpp
 

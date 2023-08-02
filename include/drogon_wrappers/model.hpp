@@ -16,14 +16,16 @@
 #include <concepts/required.hpp>
 #include <drogon_visitors/row_reader.hpp>
 #include <drogon_visitors/json_handler.hpp>
+#include <drogon_visitors/json_handler_omit_primary.hpp>
 #include <drogon_visitors/m_vector_handler.hpp>
+#include <drogon_visitors/m_vector_handler_omit_primary.hpp>
 #include <drogon_visitors/row_handler.hpp>
 
 namespace crudpp
 {
 namespace wrapper
 {
-namespace internal // adapted from drogon's Mapper.h
+namespace inside // adapted from drogon's Mapper.h
 {
 template <typename T, bool hasPrimaryKey = true>
 struct trait
@@ -38,14 +40,19 @@ struct trait<T, false>
 };
 } // namespace intenal
 
+using namespace drogon::orm;
+
 template <r_table T>
 class model
 {
     static const constexpr std::string get_primary_key_name()
     {
         if constexpr(has_primary_key<T>)
-            if constexpr(requires { r_c_name<typename T::id>; })
-                return T::id::c_name();
+            if constexpr(requires { r_c_name<typename T::primary_key()>; })
+            {
+                using id = typename T::primary_key();
+                return id::c_name();
+            }
 
         return "";
     }
@@ -54,19 +61,22 @@ public:
     static const constexpr std::string tableName = T::table();
     static const constexpr bool hasPrimaryKey = has_primary_key<T>;
     static const constexpr std::string primaryKeyName = get_primary_key_name();
-    using PrimaryKeyType = typename internal::trait<T, has_primary_key<T>>::type;
-    using mapper_key_type = typename drogon::orm::internal::Traits<model<T>, has_primary_key<T>>::type;
+    using PrimaryKeyType = typename inside::trait<T, has_primary_key<T>>::type;
 
-    const mapper_key_type getPrimaryKey() const
+    const typename internal::Traits<model<T>, has_primary_key<T>>::type getPrimaryKey() const
     {
         if constexpr(has_primary_key<T>)
-            return aggregate.id.value;
+            if constexpr(requires { r_value<T, PrimaryKeyType>; })
+            {
+                const auto id = aggregate.*T::primary_key();
+                return id.value;
+            }
 
         assert(false);
         return 0;
     }
 
-    explicit model(const drogon::orm::Row& r, const ssize_t indexOffset = 0) noexcept
+    explicit model(const Row& r, const ssize_t indexOffset = 0) noexcept
     {
         using namespace boost::pfr;
 
@@ -106,7 +116,7 @@ public:
 
     void updateByJson(const Json::Value &pJson) noexcept(false)
     {
-        boost::pfr::for_each_field(aggregate, visitor::json_handler<true>{dirtyFlag_, pJson});
+        boost::pfr::for_each_field(aggregate, visitor::json_handler_omit_primary<T>{dirtyFlag_, pJson});
     }
 
     void updateByMasqueradedJson(const Json::Value &pJson,
@@ -119,9 +129,9 @@ public:
         }
 
         boost::pfr::for_each_field(aggregate,
-                                   visitor::m_vector_handler<true>{dirtyFlag_,
-                                                                   pJson,
-                                                                   pMasqueradingVector});
+                                   visitor::m_vector_handler_omit_primary<T>{dirtyFlag_,
+                                                                             pJson,
+                                                                             pMasqueradingVector});
     }
 
 //    TODO : re-impelement checks
@@ -192,7 +202,7 @@ public:
         for_each_field(aggregate,
                        [this, &sql, &parametersCount](r_c_name auto& f, size_t i)
                        {
-                           if constexpr(is_primary_key<decltype(f)>)
+                           if constexpr(is_primary_key<decltype(f), T>)
                                return;
 
                            if (dirtyFlag_[i])
@@ -218,7 +228,7 @@ public:
         for_each_field(aggregate,
                        [this, &sql](auto& f, size_t i)
                        {
-                           if constexpr(is_primary_key<decltype(f)>)
+                           if constexpr(is_primary_key<decltype(f), T>)
                                return;
 
                            if (dirtyFlag_[i])
@@ -249,13 +259,13 @@ public:
     }
 
 private:
-    friend drogon::orm::Mapper<model<T>>;
-    friend drogon::orm::BaseBuilder<model<T>, true, true>;
-    friend drogon::orm::BaseBuilder<model<T>, true, false>;
-    friend drogon::orm::BaseBuilder<model<T>, false, true>;
-    friend drogon::orm::BaseBuilder<model<T>, false, false>;
+    friend Mapper<model<T>>;
+    friend BaseBuilder<model<T>, true, true>;
+    friend BaseBuilder<model<T>, true, false>;
+    friend BaseBuilder<model<T>, false, true>;
+    friend BaseBuilder<model<T>, false, false>;
 #ifdef __cpp_impl_coroutine
-    friend drogon::orm::CoroMapper<model<T>>;
+    friend CoroMapper<model<T>>;
 #endif
 
     const std::vector<std::string> updateColumns() const
@@ -265,7 +275,7 @@ private:
         boost::pfr::for_each_field(aggregate,
                                    [this, &ret](r_c_name auto& f, size_t i)
                                    {
-                                       if constexpr(is_primary_key<decltype(f)>)
+                                       if constexpr(is_primary_key<decltype(f), T>)
                                            return;
 
                                        if (dirtyFlag_[i])
@@ -274,12 +284,12 @@ private:
         return ret;
     }
 
-    void outputArgs(drogon::orm::internal::SqlBinder& binder) const
+    void outputArgs(internal::SqlBinder& binder) const
     {
         boost::pfr::for_each_field(aggregate,
                                    [this, &binder](auto& f, size_t i)
                                    {
-                                       if constexpr(is_primary_key<decltype(f)>)
+                                       if constexpr(is_primary_key<decltype(f), T>)
                                            return;
 
                                        if (dirtyFlag_[i])
@@ -287,7 +297,7 @@ private:
                                    });
     }
 
-    void updateArgs(drogon::orm::internal::SqlBinder& binder) const { outputArgs(binder); }
+    void updateArgs(internal::SqlBinder& binder) const { outputArgs(binder); }
 
     ///For mysql or sqlite3
     void updateId(const uint64_t id)

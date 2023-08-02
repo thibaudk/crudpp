@@ -16,8 +16,10 @@ set(SRC
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/row_handler.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/row_reader.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/json_handler.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/json_handler_omit_primary.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/json_reader.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/m_vector_handler.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/m_vector_handler_omit_primary.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/include/drogon_visitors/m_vector_reader.hpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
