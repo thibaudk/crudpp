@@ -1,7 +1,7 @@
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
 
-#include <drogon_wrappers/model.hpp>
+#include <bindigs/drogon/wrappers/model.hpp>
 #include <concepts/required.hpp>
 
 using namespace crudpp::wrapper;

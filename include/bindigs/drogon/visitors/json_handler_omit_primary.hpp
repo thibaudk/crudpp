@@ -1,7 +1,7 @@
 #ifndef JSON_HANDLER_OMIT_PRIMARY_HPP
 #define JSON_HANDLER_OMIT_PRIMARY_HPP
 
-#include "drogon_visitors/json_reader.hpp"
+#include "json_reader.hpp"
 #include <concepts/required.hpp>
 
 namespace crudpp

@@ -1,5 +1,5 @@
 #include <drogon/HttpController.h>
-#include <drogon_wrappers/restful_ctrl.hpp>
+#include <bindigs/drogon/wrappers/restful_ctrl.hpp>
 
 using namespace drogon;
 

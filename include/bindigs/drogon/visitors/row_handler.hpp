@@ -1,7 +1,7 @@
 #ifndef ROW_HANDLER_HPP
 #define ROW_HANDLER_HPP
 
-#include "drogon_visitors/row_reader.hpp"
+#include "row_reader.hpp"
 
 namespace crudpp
 {

@@ -1,7 +1,7 @@
 #ifndef M_VECTOR_HANDLER_OMIT_PRIMARY_HPP
 #define M_VECTOR_HANDLER_OMIT_PRIMARY_HPP
 
-#include "drogon_visitors/m_vector_reader.hpp"
+#include "m_vector_reader.hpp"
 #include <concepts/required.hpp>
 
 namespace crudpp

@@ -1,4 +1,4 @@
-#include <drogon_wrappers/restful_ctrl_base.hpp>
+#include <bindigs/drogon/wrappers/restful_ctrl_base.hpp>
 
 template <typename T>
 struct restful_ctrl : public restful_ctrl_base<T>
