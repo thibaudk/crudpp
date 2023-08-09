@@ -13,8 +13,8 @@ set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 include_directories(${CRUDPP_SOURCE_DIR}/include)
 
 function(make_drogon_server)
-    add_subdirectory(${CRUDPP_SOURCE_DIR}/include/bindigs/drogon
-        ${CMAKE_BINARY_DIR}/server/drogon)
+    add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/drogon
+        ${CMAKE_BINARY_DIR}/drogon)
 endfunction(make_drogon_server)
 
 # Copied from https://github.com/celtera/avendish/blob/main/CMakeLists.txt#L18

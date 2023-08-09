@@ -1,5 +1,5 @@
-#ifndef MODEL_WRAPPER_HPP
-#define MODEL_WRAPPER_HPP
+#ifndef MODEL_HPP
+#define MODEL_HPP
 
 #include <string>
 
@@ -317,4 +317,4 @@ private:
 } // namespace wrapper
 } // namespace crudpp
 
-#endif // MODEL_WRAPPER_HPP
+#endif // MODEL_HPP

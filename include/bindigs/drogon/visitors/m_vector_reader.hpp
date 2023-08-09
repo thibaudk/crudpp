@@ -18,6 +18,18 @@ struct m_vector_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), int8_t>
+    {
+        f.value = json[m_vector[index]].asInt();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires std::is_enum_v<decltype(f.value)>
+    {
+        f.value = decltype(f.value)(json[m_vector[index]].asInt());
+    }
+
+    void operator()(r_c_name auto& f) noexcept
         requires std::same_as<decltype(f.value), std::string>
     {
         f.value = json[m_vector[index]].asString();

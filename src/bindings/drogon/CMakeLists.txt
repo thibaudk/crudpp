@@ -1,3 +1,5 @@
+project("${PROJECT_NAME}_server")
+
 include(CheckIncludeFileCXX)
 
 add_executable(${PROJECT_NAME} main.cc)
@@ -24,7 +26,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_sources(${PROJECT_NAME}
                PRIVATE
-               ${SRC})
+               ${SERVER_SOURCES})
 
 # ##############################################################################
 # uncomment the following line for dynamically loading views
