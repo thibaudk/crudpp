@@ -1,5 +1,4 @@
-#ifndef MODEL_HPP
-#define MODEL_HPP
+#pragma once
 
 #include <string>
 
@@ -156,7 +155,7 @@ public:
         Json::Value ret;
 
         boost::pfr::for_each_field(aggregate,
-                                   [&ret](r_c_name auto& f) { ret[f.c_name()] = f.value; });
+                                   [&ret](const r_c_name auto& f) { ret[f.c_name()] = f.value; });
         return ret;
     }
 
@@ -167,7 +166,7 @@ public:
         if(pMasqueradingVector.size() == getColumnNumber())
         {
             boost::pfr::for_each_field(aggregate,
-                                       [&ret, &pMasqueradingVector](r_c_name auto& f, size_t i)
+                                       [&ret, &pMasqueradingVector](const r_c_name auto& f, size_t i)
                                        {
                                            if(!pMasqueradingVector[i].empty())
                                                ret[pMasqueradingVector[i]] = f.value;
@@ -200,7 +199,7 @@ public:
         using namespace boost::pfr;
 
         for_each_field(aggregate,
-                       [this, &sql, &parametersCount](r_c_name auto& f, size_t i)
+                       [this, &sql, &parametersCount](const r_c_name auto& f, size_t i)
                        {
                            if constexpr(is_primary_key<decltype(f), T>)
                                return;
@@ -226,7 +225,7 @@ public:
         sql +="default,";
 
         for_each_field(aggregate,
-                       [this, &sql](auto& f, size_t i)
+                       [this, &sql](const auto& f, size_t i)
                        {
                            if constexpr(is_primary_key<decltype(f), T>)
                                return;
@@ -253,7 +252,7 @@ public:
             return inCols;
 
         boost::pfr::for_each_field(T{},
-                                   [](r_c_name auto& f)
+                                   [](const r_c_name auto& f)
                                    { inCols.push_back(f.c_name()); });
         return inCols;
     }
@@ -316,5 +315,3 @@ private:
 };
 } // namespace wrapper
 } // namespace crudpp
-
-#endif // MODEL_HPP
