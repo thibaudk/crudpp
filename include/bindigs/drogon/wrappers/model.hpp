@@ -47,12 +47,12 @@ class model
     static const constexpr std::string get_primary_key_name()
     {
         if constexpr(has_primary_key<T>)
-            if constexpr(requires { r_c_name<typename T::primary_key()>; })
-            {
-                using id = typename T::primary_key();
-                return id::c_name();
-            }
+        {
+            const auto m_primary_key{T{}.*T::primary_key()};
 
+            if constexpr(r_c_name<decltype(m_primary_key)>)
+                return m_primary_key.c_name();
+        }
         return "";
     }
 

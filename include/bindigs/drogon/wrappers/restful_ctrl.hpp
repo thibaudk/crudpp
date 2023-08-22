@@ -35,9 +35,8 @@ struct restful_ctrl : public restful_ctrl_base<T>
             });
     }
 
-    void updateOne(const HttpRequestPtr &req,
-                   std::function<void(const HttpResponsePtr &)> &&callback,
-                   typename model<T>::PrimaryKeyType &&id)
+    void update(const HttpRequestPtr &req,
+                   std::function<void(const HttpResponsePtr &)> &&callback)
     {
         auto jsonPtr=req->jsonObject();
         if(!jsonPtr)
@@ -99,7 +98,7 @@ struct restful_ctrl : public restful_ctrl_base<T>
             callback(resp);
             return;
         }
-        if(object.getPrimaryKey() != id)
+        if(object.getPrimaryKey() < 1)
         {
             Json::Value ret;
             ret["error"]="Bad primary key";
