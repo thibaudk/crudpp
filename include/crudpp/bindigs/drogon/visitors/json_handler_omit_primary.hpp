@@ -1,8 +1,7 @@
-#ifndef JSON_HANDLER_OMIT_PRIMARY_HPP
-#define JSON_HANDLER_OMIT_PRIMARY_HPP
+#pragma once
 
 #include "json_reader.hpp"
-#include <concepts/required.hpp>
+#include <crudpp/required.hpp>
 
 namespace crudpp
 {
@@ -34,5 +33,3 @@ struct json_handler_omit_primary
 };
 } // namespace visitor
 } // namespace crudpp
-
-#endif // JSON_HANDLER_OMIT_PRIMARY_HPP

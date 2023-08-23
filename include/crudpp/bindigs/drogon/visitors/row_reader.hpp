@@ -1,10 +1,9 @@
-#ifndef ROW_READER_HPP
-#define ROW_READER_HPP
+#pragma once
 
 #include <drogon/orm/Field.h>
 #include <drogon/orm/Row.h>
 
-#include <concepts/required.hpp>
+#include <crudpp/required.hpp>
 
 namespace crudpp
 {
@@ -79,5 +78,3 @@ struct offset_row_reader
 };
 } // namespace visitor
 } // namespace crudpp
-
-#endif // ROW_READER_HPP

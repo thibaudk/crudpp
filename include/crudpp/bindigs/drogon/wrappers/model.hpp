@@ -12,55 +12,29 @@
 #endif
 #include <json/value.h>
 
-#include <concepts/required.hpp>
-#include <bindigs/drogon/visitors/row_reader.hpp>
-#include <bindigs/drogon/visitors/json_handler.hpp>
-#include <bindigs/drogon/visitors/json_handler_omit_primary.hpp>
-#include <bindigs/drogon/visitors/m_vector_handler.hpp>
-#include <bindigs/drogon/visitors/m_vector_handler_omit_primary.hpp>
-#include <bindigs/drogon/visitors/row_handler.hpp>
+#include <crudpp/required.hpp>
+#include <crudpp/utils.hpp>
+#include <crudpp/bindigs/drogon/visitors/row_reader.hpp>
+#include <crudpp/bindigs/drogon/visitors/json_handler.hpp>
+#include <crudpp/bindigs/drogon/visitors/json_handler_omit_primary.hpp>
+#include <crudpp/bindigs/drogon/visitors/m_vector_handler.hpp>
+#include <crudpp/bindigs/drogon/visitors/m_vector_handler_omit_primary.hpp>
+#include <crudpp/bindigs/drogon/visitors/row_handler.hpp>
 
 namespace crudpp
 {
 namespace wrapper
 {
-namespace inside // adapted from drogon's Mapper.h
-{
-template <typename T, bool hasPrimaryKey = true>
-struct trait
-{
-    using type = decltype(T::id.value);
-};
-
-template <typename T>
-struct trait<T, false>
-{
-    using type = void;
-};
-} // namespace intenal
-
 using namespace drogon::orm;
 
 template <r_table T>
 class model
 {
-    static const constexpr std::string get_primary_key_name()
-    {
-        if constexpr(has_primary_key<T>)
-        {
-            const auto m_primary_key{T{}.*T::primary_key()};
-
-            if constexpr(r_c_name<decltype(m_primary_key)>)
-                return m_primary_key.c_name();
-        }
-        return "";
-    }
-
 public:
     static const constexpr std::string tableName = T::table();
     static const constexpr bool hasPrimaryKey = has_primary_key<T>;
-    static const constexpr std::string primaryKeyName = get_primary_key_name();
-    using PrimaryKeyType = typename inside::trait<T, has_primary_key<T>>::type;
+    static const constexpr std::string primaryKeyName = get_primary_key_name<T>();
+    using PrimaryKeyType = typename trait<T, has_primary_key<T>>::type;
 
     const typename internal::Traits<model<T>, has_primary_key<T>>::type getPrimaryKey() const
     {
@@ -134,19 +108,46 @@ public:
     }
 
 //    TODO : re-impelement checks
-    static bool validateJsonForCreation(const Json::Value &pJson, std::string &err){ return true; }
-    static bool validateMasqueradedJsonForCreation(const Json::Value &,
-                                                   const std::vector<std::string> &pMasqueradingVector,
-                                                   std::string &err){ return true; }
-    static bool validateJsonForUpdate(const Json::Value &pJson, std::string &err){ return true; }
-    static bool validateMasqueradedJsonForUpdate(const Json::Value &,
-                                                 const std::vector<std::string> &pMasqueradingVector,
-                                                 std::string &err){ return true; }
-    static bool validJsonOfField(size_t index,
-                                 const std::string &fieldName,
-                                 const Json::Value &pJson,
-                                 std::string &err,
-                                 bool isForCreation){ return true; }
+//    static bool validJsonOfField(size_t index,
+//                                 const std::string &fieldName,
+//                                 const Json::Value &pJson,
+//                                 std::string &err,
+//                                 bool isForCreation){ return true; }
+//    static bool validateJsonForCreation(const Json::Value &pJson, std::string &err){ return true; }
+//    static bool validateMasqueradedJsonForCreation(const Json::Value &,
+//                                                   const std::vector<std::string> &pMasqueradingVector,
+//                                                   std::string &err){ return true; }
+//    static bool validateMasqueradedJsonForUpdate(const Json::Value & pJson,
+//                                                 const std::vector<std::string> &pMasqueradingVector,
+//                                                 std::string &err){ return true; }
+
+    static bool validateJsonForUpdate(const Json::Value &pJson, std::string &err)
+    {
+        if constexpr (has_primary_key<T>)
+        {
+            if (!pJson.isMember(primaryKeyName))
+            {
+                err = "The value of primary key must be set in the json object for update";
+                return false;
+            }
+
+            // TODO : check primary key type
+
+            if (pJson.size() < 2)
+            {
+                err = "No values to update";
+                return false;
+            }
+        }
+        else
+            if (pJson.empty())
+            {
+                err = "No values to update";
+                return false;
+            }
+
+        return true;
+    }
 
     static size_t getColumnNumber() noexcept { return boost::pfr::tuple_size<T>::value; }
 
@@ -201,18 +202,16 @@ public:
         for_each_field(aggregate,
                        [this, &sql, &parametersCount](const r_c_name auto& f, size_t i)
                        {
-                           if constexpr(is_primary_key<decltype(f), T>)
-                               return;
+                           if constexpr(!is_primary_key<decltype(f), T>)
+                               if (!dirtyFlag_[i]) return;
 
-                           if (dirtyFlag_[i])
-                           {
-                               sql += f.c_name();
-                               ++parametersCount;
-                           }
-
+                           sql += f.c_name();
+                           sql += ',';
+                           ++parametersCount;
                        });
 
-        needSelection = true;
+        if constexpr (has_primary_key<T>)
+            needSelection = true;
 
         if(parametersCount > 0)
         {
@@ -222,13 +221,11 @@ public:
         else
             sql += ") values (";
 
-        sql +="default,";
-
         for_each_field(aggregate,
                        [this, &sql](const auto& f, size_t i)
                        {
                            if constexpr(is_primary_key<decltype(f), T>)
-                               return;
+                               sql +="default,";
 
                            if (dirtyFlag_[i])
                                sql.append("?,");

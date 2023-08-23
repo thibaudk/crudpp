@@ -1,8 +1,8 @@
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
 
-#include <bindigs/drogon/wrappers/model.hpp>
-#include <concepts/required.hpp>
+#include <crudpp/bindigs/drogon/wrappers/model.hpp>
+#include <crudpp/required.hpp>
 
 using namespace crudpp::wrapper;
 
@@ -132,97 +132,11 @@ public:
         }
     }
 
-    virtual void create(const HttpRequestPtr &req,
-                        std::function<void(const HttpResponsePtr &)> &&callback)
-    {
-        auto jsonPtr=req->jsonObject();
-        if(!jsonPtr)
-        {
-            Json::Value ret;
-            ret["error"]="No json object is found in the request";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-        std::string err;
-        if(!doCustomValidations(*jsonPtr, err))
-        {
-            Json::Value ret;
-            ret["error"] = err;
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-        if(isMasquerading())
-        {
-            if(!model<T>::validateMasqueradedJsonForCreation(*jsonPtr, masqueradingVector(), err))
-            {
-                Json::Value ret;
-                ret["error"] = err;
-                auto resp= HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k400BadRequest);
-                callback(resp);
-                return;
-            }
-        }
-        else
-        {
-            if(!model<T>::validateJsonForCreation(*jsonPtr, err))
-            {
-                Json::Value ret;
-                ret["error"] = err;
-                auto resp= HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k400BadRequest);
-                callback(resp);
-                return;
-            }
-        }
-        try
-        {
-            model<T> object =
-                (isMasquerading()?
-                    model<T>(*jsonPtr, masqueradingVector()) :
-                    model<T>(*jsonPtr));
-            auto dbClientPtr = getDbClient();
-            auto callbackPtr =
-                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                    std::move(callback));
-            Mapper<model<T>> mapper(dbClientPtr);
-            mapper.insert(
-                object,
-                [req, callbackPtr, this](model<T> newObject){
-                    (*callbackPtr)(HttpResponse::newHttpJsonResponse(
-                        makeJson(req, newObject)));
-                },
-                [callbackPtr](const DrogonDbException &e){
-                    LOG_ERROR << e.base().what();
-                    Json::Value ret;
-                    ret["error"] = "database error";
-                    auto resp = HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k500InternalServerError);
-                    (*callbackPtr)(resp);
-                });
-        }
-        catch(const Json::Exception &e)
-        {
-            LOG_ERROR << e.what();
-            Json::Value ret;
-            ret["error"]="Field type error";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-    }
-
     orm::DbClientPtr getDbClient() 
     {
         return drogon::app().getDbClient(dbClientName_);
     }
 
-//protected:
     /// Ensure that subclasses inherited from this class are instantiated.
     restful_ctrl_base()
         : RestfulController{ model<T>::insertColumns() }

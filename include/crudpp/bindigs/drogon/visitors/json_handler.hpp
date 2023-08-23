@@ -1,5 +1,4 @@
-#ifndef JSON_HANDLER_HPP
-#define JSON_HANDLER_HPP
+#pragma once
 
 #include "json_reader.hpp"
 
@@ -31,5 +30,3 @@ struct json_handler
 };
 } // namespace visitor
 } // namespace crudpp
-
-#endif // JSON_HANDLER_HPP

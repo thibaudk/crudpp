@@ -1,8 +1,7 @@
-#ifndef M_VECTOR_HANDLER_OMIT_PRIMARY_HPP
-#define M_VECTOR_HANDLER_OMIT_PRIMARY_HPP
+#pragma once
 
 #include "m_vector_reader.hpp"
-#include <concepts/required.hpp>
+#include <crudpp/required.hpp>
 
 namespace crudpp
 {
@@ -37,5 +36,3 @@ struct m_vector_handler_omit_primary
 };
 } // namespace visitor
 } // namespace crudpp
-
-#endif // M_VECTOR_HANDLER_OMIT_PRIMARY_HPP

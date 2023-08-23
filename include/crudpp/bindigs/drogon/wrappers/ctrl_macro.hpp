@@ -1,5 +1,5 @@
 #include <drogon/HttpController.h>
-#include <bindigs/drogon/wrappers/restful_ctrl.hpp>
+#include <crudpp/bindigs/drogon/wrappers/restful_ctrl.hpp>
 
 using namespace drogon;
 
@@ -22,9 +22,9 @@ struct T##_ctrl : public drogon::HttpController<T##_ctrl>                       
                 , restful_ctrl<T>                                                                \
 {                                                                                                \
     METHOD_LIST_BEGIN                                                                            \
-    ADD_METHOD_TO(T##_ctrl::getOne, std::string{"/"} + T::table() + "/{1}", Get, Options);       \
-    ADD_METHOD_TO(T##_ctrl::update, std::string{"/"} + T::table(), Put, Options);    \
-    ADD_METHOD_TO(T##_ctrl::deleteOne, std::string{"/"} + T::table() + "/{1}", Delete, Options); \
+    ADD_METHOD_TO(T##_ctrl::getOne, std::string{"/"} + T::table() + "/{}", Get, Options);       \
+    ADD_METHOD_TO(T##_ctrl::updateOne, std::string{"/"} + T::table() + "/{}", Put, Options);    \
+    ADD_METHOD_TO(T##_ctrl::deleteOne, std::string{"/"} + T::table() + "/{}", Delete, Options); \
     ADD_METHOD_TO(T##_ctrl::get, std::string{"/"} + T::table(), Get, Options);                   \
     ADD_METHOD_TO(T##_ctrl::create, std::string{"/"} + T::table(), Post, Options);               \
     /*ADD_METHOD_TO(T##_ctrl::update, std::string{"/"} + T::table(), Put, Options);*/            \

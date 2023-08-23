@@ -1,4 +1,4 @@
-#include <bindigs/drogon/wrappers/restful_ctrl_base.hpp>
+#include <crudpp/bindigs/drogon/wrappers/restful_ctrl_base.hpp>
 
 template <typename T>
 struct restful_ctrl : public restful_ctrl_base<T>
@@ -35,8 +35,9 @@ struct restful_ctrl : public restful_ctrl_base<T>
             });
     }
 
-    void update(const HttpRequestPtr &req,
-                   std::function<void(const HttpResponsePtr &)> &&callback)
+    void updateOne(const HttpRequestPtr &req,
+                   std::function<void(const HttpResponsePtr &)> &&callback,
+                typename model<T>::PrimaryKeyType &&id)
     {
         auto jsonPtr=req->jsonObject();
         if(!jsonPtr)
@@ -61,34 +62,23 @@ struct restful_ctrl : public restful_ctrl_base<T>
         }
         try
         {
-            if(this->isMasquerading())
+            // workaroud validateMasqueradedJsonForUpdate
+            if (!model<T>::validateJsonForUpdate(*jsonPtr, err))
             {
-                if(!model<T>::validateMasqueradedJsonForUpdate(*jsonPtr, this->masqueradingVector(), err))
-                {
-                    Json::Value ret;
-                    ret["error"] = err;
-                    auto resp= HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k400BadRequest);
-                    callback(resp);
-                    return;
-                }
+                Json::Value ret;
+                ret["error"] = err;
+                auto resp= HttpResponse::newHttpJsonResponse(ret);
+                resp->setStatusCode(k400BadRequest);
+                callback(resp);
+                return;
+            }
+
+            if (this->isMasquerading())
                 object.updateByMasqueradedJson(*jsonPtr, this->masqueradingVector());
-            }
             else
-            {
-                if(!model<T>::validateJsonForUpdate(*jsonPtr, err))
-                {
-                    Json::Value ret;
-                    ret["error"] = err;
-                    auto resp= HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k400BadRequest);
-                    callback(resp);
-                    return;
-                }
                 object.updateByJson(*jsonPtr);
-            }
         }
-        catch(const Json::Exception &e)
+        catch (const Json::Exception &e)
         {
             LOG_ERROR << e.what();
             Json::Value ret;
@@ -98,7 +88,7 @@ struct restful_ctrl : public restful_ctrl_base<T>
             callback(resp);
             return;
         }
-        if(object.getPrimaryKey() < 1)
+        if(object.getPrimaryKey() != id)
         {
             Json::Value ret;
             ret["error"]="Bad primary key";
@@ -153,31 +143,14 @@ struct restful_ctrl : public restful_ctrl_base<T>
     }
 
     void create(const HttpRequestPtr &req,
-                std::function<void(const HttpResponsePtr &)> &&callback) override
+                std::function<void(const HttpResponsePtr &)> &&callback)
     {
         auto jsonPtr=req->jsonObject();
-        if(!jsonPtr)
+        if (jsonPtr)
         {
-            Json::Value ret;
-            ret["error"]="No json object is found in the request";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-        std::string err;
-        if(!this->doCustomValidations(*jsonPtr, err))
-        {
-            Json::Value ret;
-            ret["error"] = err;
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-        if(this->isMasquerading())
-        {
-            if(!model<T>::validateMasqueradedJsonForCreation(*jsonPtr, this->masqueradingVector(), err))
+            std::string err;
+
+            if (!this->doCustomValidations(*jsonPtr, err))
             {
                 Json::Value ret;
                 ret["error"] = err;
@@ -187,18 +160,7 @@ struct restful_ctrl : public restful_ctrl_base<T>
                 return;
             }
         }
-        else
-        {
-            if(!model<T>::validateJsonForCreation(*jsonPtr, err))
-            {
-                Json::Value ret;
-                ret["error"] = err;
-                auto resp= HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k400BadRequest);
-                callback(resp);
-                return;
-            }
-        }
+
         try
         {
             model<T> object =
@@ -236,9 +198,6 @@ struct restful_ctrl : public restful_ctrl_base<T>
             return;
         }
     }
-
-    //  void update(const HttpRequestPtr &req,
-    //              std::function<void(const HttpResponsePtr &)> &&callback);
 
     void deleteOne(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback,

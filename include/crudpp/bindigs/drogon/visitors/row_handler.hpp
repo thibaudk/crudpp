@@ -1,5 +1,4 @@
-#ifndef ROW_HANDLER_HPP
-#define ROW_HANDLER_HPP
+#pragma once
 
 #include "row_reader.hpp"
 
@@ -23,4 +22,3 @@ struct row_handler
 };
 } // namespace visitor
 } // namespace crudpp
-#endif // ROW_HANDLER_HPP

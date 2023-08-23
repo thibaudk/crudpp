@@ -1,5 +1,4 @@
-#ifndef M_VECTOR_HANDLER_HPP
-#define M_VECTOR_HANDLER_HPP
+#pragma once
 
 #include "m_vector_reader.hpp"
 
@@ -34,5 +33,3 @@ struct m_vector_handler
 };
 } // namespace visitor
 } // namespace crudpp
-
-#endif // M_VECTOR_HANDLER_HPP
