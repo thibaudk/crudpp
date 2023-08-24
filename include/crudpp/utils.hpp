@@ -2,6 +2,8 @@
 
 #include <string>
 
+#include <boost/pfr/core.hpp>
+
 #include <crudpp/required.hpp>
 
 namespace crudpp
@@ -30,5 +32,19 @@ const constexpr std::string get_primary_key_name()
             return m_primary_key.c_name();
     }
     return "";
+}
+
+template <typename T>
+const constexpr size_t get_primary_key_index()
+{
+    size_t pk_index{};
+
+    boost::pfr::for_each_field(T{},
+                               [&pk_index](const r_c_name auto& f, size_t i)
+                               {
+                                   if constexpr (is_primary_key<decltype(f), T>)
+                                       pk_index = i;
+                               });
+    return pk_index;
 }
 }
