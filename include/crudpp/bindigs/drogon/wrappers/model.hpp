@@ -239,7 +239,7 @@ public:
         return sql;
     }
 
-    T& get_aggregate() { return aggregate; };
+    T& get_aggregate() { return aggregate; }
 
     static const std::vector<std::string>& insertColumns() noexcept
     {

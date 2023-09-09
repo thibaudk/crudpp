@@ -119,7 +119,8 @@ struct restful_ctrl : public restful_ctrl_base<T>
                     Json::Value ret;
                     ret["error"]="No resources are updated";
                     auto resp = HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k404NotFound);
+//                    TODO : reinstate as an error when redundant client requests can be prevented
+//                    resp->setStatusCode(k404NotFound);
                     (*callbackPtr)(resp);
                 }
                 else

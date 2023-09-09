@@ -17,6 +17,11 @@ function(make_drogon_server)
         ${CMAKE_BINARY_DIR}/drogon)
 endfunction(make_drogon_server)
 
+function(make_qt_client)
+    add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/qt
+        ${CMAKE_BINARY_DIR}/qt)
+endfunction(make_qt_client)
+
 # Copied from https://github.com/celtera/avendish/blob/main/CMakeLists.txt#L18
 # Only build examples if we are building this repo directly,
 # not if it is add_subdirectory'd
