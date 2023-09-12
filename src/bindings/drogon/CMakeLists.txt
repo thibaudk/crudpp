@@ -2,6 +2,8 @@ project("${PROJECT_NAME}_server")
 
 include(CheckIncludeFileCXX)
 
+add_compile_definitions(SERVER DROGON)
+
 add_executable(${PROJECT_NAME} main.cc)
 
 find_package(Drogon CONFIG REQUIRED)
@@ -24,9 +26,9 @@ target_include_directories(${PROJECT_NAME}
                            PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_sources(${PROJECT_NAME}
-               PRIVATE
-               ${SERVER_SOURCES})
+#target_sources(${PROJECT_NAME}
+#               PRIVATE
+#               ${SERVER_SOURCES})
 
 # ##############################################################################
 # uncomment the following line for dynamically loading views

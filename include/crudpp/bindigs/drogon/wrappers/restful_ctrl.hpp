@@ -1,7 +1,7 @@
 #include <crudpp/bindigs/drogon/wrappers/restful_ctrl_base.hpp>
 
 template <typename T>
-struct restful_ctrl : public restful_ctrl_base<T>
+struct restful_ctrl<T, true> : public restful_ctrl<T, false>
 {
     void getOne(const HttpRequestPtr &req,
                 std::function<void(const HttpResponsePtr &)> &&callback,
@@ -141,63 +141,6 @@ struct restful_ctrl : public restful_ctrl_base<T>
                 resp->setStatusCode(k500InternalServerError);
                 (*callbackPtr)(resp);
             });
-    }
-
-    void create(const HttpRequestPtr &req,
-                std::function<void(const HttpResponsePtr &)> &&callback)
-    {
-        auto jsonPtr=req->jsonObject();
-        if (jsonPtr)
-        {
-            std::string err;
-
-            if (!this->doCustomValidations(*jsonPtr, err))
-            {
-                Json::Value ret;
-                ret["error"] = err;
-                auto resp= HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k400BadRequest);
-                callback(resp);
-                return;
-            }
-        }
-
-        try
-        {
-            model<T> object =
-                (this->isMasquerading()?
-                                   model<T>(*jsonPtr, this->masqueradingVector()) :
-                     model<T>(*jsonPtr));
-            auto dbClientPtr = this->getDbClient();
-            auto callbackPtr =
-                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                    std::move(callback));
-            drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
-            mapper.insert(
-                object,
-                [req, callbackPtr, this](model<T> newObject){
-                    (*callbackPtr)(HttpResponse::newHttpJsonResponse(
-                        this->makeJson(req, newObject)));
-                },
-                [callbackPtr](const DrogonDbException &e){
-                    LOG_ERROR << e.base().what();
-                    Json::Value ret;
-                    ret["error"] = "database error";
-                    auto resp = HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k500InternalServerError);
-                    (*callbackPtr)(resp);
-                });
-        }
-        catch(const Json::Exception &e)
-        {
-            LOG_ERROR << e.what();
-            Json::Value ret;
-            ret["error"]="Field type error";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
     }
 
     void deleteOne(const HttpRequestPtr &req,

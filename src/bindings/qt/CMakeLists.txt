@@ -1,5 +1,7 @@
 project(${PROJECT_NAME})
 
+add_compile_definitions(CLIENT QT)
+
 set(CMAKE_AUTOUIC OFF)
 set(CMAKE_AUTOMOC OFF)
 set(CMAKE_AUTORCC ON)
@@ -13,11 +15,8 @@ include_directories(${VERDIGRIS_PATH}/src)
 
 qt_add_executable(${PROJECT_NAME}
     MANUAL_FINALIZATION
-    ${CLIENT_SOURCES})
-
-target_include_directories(${PROJECT_NAME}
-                           PRIVATE
-                           ${CMAKE_CURRENT_SOURCE_DIR})
+    ${CRUDPP_EXTRA_CLIENT_SOURCES}
+    main.cpp)
 
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)

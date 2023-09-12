@@ -146,4 +146,4 @@ list<T>* controller<T>::m_list{new list<T>{}};
 } // namespace crudpp
 
 #include <wobjectimpl.h>
-W_OBJECT_IMPL(crudpp::controller<T>, template <typename T>);
+W_OBJECT_IMPL(crudpp::controller<T>, template <typename T>)

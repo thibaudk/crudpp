@@ -12,15 +12,24 @@ set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 
 include_directories(${CRUDPP_SOURCE_DIR}/include)
 
-function(make_drogon_server)
+function(make_all)
+
+    set(ONE_VALUE_ARGS INCLUDE)
+    set(MULTI_VALUE_ARGS AGGREGATES EXTRA_CLIENT_SOURCES)
+    cmake_parse_arguments(CRUDPP "" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" ${ARGN})
+
+    string(REPLACE ";" "," CRUDPP_AGGREGATES "${CRUDPP_AGGREGATES}")
+
+    add_compile_definitions(INCLUDE=${CRUDPP_INCLUDE}
+                            AGGREGATES=${CRUDPP_AGGREGATES})
+
     add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/drogon
         ${CMAKE_BINARY_DIR}/drogon)
-endfunction(make_drogon_server)
 
-function(make_qt_client)
     add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/qt
         ${CMAKE_BINARY_DIR}/qt)
-endfunction(make_qt_client)
+
+endfunction(make_all)
 
 # Copied from https://github.com/celtera/avendish/blob/main/CMakeLists.txt#L18
 # Only build examples if we are building this repo directly,

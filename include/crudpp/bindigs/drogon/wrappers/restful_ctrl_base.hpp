@@ -1,15 +1,15 @@
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
 
-#include <crudpp/bindigs/drogon/wrappers/model.hpp>
 #include <crudpp/required.hpp>
+#include <crudpp/bindigs/drogon/wrappers/model.hpp>
 
 using namespace crudpp::wrapper;
 
 using namespace drogon;
 
-template <typename T>
-class restful_ctrl_base : public RestfulController
+template <typename T, bool has_primary_key = false>
+class restful_ctrl : public RestfulController
 {
 public:
     void get(const HttpRequestPtr &req,
@@ -132,13 +132,70 @@ public:
         }
     }
 
+    void create(const HttpRequestPtr &req,
+                std::function<void(const HttpResponsePtr &)> &&callback)
+    {
+        auto jsonPtr=req->jsonObject();
+        if (jsonPtr)
+        {
+            std::string err;
+
+            if (!this->doCustomValidations(*jsonPtr, err))
+            {
+                Json::Value ret;
+                ret["error"] = err;
+                auto resp= HttpResponse::newHttpJsonResponse(ret);
+                resp->setStatusCode(k400BadRequest);
+                callback(resp);
+                return;
+            }
+        }
+
+        try
+        {
+            model<T> object =
+                (this->isMasquerading()?
+                     model<T>(*jsonPtr, this->masqueradingVector()) :
+                     model<T>(*jsonPtr));
+            auto dbClientPtr = this->getDbClient();
+            auto callbackPtr =
+                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                    std::move(callback));
+            drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
+            mapper.insert(
+                object,
+                [req, callbackPtr, this](model<T> newObject){
+                    (*callbackPtr)(HttpResponse::newHttpJsonResponse(
+                        this->makeJson(req, newObject)));
+                },
+                [callbackPtr](const DrogonDbException &e){
+                    LOG_ERROR << e.base().what();
+                    Json::Value ret;
+                    ret["error"] = "database error";
+                    auto resp = HttpResponse::newHttpJsonResponse(ret);
+                    resp->setStatusCode(k500InternalServerError);
+                    (*callbackPtr)(resp);
+                });
+        }
+        catch(const Json::Exception &e)
+        {
+            LOG_ERROR << e.what();
+            Json::Value ret;
+            ret["error"]="Field type error";
+            auto resp= HttpResponse::newHttpJsonResponse(ret);
+            resp->setStatusCode(k400BadRequest);
+            callback(resp);
+            return;
+        }
+    }
+
     orm::DbClientPtr getDbClient() 
     {
         return drogon::app().getDbClient(dbClientName_);
     }
 
     /// Ensure that subclasses inherited from this class are instantiated.
-    restful_ctrl_base()
+    restful_ctrl()
         : RestfulController{ model<T>::insertColumns() }
     {
     /**

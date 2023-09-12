@@ -86,7 +86,7 @@ public:
     }
     W_INVOKABLE(resetPwd)
 
-    void setQmlObject(QObject* obj) noexcept { qmlObject = obj; };
+    void setQmlObject(QObject* obj) noexcept { qmlObject = obj; }
 
     bool hasFlag(int value, int flag) const noexcept
     {
@@ -107,14 +107,14 @@ public:
         emit downloadProgressChanged();
     }
     void downloadProgressChanged()
-    W_SIGNAL(downloadProgressChanged);
+    W_SIGNAL(downloadProgressChanged)
 
     W_PROPERTY(float, downloadProgress READ getDownloadProgress WRITE setDownloadProgress NOTIFY downloadProgressChanged)
 
     QQmlApplicationEngine* engine{new QQmlApplicationEngine{}};
 
 private:
-    bridge() {};
+    bridge() {}
 
     QObject* qmlObject;
 
@@ -142,4 +142,4 @@ private:
 } // namespace crudpp
 
 #include <wobjectimpl.h>
-W_OBJECT_IMPL(crudpp::bridge);
+W_OBJECT_IMPL(crudpp::bridge)
