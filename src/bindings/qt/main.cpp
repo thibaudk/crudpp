@@ -29,10 +29,10 @@ int main(int argc, char* argv[])
     net_manager::instance().init(host);
 
     bridge::instance().init();
-    bridge::instance().registerQml<AGGREGATES>();
+    bridge::instance().registerQml<CLASSES>();
 //    client::instance().init();
 
-    make_ctls<AGGREGATES>();
+    make_ctls<CLASSES>();
 
     // qml engine
     const QUrl url(QStringLiteral("qrc:/ui/main.qml"));

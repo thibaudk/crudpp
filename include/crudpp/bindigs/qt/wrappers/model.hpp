@@ -48,17 +48,6 @@ struct model final
     {
         QVariant v{};
 
-        boost::pfr::for_each_field(aggregate,
-                                   [&v, role](const auto& f, size_t i)
-                                   {
-                                       // prevent from manually setting primary key
-                                       if constexpr (is_primary_key<decltype(f), T>)
-                                           return;
-
-                                       if (role - Qt::UserRole == i)
-                                           v = to_qt(f.value);
-                                   });
-
         if (role == flagged_for_update_role())
         {
             for (bool f : dirtyFlag_)
@@ -76,6 +65,15 @@ struct model final
         {
             v = loading;
         }
+        else
+        {
+            boost::pfr::for_each_field(aggregate,
+                                       [&v, role](const auto& f, size_t i)
+                                       {
+                                           if (role - Qt::UserRole == i)
+                                               v = to_qt(f.value);
+                                       });
+        }
 
         return v;
     }
@@ -85,6 +83,10 @@ struct model final
         boost::pfr::for_each_field(aggregate,
                                    [&v, role, this](auto& f, size_t i)
                                    {
+                                       // prevent from manually setting primary key
+                                       if constexpr (is_primary_key<decltype(f), T>)
+                                           return;
+
                                        if (role - Qt::UserRole == i)
                                        {
                                            const auto new_val{from_qt<decltype(f.value)>(v)};

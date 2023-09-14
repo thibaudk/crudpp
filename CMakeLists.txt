@@ -10,18 +10,18 @@ find_package(Boost QUIET REQUIRED)
 set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 
-include_directories(${CRUDPP_SOURCE_DIR}/include)
-
 function(make_all)
 
+    include_directories(${CRUDPP_SOURCE_DIR}/include)
+
     set(ONE_VALUE_ARGS INCLUDE)
-    set(MULTI_VALUE_ARGS AGGREGATES EXTRA_CLIENT_SOURCES)
+    set(MULTI_VALUE_ARGS CLASSES EXTRA_CLIENT_SOURCES)
     cmake_parse_arguments(CRUDPP "" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" ${ARGN})
 
-    string(REPLACE ";" "," CRUDPP_AGGREGATES "${CRUDPP_AGGREGATES}")
+    string(REPLACE ";" "," CRUDPP_CLASSES "${CRUDPP_CLASSES}")
 
     add_compile_definitions(INCLUDE=${CRUDPP_INCLUDE}
-                            AGGREGATES=${CRUDPP_AGGREGATES})
+                            CLASSES=${CRUDPP_CLASSES})
 
     add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/drogon
         ${CMAKE_BINARY_DIR}/drogon)

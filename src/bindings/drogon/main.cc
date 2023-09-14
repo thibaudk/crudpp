@@ -3,7 +3,7 @@
 
 #include STRINGIFY_MACRO(INCLUDE)
 
-CTRLS_FROM_MACRO(AGGREGATES)
+CTRLS_FROM_MACRO(CLASSES)
 
 int main() {
     //Set HTTP listener address and port
