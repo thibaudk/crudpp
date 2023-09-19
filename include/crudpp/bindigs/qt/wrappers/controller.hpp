@@ -44,7 +44,9 @@ public:
                                 item.reset_flags();
                                 emit m_list->loaded(row);
                             },
-                            "Validate error");
+                            "Validate error",
+                            [row]()
+                            { emit m_list->loaded(row); });
                     }
                     else // insert otherwise
                     {
@@ -70,8 +72,13 @@ public:
                     {
                         net_manager::instance().deleteToKey(make_key(item).c_str(),
                             [this, row](const QJsonValue& rep)
-                            { m_list->removeItem(row); },
-                            "Remove Error");
+                            {
+                                m_list->removeItem(row);
+                                emit m_list->loaded(row);
+                            },
+                            "Remove Error",
+                            [this, row]()
+                            { emit m_list->loaded(row); });
 
                         return;
                     }

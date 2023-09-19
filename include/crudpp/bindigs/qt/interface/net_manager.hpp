@@ -111,11 +111,11 @@ public:
 
     void loggedIn(bool success,
                   const QString& errorString = "")
-    W_SIGNAL(loggedIn, success, errorString);
+    W_SIGNAL(loggedIn, success, errorString)
 
     void replyError(const QString& prefix = "",
                     const QString& errorString = "")
-    W_SIGNAL(replyError, prefix, errorString);
+    W_SIGNAL(replyError, prefix, errorString)
 
     void downloadFile(const char* key,
                       const QString& path,
@@ -207,13 +207,15 @@ public:
 
     void deleteToKey(const char* key,
                      const std::function<void (const QJsonObject &)>&& callback,
-                     const QString&& errorPrefix = "")
+                     const QString&& errorPrefix = "",
+                     const std::function<void ()>&& errorCallback = [](){})
     {
         setRequest(key);
         auto* reply = deleteResource(rqst);
         setCallback(reply,
                     std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
-                    std::forward<const QString&&>(errorPrefix));
+                    std::forward<const QString&&>(errorPrefix),
+                    std::forward<const std::function<void ()>&&>(errorCallback));
     }
 
     void userChanged(int newId)
@@ -223,7 +225,7 @@ public:
     W_SIGNAL(clearanceChanged, newClearance)
 
 private:
-    net_manager() {};
+    net_manager() {}
 
     QNetworkRequest rqst;
     QString prefix;
@@ -296,4 +298,4 @@ private:
 } // crudpp
 
 #include "wobjectimpl.h"
-W_OBJECT_IMPL(crudpp::net_manager);
+W_OBJECT_IMPL(crudpp::net_manager)
