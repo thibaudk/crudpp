@@ -4,55 +4,14 @@
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/drogon/wrappers/model.hpp>
 
-using namespace crudpp;
 using namespace crudpp::wrapper;
 
 using namespace drogon;
 
-template <typename T, bool has_primary_key = false>
-class restful_ctrl : public RestfulController
+template <typename T>
+class restful_ctrl_base : public RestfulController
 {
 public:
-
-    virtual void getOne(const HttpRequestPtr &req,
-                        std::function<void(const HttpResponsePtr &)> &&callback,
-                        typename orm::internal::Traits<model<T>, crudpp::has_primary_key<T>>::type &&id)
-    {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        auto resp = HttpResponse::newHttpResponse();
-        resp->setStatusCode(k404NotFound);
-        (*callbackPtr)(resp);
-    }
-
-    virtual void updateOne(const HttpRequestPtr &req,
-                           std::function<void(const HttpResponsePtr &)> &&callback,
-                           typename orm::internal::Traits<model<T>, crudpp::has_primary_key<T>>::type &&id)
-    {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        auto resp = HttpResponse::newHttpResponse();
-        resp->setStatusCode(k404NotFound);
-        (*callbackPtr)(resp);
-    }
-
-    virtual void deleteOne(const HttpRequestPtr &req,
-                           std::function<void(const HttpResponsePtr &)> &&callback,
-                           typename orm::internal::Traits<model<T>, crudpp::has_primary_key<T>>::type &&id)
-    {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        auto resp = HttpResponse::newHttpResponse();
-        resp->setStatusCode(k404NotFound);
-        (*callbackPtr)(resp);
-    }
-
     void get(const HttpRequestPtr &req,
              std::function<void(const HttpResponsePtr &)> &&callback)
     {
@@ -230,14 +189,8 @@ public:
         }
     }
 
-    orm::DbClientPtr getDbClient() 
-    {
-        return drogon::app().getDbClient(dbClientName_);
-    }
-
     /// Ensure that subclasses inherited from this class are instantiated.
-    restful_ctrl()
-        : RestfulController{ model<T>::insertColumns() }
+    restful_ctrl_base() : RestfulController{ model<T>::insertColumns() }
     {
     /**
     * The items in the vector are aliases of column names in the table.
@@ -245,6 +198,12 @@ public:
     * to clients.
     */
         enableMasquerading(model<T>::insertColumns());
+    }
+
+protected:
+    orm::DbClientPtr getDbClient() 
+    {
+        return drogon::app().getDbClient(dbClientName_);
     }
 
     const std::string dbClientName_{"default"};

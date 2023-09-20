@@ -14,15 +14,12 @@ function(make_all)
 
     include_directories(${CRUDPP_SOURCE_DIR}/include)
 
-    set(OPTIONS USER_CLASS)
-    set(ONE_VALUE_ARGS INCLUDE)
+    set(ONE_VALUE_ARGS INCLUDE USER_CLASS)
     set(MULTI_VALUE_ARGS CLASSES EXTRA_CLIENT_SOURCES)
     cmake_parse_arguments(CRUDPP "" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" ${ARGN})
 
-    if (DEFINED ${CRUDPP_USER_CLASS})
-        add_compile_definitions(USER_CLASS=${CRUDPP_USER_CLASS})
-        list(APPEND ${CRUDPP_USER_CLASS})
-    endif()
+    add_compile_definitions(USER_CLASS=${CRUDPP_USER_CLASS})
+    list(APPEND CRUDPP_CLASSES ${CRUDPP_USER_CLASS})
 
     string(REPLACE ";" "," CRUDPP_CLASSES "${CRUDPP_CLASSES}")
 

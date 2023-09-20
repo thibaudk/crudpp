@@ -1,11 +1,11 @@
-#include <crudpp/bindigs/drogon/wrappers/restful_ctrl_base.hpp>
+#include <crudpp/bindigs/drogon/wrappers/restful_ctrl_pivot.hpp>
 
 template <typename T>
-struct restful_ctrl<T, true> : public restful_ctrl<T, false>
+struct restful_ctrl<T, true> : public restful_ctrl_base<T>
 {
     void getOne(const HttpRequestPtr &req,
                 std::function<void(const HttpResponsePtr &)> &&callback,
-                typename orm::internal::Traits<model<T>, has_primary_key<T>>::type &&id) override
+                typename model<T>::PrimaryKeyType &&id)
     {
         auto dbClientPtr = this->getDbClient();
         auto callbackPtr =
@@ -37,7 +37,7 @@ struct restful_ctrl<T, true> : public restful_ctrl<T, false>
 
     void updateOne(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback,
-                   typename orm::internal::Traits<model<T>, has_primary_key<T>>::type &&id) override
+                   typename model<T>::PrimaryKeyType &&id)
     {
         auto jsonPtr=req->jsonObject();
         if(!jsonPtr)
@@ -145,7 +145,7 @@ struct restful_ctrl<T, true> : public restful_ctrl<T, false>
 
     void deleteOne(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback,
-                   typename orm::internal::Traits<model<T>, has_primary_key<T>>::type &&id) override
+                   typename model<T>::PrimaryKeyType &&id)
     {
         auto dbClientPtr = this->getDbClient();
         auto callbackPtr =

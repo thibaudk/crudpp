@@ -6,7 +6,7 @@ using namespace drogon;
 
 #define CTRL(T)                                                                                  \
 struct T##_ctrl : public drogon::HttpController<T##_ctrl>                                        \
-                , restful_ctrl<T, crudpp::has_primary_key<T>>                                    \
+                , public restful_ctrl<T, crudpp::has_primary_key<T>>                             \
 {                                                                                                \
     METHOD_LIST_BEGIN                                                                            \
     ADD_METHOD_TO(T##_ctrl::getOne, std::string{"/"} + T::table() + "/{}", Get, Options);        \
