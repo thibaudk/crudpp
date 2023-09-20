@@ -31,6 +31,7 @@ const constexpr std::string get_primary_key_name()
         if constexpr(r_c_name<decltype(m_primary_key)>)
             return m_primary_key.c_name();
     }
+
     return "";
 }
 
@@ -47,4 +48,5 @@ const constexpr size_t get_primary_key_index()
                                });
     return pk_index;
 }
-}
+
+} // namespace crudpp

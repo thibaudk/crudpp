@@ -42,9 +42,16 @@ concept has_primary_key = requires()
     std::is_aggregate<decltype(T::primary_key())>();
 };
 
+template <typename T>
+concept has_session_id = requires()
+{
+    std::is_aggregate<decltype(T::session_id())>();
+};
+
 template <typename T, typename Agg>
 concept is_primary_key = requires(const Agg& a)
 {
     { a.*Agg::primary_key() } -> std::same_as<T>;
 };
+
 } // namespace crudpp

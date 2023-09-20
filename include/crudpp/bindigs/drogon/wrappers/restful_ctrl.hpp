@@ -5,7 +5,7 @@ struct restful_ctrl<T, true> : public restful_ctrl<T, false>
 {
     void getOne(const HttpRequestPtr &req,
                 std::function<void(const HttpResponsePtr &)> &&callback,
-                typename model<T>::PrimaryKeyType &&id)
+                typename orm::internal::Traits<model<T>, has_primary_key<T>>::type &&id) override
     {
         auto dbClientPtr = this->getDbClient();
         auto callbackPtr =
@@ -37,7 +37,7 @@ struct restful_ctrl<T, true> : public restful_ctrl<T, false>
 
     void updateOne(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback,
-                typename model<T>::PrimaryKeyType &&id)
+                   typename orm::internal::Traits<model<T>, has_primary_key<T>>::type &&id) override
     {
         auto jsonPtr=req->jsonObject();
         if(!jsonPtr)
@@ -145,7 +145,7 @@ struct restful_ctrl<T, true> : public restful_ctrl<T, false>
 
     void deleteOne(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback,
-                   typename model<T>::PrimaryKeyType &&id)
+                   typename orm::internal::Traits<model<T>, has_primary_key<T>>::type &&id) override
     {
         auto dbClientPtr = this->getDbClient();
         auto callbackPtr =

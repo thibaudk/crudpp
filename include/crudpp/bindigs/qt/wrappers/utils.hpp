@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QVariant>
+
 namespace crudpp
 {
 template <typename T>

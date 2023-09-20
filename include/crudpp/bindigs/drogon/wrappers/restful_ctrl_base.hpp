@@ -4,6 +4,7 @@
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/drogon/wrappers/model.hpp>
 
+using namespace crudpp;
 using namespace crudpp::wrapper;
 
 using namespace drogon;
@@ -12,6 +13,46 @@ template <typename T, bool has_primary_key = false>
 class restful_ctrl : public RestfulController
 {
 public:
+
+    virtual void getOne(const HttpRequestPtr &req,
+                        std::function<void(const HttpResponsePtr &)> &&callback,
+                        typename orm::internal::Traits<model<T>, crudpp::has_primary_key<T>>::type &&id)
+    {
+        auto callbackPtr =
+            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                std::move(callback));
+
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setStatusCode(k404NotFound);
+        (*callbackPtr)(resp);
+    }
+
+    virtual void updateOne(const HttpRequestPtr &req,
+                           std::function<void(const HttpResponsePtr &)> &&callback,
+                           typename orm::internal::Traits<model<T>, crudpp::has_primary_key<T>>::type &&id)
+    {
+        auto callbackPtr =
+            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                std::move(callback));
+
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setStatusCode(k404NotFound);
+        (*callbackPtr)(resp);
+    }
+
+    virtual void deleteOne(const HttpRequestPtr &req,
+                           std::function<void(const HttpResponsePtr &)> &&callback,
+                           typename orm::internal::Traits<model<T>, crudpp::has_primary_key<T>>::type &&id)
+    {
+        auto callbackPtr =
+            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                std::move(callback));
+
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setStatusCode(k404NotFound);
+        (*callbackPtr)(resp);
+    }
+
     void get(const HttpRequestPtr &req,
              std::function<void(const HttpResponsePtr &)> &&callback)
     {

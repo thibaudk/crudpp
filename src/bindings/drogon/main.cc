@@ -5,7 +5,8 @@
 
 CTRLS_FROM_MACRO(CLASSES)
 
-int main() {
+int main()
+{
     //Set HTTP listener address and port
     //drogon::app().addListener("0.0.0.0",80);
     //Load config file
