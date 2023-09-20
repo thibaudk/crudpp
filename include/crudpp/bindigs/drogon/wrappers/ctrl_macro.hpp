@@ -17,7 +17,4 @@ struct T##_ctrl : public drogon::HttpController<T##_ctrl>                       
     METHOD_LIST_END                                                                              \
 };
 
-#define CTRLS_FROM_MACRO(...) MAKE_CTRLS(__VA_ARGS__)
-
-#define MAKE_CTRLS(T, ...) CTRL(T) __VA_OPT__(MAKE_CTRLS_AGAIN(__VA_ARGS__))
-#define MAKE_CTRLS_AGAIN(T, ...) CTRL(T) __VA_OPT__(MAKE_CTRLS(__VA_ARGS__))
+#define CTRLS_FROM_MACRO(r, data, elem) CTRL(elem)

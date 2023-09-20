@@ -2,7 +2,11 @@ project("${PROJECT_NAME}_server")
 
 include(CheckIncludeFileCXX)
 
-add_compile_definitions(SERVER DROGON)
+string(REPLACE "," ")(" BOOST_FORMATED_CLASSES "(${CRUDPP_CLASSES})")
+
+add_compile_definitions(SERVER
+                        DROGON
+                        BOOST_FORMATED_CLASSES=${BOOST_FORMATED_CLASSES})
 
 add_executable(${PROJECT_NAME} main.cc)
 
