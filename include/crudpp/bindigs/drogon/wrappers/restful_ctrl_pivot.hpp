@@ -1,6 +1,8 @@
+#pragma once
+
 #include <crudpp/bindigs/drogon/wrappers/restful_ctrl_base.hpp>
 
-template <typename T, bool has_primary_key = false>
+template <typename T, bool has_primary_key = false, bool authenticates = false>
 struct restful_ctrl : public restful_ctrl_base<T>
 {
     void getOne(const HttpRequestPtr &req,

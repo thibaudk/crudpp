@@ -2,7 +2,7 @@ project("${PROJECT_NAME}_server")
 
 include(CheckIncludeFileCXX)
 
-string(REPLACE "," ")(" BOOST_FORMATED_CLASSES "(${CRUDPP_CLASSES})")
+string(REPLACE ";" ")(" BOOST_FORMATED_CLASSES "(${CRUDPP_CLASSES})")
 
 add_compile_definitions(SERVER
                         DROGON

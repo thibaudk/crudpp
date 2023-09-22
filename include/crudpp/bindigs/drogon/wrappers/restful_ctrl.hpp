@@ -1,8 +1,22 @@
+#pragma once
+
 #include <crudpp/bindigs/drogon/wrappers/restful_ctrl_pivot.hpp>
 
 template <typename T>
 struct restful_ctrl<T, true> : public restful_ctrl_base<T>
 {
+    virtual void auth(const HttpRequestPtr &req,
+                      std::function<void(const HttpResponsePtr &)> &&callback)
+    {
+        auto callbackPtr =
+            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                std::move(callback));
+
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setStatusCode(k404NotFound);
+        (*callbackPtr)(resp);
+    }
+
     void getOne(const HttpRequestPtr &req,
                 std::function<void(const HttpResponsePtr &)> &&callback,
                 typename model<T>::PrimaryKeyType &&id)

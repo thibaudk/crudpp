@@ -1,6 +1,10 @@
 project(${PROJECT_NAME})
 
-add_compile_definitions(CLIENT QT)
+string(REPLACE ";" "," CLASSES_STRING "${CRUDPP_CLASSES}")
+
+add_compile_definitions(CLIENT
+                        QT
+                        CLASSES_STRING=${CLASSES_STRING})
 
 set(CMAKE_AUTOUIC OFF)
 set(CMAKE_AUTOMOC OFF)

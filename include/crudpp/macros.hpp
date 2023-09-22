@@ -2,7 +2,7 @@
 
 #ifdef SERVER
 #ifdef DROGON
-#include <crudpp/bindigs/drogon/wrappers/ctrl_macro.hpp>
+#include <crudpp/bindigs/drogon/ctrl_macro.hpp>
 #endif
 #endif
 

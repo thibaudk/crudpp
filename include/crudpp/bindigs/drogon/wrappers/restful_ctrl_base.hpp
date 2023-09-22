@@ -1,3 +1,5 @@
+#pragma once
+
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
 

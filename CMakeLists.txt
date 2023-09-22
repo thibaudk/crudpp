@@ -21,10 +21,7 @@ function(make_all)
     add_compile_definitions(USER_CLASS=${CRUDPP_USER_CLASS})
     list(APPEND CRUDPP_CLASSES ${CRUDPP_USER_CLASS})
 
-    string(REPLACE ";" "," CRUDPP_CLASSES "${CRUDPP_CLASSES}")
-
-    add_compile_definitions(INCLUDE=${CRUDPP_INCLUDE}
-                            CLASSES=${CRUDPP_CLASSES})
+    add_compile_definitions(INCLUDE=${CRUDPP_INCLUDE})
 
     add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/drogon
         ${CMAKE_BINARY_DIR}/drogon)

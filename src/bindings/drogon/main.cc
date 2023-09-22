@@ -1,10 +1,9 @@
-#include <boost/preprocessor/seq/for_each.hpp>
 #include <drogon/drogon.h>
 #include <crudpp/macros.hpp>
 
 #include STRINGIFY_MACRO(INCLUDE)
 
-BOOST_PP_SEQ_FOR_EACH(CTRLS_FROM_MACRO, , BOOST_FORMATED_CLASSES)
+MAKE_CTRLS(BOOST_FORMATED_CLASSES)
 
 int main()
 {
