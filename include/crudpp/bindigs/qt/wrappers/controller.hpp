@@ -141,7 +141,7 @@ public:
         std::string key{T::table()};
         key += '/';
 
-        if constexpr (has_primary_key<T>)
+        if constexpr (r_primary_key<T>)
             key += std::to_string((item.get_aggregate().*T::primary_key()).value);
 
         return key;

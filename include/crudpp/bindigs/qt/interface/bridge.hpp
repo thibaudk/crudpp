@@ -26,6 +26,9 @@ public:
 
     void init()
     {
+        qmlRegisterUncreatableType<bridge>("Interface", 1, 0, "Bridge", "");
+        context()->setContextProperty("bridge", this);
+
         connect(&net_manager::instance(),
                 &net_manager::loggedIn,
                 this,

@@ -13,7 +13,7 @@ using namespace crudpp;
 
 #define CTRL(T)                                                                                   \
 struct T##_ctrl : public drogon::HttpController<T##_ctrl>                                         \
-                , public restful_ctrl<T, has_primary_key<T>, authenticates<T>>                    \
+                , public restful_ctrl<T, r_primary_key<T>, authenticates<T>>                      \
 {                                                                                                 \
     METHOD_LIST_BEGIN                                                                             \
     ADD_METHOD_TO(T##_ctrl::auth, std::string{"/"} + T::table() + "/auth", Post, Options);        \

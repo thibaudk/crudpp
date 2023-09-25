@@ -10,6 +10,10 @@
 
 #include <wobjectdefs.h>
 
+#include <crudpp/macros.hpp>
+#include <crudpp/bindigs/qt/wrappers/model.hpp>
+#include STRINGIFY_MACRO(INCLUDE)
+
 namespace crudpp
 {
 class smtp;
@@ -54,59 +58,66 @@ public:
     net_manager(net_manager const&) = delete;
     void operator = (net_manager const&) = delete;
 
-    void authenticate(const QString& username, const QString& password)
+    void authenticate(const QString& identeifier, const QString& secret)
     {
-        QUrl url{prefix
-                 + '?' + "userName=" + username
-                 + '&' + "password=" + password};
+        model<USER_CLASS> usr;
+        auto& agg{usr.get_aggregate()};
+        (agg.*USER_CLASS::identifier()).value = identeifier.toStdString();
 
-        rqst.setUrl(url);
+        QJsonObject json;
+        usr.write(json);
+
+        std::string url{agg.table()};
+        url += "/auth";
 
         authenticating = true;
-        auto* reply = get(rqst);
+        postToKey(url.c_str(),
+                  QJsonDocument{json}.toJson(),
+                  [this](const QJsonObject & obj)
+                  {
+                      qDebug() << obj;
 
-        connect(reply, &QNetworkReply::finished,
-                [this, reply]()
-                {
-                    if (reply->error())
-                    {
-                        if (authenticating)
-                        {
-                            authenticating = false;
-                            emit loggedIn(false, reply->errorString());
-                        }
-                    }
-                    else
-                    {
-                        const auto res = reply->readAll();
-                        const auto json = QJsonDocument::fromJson(res).object();
+                      //                    if (reply->error())
+                      //                    {
+                      //                        if (authenticating)
+                      //                        {
+                      //                            authenticating = false;
+                      //                            emit loggedIn(false, reply->errorString());
+                      //                        }
+                      //                    }
+                      //                    else
+                      //                    {
+                      //                        const auto res = reply->readAll();
+                      //                        const auto json = QJsonDocument::fromJson(res).object();
 
-                        if (json.contains("sessionId"))
-                        {
-                            if (authenticating)
-                            {
-                                authenticating = false;
+                      //                        qDebug() << json;
 
-                                if (json.contains("sessionId") && json["sessionId"].isString())
-                                {
-                                    const auto str{json["sessionId"].toString().toStdString()};
-                                    rqst.setRawHeader("sessionId",
-                                                      QByteArray::fromStdString(str));
-                                }
+                      //                        if (json.contains("sessionId"))
+                      //                        {
+                      //                            if (authenticating)
+                      //                            {
+                      //                                authenticating = false;
 
-                                if (json.contains("id") && json["id"].isDouble())
-                                    emit userChanged(json["id"].toInt());
+                      //                                if (json.contains("sessionId") && json["sessionId"].isString())
+                      //                                {
+                      //                                    const auto str{json["sessionId"].toString().toStdString()};
+                      //                                    rqst.setRawHeader("sessionId",
+                      //                                                      QByteArray::fromStdString(str));
+                      //                                }
 
-                                if (json.contains("clearance") && json["clearance"].isDouble())
-                                    emit clearanceChanged(json["clearance"].toInt());
+                      //                                if (json.contains("id") && json["id"].isDouble())
+                      //                                    emit userChanged(json["id"].toInt());
 
-                                emit loggedIn(true);
-                            }
-                        }
-                    }
+                      //                                if (json.contains("clearance") && json["clearance"].isDouble())
+                      //                                    emit clearanceChanged(json["clearance"].toInt());
 
-                    reply->deleteLater();
-                });
+                      //                                emit loggedIn(true);
+                      //                            }
+                      //                        }
+                      //                    }
+
+                      //                    reply->deleteLater();
+                  });
     }
 
     void loggedIn(bool success,

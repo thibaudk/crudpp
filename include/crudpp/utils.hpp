@@ -24,7 +24,7 @@ struct trait<T, false>
 template <typename T>
 const constexpr std::string get_primary_key_name()
 {
-    if constexpr(has_primary_key<T>)
+    if constexpr(r_primary_key<T>)
     {
         const auto m_primary_key{T{}.*T::primary_key()};
 

@@ -32,13 +32,13 @@ class model
 {
 public:
     static const constexpr std::string tableName = T::table();
-    static const constexpr bool hasPrimaryKey = has_primary_key<T>;
+    static const constexpr bool hasPrimaryKey = r_primary_key<T>;
     static const constexpr std::string primaryKeyName = get_primary_key_name<T>();
-    using PrimaryKeyType = typename trait<T, has_primary_key<T>>::type;
+    using PrimaryKeyType = typename trait<T, r_primary_key<T>>::type;
 
-    const typename internal::Traits<model<T>, has_primary_key<T>>::type getPrimaryKey() const
+    const typename internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
     {
-        if constexpr(has_primary_key<T>)
+        if constexpr(r_primary_key<T>)
             if constexpr(requires { r_value<T, PrimaryKeyType>; })
             {
                 const auto id = aggregate.*T::primary_key();
@@ -123,7 +123,7 @@ public:
 
     static bool validateJsonForUpdate(const Json::Value &pJson, std::string &err)
     {
-        if constexpr (has_primary_key<T>)
+        if constexpr (r_primary_key<T>)
         {
             if (!pJson.isMember(primaryKeyName))
             {
@@ -210,7 +210,7 @@ public:
                            ++parametersCount;
                        });
 
-        if constexpr (has_primary_key<T>)
+        if constexpr (r_primary_key<T>)
             needSelection = true;
 
         if(parametersCount > 0)
@@ -298,7 +298,7 @@ private:
     ///For mysql or sqlite3
     void updateId(const uint64_t id)
     {
-        if constexpr(has_primary_key<T>)
+        if constexpr(r_primary_key<T>)
         {
             aggregate.id.value = id;
             return;
