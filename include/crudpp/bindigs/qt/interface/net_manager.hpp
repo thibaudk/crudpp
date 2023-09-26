@@ -58,14 +58,14 @@ public:
     net_manager(net_manager const&) = delete;
     void operator = (net_manager const&) = delete;
 
-    void authenticate(const QString& identeifier, const QString& secret)
+    void authenticate(const QString& identifier, const QString& secret)
     {
         model<USER_CLASS> usr;
         auto& agg{usr.get_aggregate()};
-        (agg.*USER_CLASS::identifier()).value = identeifier.toStdString();
 
         QJsonObject json;
-        usr.write(json);
+        json[(agg.*USER_CLASS::identifier()).c_name()] = identifier;
+        json[(agg.*USER_CLASS::secret()).c_name()] = secret;
 
         std::string url{agg.table()};
         url += "/auth";
@@ -76,6 +76,7 @@ public:
                   [this](const QJsonObject & obj)
                   {
                       qDebug() << obj;
+                      emit loggedIn(true);
 
                       //                    if (reply->error())
                       //                    {

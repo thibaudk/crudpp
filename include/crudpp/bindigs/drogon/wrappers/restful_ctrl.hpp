@@ -258,6 +258,8 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
     }
 };
 
+#include <crudpp/bindigs/drogon/visitors/json_handler.hpp>
+
 // authenticating
 template <typename T>
 struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
@@ -275,19 +277,25 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
             callback(resp);
             return;
         }
-        model<T> object;
-        std::string err;
-        if(!this->doCustomValidations(*jsonPtr, err))
+
+        T tmp{};
+        auto& identifier{tmp.*T::identifier()};
+        auto& secret{tmp.*T::secret()};
+        bool dirtyFlag_[2] = { false };
+        crudpp::visitor::json_handler handler{dirtyFlag_, *jsonPtr};
+
+        handler(identifier);
+        handler(secret);
+
+        if(!dirtyFlag_[0] || !dirtyFlag_[1])
         {
             Json::Value ret;
-            ret["error"] = err;
+            ret["error"] = "missing idetifier and/or secret in the request";
             auto resp= HttpResponse::newHttpJsonResponse(ret);
             resp->setStatusCode(k400BadRequest);
             callback(resp);
             return;
         }
-
-        const auto identifier{object.get_aggregate().*T::identifier()};
 
         auto dbClientPtr = this->getDbClient();
         auto callbackPtr =
@@ -296,7 +304,8 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
         drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
         mapper.findOne(
             Criteria{identifier.c_name(), CompareOperator::EQ, identifier.value},
-            [req, callbackPtr, this](model<T> r) {
+            [callbackPtr, req, this](model<T> r) {
+                // passwd encryption goes here
                 (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r)));
             },
             [callbackPtr](const DrogonDbException &e) {
