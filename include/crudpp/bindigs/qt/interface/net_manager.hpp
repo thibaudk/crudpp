@@ -60,7 +60,7 @@ public:
 
     void authenticate(const QString& identifier, const QString& secret)
     {
-        model<USER_CLASS> usr;
+        model<USER_CLASS> usr{};
         auto& agg{usr.get_aggregate()};
 
         QJsonObject json;
@@ -73,9 +73,9 @@ public:
         authenticating = true;
         postToKey(url.c_str(),
                   QJsonDocument{json}.toJson(),
-                  [this](const QJsonObject & obj)
-                  {
-                      qDebug() << obj;
+                  [usr, this](const QJsonObject& obj)
+                  mutable {
+                      usr.read(obj);
                       emit loggedIn(true);
 
                       //                    if (reply->error())

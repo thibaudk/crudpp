@@ -4,6 +4,7 @@
 #include <crudpp/bindigs/qt/interface/net_manager.hpp>
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
 #include <crudpp/bindigs/qt/wrappers/controller.hpp>
+#include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
 #include <crudpp/macros.hpp>
 
 #include STRINGIFY_MACRO(INCLUDE)
@@ -33,6 +34,8 @@ int main(int argc, char* argv[])
 //    client::instance().init();
 
     make_ctls<CLASSES_STRING>();
+
+    property_holder<USER_CLASS> p{};
 
     // qml engine
     const QUrl url(QStringLiteral("qrc:/ui/main.qml"));

@@ -279,8 +279,8 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
         }
 
         T tmp{};
-        auto& identifier{tmp.*T::identifier()};
-        auto& secret{tmp.*T::secret()};
+        auto identifier{tmp.*T::identifier()};
+        auto secret{tmp.*T::secret()};
         bool dirtyFlag_[2] = { false };
         crudpp::visitor::json_handler handler{dirtyFlag_, *jsonPtr};
 
