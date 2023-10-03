@@ -16,17 +16,41 @@
 namespace crudpp
 {
 template <r_c_name T>
-constexpr auto get_property_name()
+constexpr auto get_property_name() -> w_cpp::StringView
 {
+    return {T::c_name(),
+            T::c_name() +
+                (std::char_traits<char>::length(T::c_name()))};
 }
 
-//template <r_c_name T>
-//constexpr auto get_property_changed_name()
-//{
-//    std::string str{"Changed"};
-//    str.insert(0, T::c_name());
-//    return w_cpp::viewLiteral(cstr.c_str());
-//}
+// constexpr char* concatenation adapted from https://stackoverflow.com/a/53190554/14999126
+// http://coliru.stacked-crooked.com/a/3f557060cc18719e
+
+template <size_t N>
+struct String
+{
+    char c[N];
+};
+
+template <r_c_name T>
+constexpr auto get_property_changed_name()
+{
+    constexpr size_t length{std::char_traits<char>::length(T::c_name()) + 7};
+    String<length + 1> result{};
+    result.c[length] = '\0';
+
+    char* dst = result.c;
+
+    const char* src{T::c_name()};
+    for (; *src != '\0'; src++, dst++)
+        *dst = *src;
+
+    const char* changed{"Changed"};
+    for (; *changed != '\0'; changed++, dst++)
+        *dst = *changed;
+
+    return result;
+}
 
 template <typename T>
 class property_holder : public QObject
@@ -55,10 +79,7 @@ private:
     template<size_t I, class = std::enable_if_t<(I < boost::pfr::tuple_size_v<T>)>>
     struct property_changed_signals
     {
-        constexpr static auto len{std::char_traits<char>::length(property_at<I>::c_name()) - 1};
-        constexpr static w_cpp::StringView name{property_at<I>::c_name(),
-                                                property_at<I>::c_name() + len};
-        constexpr static auto signal{w_cpp::makeSignalBuilder(name,
+        constexpr static auto signal{w_cpp::makeSignalBuilder(get_property_name<property_at<I>>(),
                                                               &property_holder::property_changed<I>)
                                                              .build()};
     };
@@ -83,10 +104,8 @@ private:
     template <size_t I, class = std::enable_if_t<(I < boost::pfr::tuple_size_v<T>)>>
     struct register_properties
     {
-        constexpr static auto len{std::char_traits<char>::length(property_at<I>::c_name()) - 1};
-        constexpr static w_cpp::StringView name{property_at<I>::c_name(),
-                                                property_at<I>::c_name() + len};
-        constexpr static auto property{w_cpp::makeProperty<QVariant>(name,
+        constexpr static auto name{get_property_changed_name<property_at<I>>()};
+        constexpr static auto property{w_cpp::makeProperty<QVariant>(w_cpp::viewLiteral(name.c),
                                                                      w_cpp::viewLiteral("QVariant"))
                                            .setGetter(&property_holder::get_property_value<I>)
                                            .setGetter(&property_holder::get_property_value<I>)
