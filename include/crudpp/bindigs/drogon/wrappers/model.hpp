@@ -41,8 +41,7 @@ public:
         if constexpr(r_primary_key<T>)
             if constexpr(requires { r_value<T, PrimaryKeyType>; })
             {
-                const auto id = aggregate.*T::primary_key();
-                return id.value;
+                return aggregate.primary_key.value;
             }
 
         assert(false);
@@ -300,7 +299,7 @@ private:
     {
         if constexpr(r_primary_key<T>)
         {
-            aggregate.id.value = id;
+            aggregate.primary_key.value = id;
             return;
         }
 

@@ -64,8 +64,8 @@ public:
         auto& agg{usr.get_aggregate()};
 
         QJsonObject json;
-        json[(agg.*USER_CLASS::identifier()).c_name()] = identifier;
-        json[(agg.*USER_CLASS::secret()).c_name()] = secret;
+        json[agg.username.c_name()] = identifier;
+        json[agg.password.c_name()] = secret;
 
         std::string url{agg.table()};
         url += "/auth";

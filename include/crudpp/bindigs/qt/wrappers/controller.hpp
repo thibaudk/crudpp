@@ -142,7 +142,7 @@ public:
         key += '/';
 
         if constexpr (r_primary_key<T>)
-            key += std::to_string((item.get_aggregate().*T::primary_key()).value);
+            key += std::to_string(item.get_aggregate().primary_key.value);
 
         return key;
     }

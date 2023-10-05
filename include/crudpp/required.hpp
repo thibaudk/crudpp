@@ -30,22 +30,22 @@ concept r_value = requires(T t)
 };
 
 template <typename T, typename Value_T>
-concept r_name_and_value = requires(T t)
+concept r_c_name_and_value = requires(T t)
 {
-    r_name<T>;
+    r_c_name<T>;
     r_value<T, Value_T>(t);
 };
 
 template <typename T>
 concept r_primary_key = requires()
 {
-    std::is_aggregate<decltype(T::primary_key())>();
+    std::is_class<decltype(T::primary_key)>();
 };
 
 template <typename T>
 concept r_session_id = requires()
 {
-    std::is_aggregate<decltype(T::session_id())>();
+    std::is_class<decltype(T::session_id)>();
 };
 
 template <typename T>
@@ -63,7 +63,7 @@ concept r_secret = requires()
 template <typename T, typename Agg>
 concept is_primary_key = requires(const Agg& a)
 {
-    { a.*Agg::primary_key() } -> std::same_as<T>;
+    { Agg::primary_key() } -> std::same_as<T>;
 };
 
 template <typename T>
