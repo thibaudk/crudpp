@@ -26,10 +26,8 @@ const constexpr std::string get_primary_key_name()
 {
     if constexpr(r_primary_key<T>)
     {
-        const auto& m_primary_key{T{}.primary_key};
-
-        if constexpr(r_c_name<decltype(m_primary_key)>)
-            return m_primary_key.c_name();
+        if constexpr(r_c_name<decltype(T::primary_key)>)
+            return T::primary_key::c_name();
     }
 
     return "";
@@ -43,7 +41,7 @@ const constexpr size_t get_primary_key_index()
     boost::pfr::for_each_field(T{},
                                [&pk_index](const r_c_name auto& f, size_t i)
                                {
-                                   if constexpr (is_primary_key<decltype(f), T>)
+                                   if constexpr(!is_primary_key<std::remove_cvref_t<decltype(f)>, T>)
                                        pk_index = i;
                                });
     return pk_index;

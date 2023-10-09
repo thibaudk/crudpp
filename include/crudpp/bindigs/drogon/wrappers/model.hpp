@@ -52,11 +52,11 @@ public:
     {
         using namespace boost::pfr;
 
-        if(indexOffset < 0)
+        if (indexOffset < 0)
             for_each_field(aggregate, visitor::row_reader{.row = r});
         else
         {
-            if(getColumnNumber() + indexOffset > r.size())
+            if (getColumnNumber() + indexOffset > r.size())
             {
                 LOG_FATAL << "Invalid SQL result for this model";
                 return;
@@ -201,7 +201,7 @@ public:
         for_each_field(aggregate,
                        [this, &sql, &parametersCount](const r_c_name auto& f, size_t i)
                        {
-                           if constexpr(!is_primary_key<decltype(f), T>)
+                           if constexpr(!is_primary_key<std::remove_cvref_t<decltype(f)>, T>)
                                if (!dirtyFlag_[i]) return;
 
                            sql += f.c_name();
@@ -223,7 +223,7 @@ public:
         for_each_field(aggregate,
                        [this, &sql](const auto& f, size_t i)
                        {
-                           if constexpr(is_primary_key<decltype(f), T>)
+                           if constexpr(!is_primary_key<std::remove_cvref_t<decltype(f)>, T>)
                                sql +="default,";
 
                            if (dirtyFlag_[i])
@@ -270,7 +270,7 @@ private:
         boost::pfr::for_each_field(aggregate,
                                    [this, &ret](r_c_name auto& f, size_t i)
                                    {
-                                       if constexpr(is_primary_key<decltype(f), T>)
+                                       if constexpr(!is_primary_key<std::remove_cvref_t<decltype(f)>, T>)
                                            return;
 
                                        if (dirtyFlag_[i])
@@ -284,7 +284,7 @@ private:
         boost::pfr::for_each_field(aggregate,
                                    [this, &binder](auto& f, size_t i)
                                    {
-                                       if constexpr(is_primary_key<decltype(f), T>)
+                                       if constexpr(!is_primary_key<std::remove_cvref_t<decltype(f)>, T>)
                                            return;
 
                                        if (dirtyFlag_[i])

@@ -49,26 +49,23 @@ concept r_session_id = requires()
 };
 
 template <typename T>
-concept r_identifier = requires()
+concept r_username = requires()
 {
-    std::is_aggregate<decltype(T::identifier())>();
+    std::is_class<decltype(T::username)>();
 };
 
 template <typename T>
-concept r_secret = requires()
+concept r_password = requires()
 {
-    std::is_aggregate<decltype(T::secret())>();
+    std::is_class<decltype(T::password)>();
 };
 
 template <typename T, typename Agg>
-concept is_primary_key = requires(const Agg& a)
-{
-    { Agg::primary_key() } -> std::same_as<T>;
-};
+concept is_primary_key = std::same_as<T, decltype(Agg::primary_key)>;
 
 template <typename T>
 concept authenticates = r_primary_key<T> &&
-                        r_identifier<T> &&
-                        r_secret<T>;
+                        r_username<T> &&
+                        r_password<T>;
 
 } // namespace crudpp

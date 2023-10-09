@@ -57,7 +57,9 @@ public:
                                 item.read(rep);
                                 emit m_list->loaded(row);
                             },
-                            "Add error");
+                            "Add error",
+                            [row]()
+                            { emit m_list->loaded(row); });
                     }
                 });
 

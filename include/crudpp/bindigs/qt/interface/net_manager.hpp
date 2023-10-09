@@ -196,13 +196,20 @@ public:
     void postToKey(const char* key,
                    const QByteArray&& data,
                    const std::function<void (const QJsonObject &)>&& callback,
-                   const QString&& errorPrefix = "")
+                   const QString&& errorPrefix = "",
+                   const std::function<void ()>&& errorCallback = [](){},
+                   const std::function<void (qint64, qint64)>&& onProgress = [](qint64 byteSent, qint64 totalBytes){})
     {
         setRequest(key);
         auto* reply = post(rqst, data);
         setCallback(reply,
                     std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
-                    std::forward<const QString&&>(errorPrefix));
+                    std::forward<const QString&&>(errorPrefix),
+                    std::forward<const std::function<void ()>&&>(errorCallback));
+
+        connect(reply,
+                &QNetworkReply::uploadProgress,
+                onProgress);
     }
 
     void deleteToKey(const char* key,

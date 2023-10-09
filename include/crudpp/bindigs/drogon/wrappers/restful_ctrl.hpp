@@ -279,18 +279,18 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
         }
 
         T tmp{};
-        auto identifier{tmp.*T::identifier()};
-        auto secret{tmp.*T::secret()};
+        auto& unmae{tmp.username};
+        auto& pwd{tmp.password};
         bool dirtyFlag_[2] = { false };
         crudpp::visitor::json_handler handler{dirtyFlag_, *jsonPtr};
 
-        handler(identifier);
-        handler(secret);
+        handler(unmae);
+        handler(pwd);
 
         if(!dirtyFlag_[0] || !dirtyFlag_[1])
         {
             Json::Value ret;
-            ret["error"] = "missing idetifier and/or secret in the request";
+            ret["error"] = "missing username and/or password in the request";
             auto resp= HttpResponse::newHttpJsonResponse(ret);
             resp->setStatusCode(k400BadRequest);
             callback(resp);
@@ -303,7 +303,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 std::move(callback));
         drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
         mapper.findOne(
-            Criteria{identifier.c_name(), CompareOperator::EQ, identifier.value},
+            Criteria{unmae.c_name(), CompareOperator::EQ, unmae.value},
             [callbackPtr, req, this](model<T> r) {
                 // passwd encryption goes here
                 (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r)));
