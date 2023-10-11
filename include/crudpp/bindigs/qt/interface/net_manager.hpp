@@ -50,7 +50,7 @@ public:
                 this, [this](QNetworkReply* reply)
                 {
                     if (reply->error() != QNetworkReply::NoError)
-                        emit replyError("netManager reply error",
+                        emit replyError("net_manager reply error",
                                         reply->errorString());
                 });
     }
@@ -118,7 +118,10 @@ public:
                       //                    }
 
                       //                    reply->deleteLater();
-                  });
+                  },
+            "",
+            [this]() { emit loggedIn(false); }
+            );
     }
 
     void loggedIn(bool success,

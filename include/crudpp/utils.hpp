@@ -41,7 +41,7 @@ const constexpr size_t get_primary_key_index()
     boost::pfr::for_each_field(T{},
                                [&pk_index](const r_c_name auto& f, size_t i)
                                {
-                                   if constexpr(!is_primary_key<std::remove_cvref_t<decltype(f)>, T>)
+                                   if constexpr(is_primary_key<decltype(f), T>)
                                        pk_index = i;
                                });
     return pk_index;

@@ -84,7 +84,7 @@ struct model final
                                    [&v, role, this](auto& f, size_t i)
                                    {
                                        // prevent from manually setting primary key
-                                       if constexpr(!is_primary_key<std::remove_cvref_t<decltype(f)>, T>)
+                                       if constexpr(is_primary_key<decltype(f), T>)
                                            return;
 
                                        if (role - Qt::UserRole == i)
@@ -115,7 +115,7 @@ struct model final
         boost::pfr::for_each_field(aggregate,
                                    [&obj, this](const r_c_name auto& f, size_t i)
                                    {
-                                       if constexpr(!is_primary_key<std::remove_cvref_t<decltype(f)>, T>)
+                                       if constexpr(is_primary_key<decltype(f), T>)
                                        {
                                            // skip primary key for insert
                                            // ie. when it's flag is true (default)

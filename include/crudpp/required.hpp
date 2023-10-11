@@ -61,7 +61,8 @@ concept r_password = requires()
 };
 
 template <typename T, typename Agg>
-concept is_primary_key = std::same_as<T, decltype(Agg::primary_key)>;
+concept is_primary_key = std::same_as<std::remove_cvref_t<T>,
+                                      std::remove_cvref_t<decltype(Agg::primary_key)>>;
 
 template <typename T>
 concept authenticates = r_primary_key<T> &&
