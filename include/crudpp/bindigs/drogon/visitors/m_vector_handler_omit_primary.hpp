@@ -19,13 +19,14 @@ struct m_vector_handler_omit_primary
 
     void operator()(r_c_name auto& f) noexcept
     {
-        if constexpr(!is_primary_key<decltype(f), T>)
-            if (!vis.m_vector[vis.index].empty() && vis.json.isMember(vis.m_vector[vis.index]))
-            {
+        if (!vis.m_vector[vis.index].empty() && vis.json.isMember(vis.m_vector[vis.index]))
+        {
+            if (!vis.json[f.c_name()].isNull())
+                vis(f);
+
+            if constexpr(!is_primary_key<decltype(f), T>)
                 *flags = true;
-                if (!vis.json[f.c_name()].isNull())
-                    vis(f);
-            }
+        }
 
         flags++;
         vis.index++;
