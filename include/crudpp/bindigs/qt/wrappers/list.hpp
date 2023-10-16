@@ -63,6 +63,13 @@ public:
     }
     W_SLOT(appendItem)
 
+    void append(Type&& item)
+    {
+        emit preItemsAppended(1);
+        m_items.emplace_back(item);
+        emit postItemsAppended();
+    }
+
     void preItemsRemoved(int first, int last)
     W_SIGNAL(preItemsRemoved, first, last)
     void postItemsRemoved()
@@ -102,26 +109,16 @@ public:
     void clear()
     {
         emit preItemsRemoved(0, size() - 1);
-
         m_items.clear();
-
         emit postItemsRemoved();
     }
     W_INVOKABLE(clear)
 
-    void add()
-    W_SIGNAL(add)
     void addWith(const QJsonObject& obj)
     W_SIGNAL(addWith, obj)
-    void addIn(int parentId)
-    W_SIGNAL(addIn, parentId)
-    void addInWith(int parentId, const QJsonObject& obj)
-    W_SIGNAL(addInWith, parentId, obj)
+
     void remove(int row)
     W_SIGNAL(remove, row)
-
-    void appendWith(int id);
-    void appendWith(const QJsonObject& obj);
 
     void erase(int id)
     {
@@ -131,9 +128,7 @@ public:
             return;
 
         emit preItemsRemoved(index, index);
-
         this->m_items.erase(m_items.begin() + index);
-
         emit postItemsRemoved();
     }
 
@@ -152,10 +147,9 @@ public:
     void read(const QJsonObject& obj)
     {
         clear();
+
         emit preItemsAppended(1);
-
         m_items.emplace_back(Type{obj});
-
         emit postItemsAppended();
     }
 

@@ -44,7 +44,7 @@ public:
                                 item.reset_flags();
                                 emit m_list->loaded(row);
                             },
-                            "Validate error",
+                            "save error",
                             [row]()
                             { emit m_list->loaded(row); });
                     }
@@ -57,10 +57,21 @@ public:
                                 item.read(rep);
                                 emit m_list->loaded(row);
                             },
-                            "Add error",
+                            "save error",
                             [row]()
                             { emit m_list->loaded(row); });
                     }
+                });
+
+        connect(m_list,
+                &list<T>::addWith,
+                [this] (const QJsonObject& obj)
+                {
+                    net_manager::instance().postToKey(T::table(),
+                        QJsonDocument{obj}.toJson(),
+                        [](const QJsonObject& rep)
+                        { m_list->append(model<T>{rep}); },
+                        "AddWith error");
                 });
 
         connect(m_list,
@@ -89,40 +100,6 @@ public:
                     m_list->removeItem(row);
                 });
 
-//        this->connect(m_list,
-//                      &list<T>::add,
-//                      this,
-//                      [this] ()
-//                      {
-//                          net_manager::instance().postToKey(this->inner->key,
-//                              QByteArray{},
-//                              [this](const Json::Value& rep)
-//                              { this->inner->appendWith(rep); },
-//                              "Add error");
-//                      });
-
-//        this->connect(this->inner,
-//                      &Inner::addWith,
-//                      this,
-//                      [this] (const QJsonObject& obj)
-//                      {
-//                          QJsonDocument doc{obj};
-//                          QByteArray data{doc.toJson()};
-
-//                          Json::Value val;
-//                          Json::Reader reader;
-//                          reader.parse(data.toStdString(), val);
-
-//                          Interface::netManager::instance().postToKey(this->inner->key,
-//                              data,
-//                              [this, val](const Json::Value& res)
-//                              {
-//                                  Json::Value concat{val};
-//                                  concatenate(concat, res);
-//                                  this->inner->appendWith(concat);
-//                              },
-//                              "addWith error");
-//                      });
         get();
     }
 
