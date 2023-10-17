@@ -312,7 +312,9 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 const drogon::orm::UnexpectedRows *s=dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
                 if(s)
                 {
-                    auto resp = HttpResponse::newHttpResponse();
+                    Json::Value ret;
+                    ret["error"] = "incorrect username";
+                    auto resp= HttpResponse::newHttpJsonResponse(ret);
                     resp->setStatusCode(k404NotFound);
                     (*callbackPtr)(resp);
                     return;

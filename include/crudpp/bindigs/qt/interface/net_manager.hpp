@@ -119,7 +119,7 @@ public:
 
                       //                    reply->deleteLater();
                   },
-            "",
+            "Authentication",
             [this]() { emit loggedIn(false); }
             );
     }
@@ -153,6 +153,7 @@ public:
                         if (file.open(QIODevice::WriteOnly))
                         {
                             file.write(bytes);
+
                             if (file.commit())
                                 callback(true, "");
                             else
@@ -289,16 +290,12 @@ private:
                             callback(json);
                     else
                     {
-                        QString error_str{reply->errorString()};
+                        QString error_str{};
 
                         if (json.contains("error") && json["error"].isString())
-                        {
-                            if (const auto str{json["error"].toString()}; !str.isEmpty())
-                            {
-                                error_str += '\n';
-                                error_str += str;
-                            }
-                        }
+                            error_str = json["error"].toSrting();
+                        else
+                            error_str = reply->errorString();
 
                         emit replyError(errorPrefix, error_str);
                         errorCallback();
