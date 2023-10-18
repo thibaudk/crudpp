@@ -19,9 +19,11 @@ public:
     controller() : QObject{}
     {
         const auto uri{make_uri<T>()};
+        QString str{T::table()};
+        str += "List";
 
         qmlRegisterUncreatableType<T>(uri.c_str(), 1, 0, uri.c_str(), "");
-        bridge::instance().context()->setContextProperty(T::table(), m_list);
+        bridge::instance().context()->setContextProperty(str, m_list);
 
         connect(m_list,
                 &list<T>::save,

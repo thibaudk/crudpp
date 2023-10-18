@@ -4,8 +4,8 @@
 #include <crudpp/bindigs/qt/interface/net_manager.hpp>
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
 #include <crudpp/bindigs/qt/wrappers/controller.hpp>
-#include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
 #include <crudpp/macros.hpp>
+#include <singleton.hpp>
 
 #include STRINGIFY_MACRO(INCLUDE)
 
@@ -29,29 +29,29 @@ int main(int argc, char* argv[])
     qDebug() << "Host :" << host;
     net_manager::instance().init(host);
 
-    bridge::instance().init();
-    bridge::instance().registerQml<CLASSES_STRING>();
-//    client::instance().init();
+    bridge& b{bridge::instance()};
+    b.init();
+    b.registerQml<CLASSES_STRING>();
+    b.context()->setContextProperty(USER_CLASS::table(),
+                                    &singleton<property_holder<USER_CLASS>>::instance());
 
     make_ctls<CLASSES_STRING>();
 
-    property_holder<USER_CLASS> p{};
-
     // qml engine
     const QUrl url(QStringLiteral("qrc:/ui/main.qml"));
-    QObject::connect(bridge::instance().engine,
+    QObject::connect(b.engine,
         &QQmlApplicationEngine::objectCreated,
         &app,
-        [url]
+        [&b, url]
         (QObject* obj, const QUrl &objUrl)
         {
             if (!obj && url == objUrl)
                 QCoreApplication::exit(-1);
             else
-                bridge::instance().setQmlObject(obj);
+                b.setQmlObject(obj);
         }, Qt::QueuedConnection);
 
-    bridge::instance().engine->load(url);
+    b.engine->load(url);
 
     return app.exec();
 }

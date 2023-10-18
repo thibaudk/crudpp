@@ -1,27 +1,26 @@
 #pragma once
 
-#include <QJsonObject>
 #include "qnamespace.h"
 
-#include <boost/pfr/core.hpp>
-
-#include <crudpp/required.hpp>
-#include <crudpp/utils.hpp>
-
-#include "utils.hpp"
-#include <crudpp/bindigs/qt/visitors/json_reader.hpp>
+#include "base_wrapper.hpp"
 
 namespace crudpp
 {
 template <typename T>
-struct model final
+struct model final : public base_wrapper<T>
 {
-    static const constexpr auto table() { return T::table(); }
+    base_wrapper(const QJsonObject& json) { read(json); }
+    base_wrapper() = default;
 
-    model(const QJsonObject& json) { read(json); }
-    model() = default;
+    void read(const QJsonObject& obj)
+    {
+        boost::pfr::for_each_field(aggregate, crudpp::visitor::json_reader{.json = obj});
+        reset_flags();
+    }
 
-    static const constexpr int flagged_for_update_role() { return boost::pfr::tuple_size<T>::value + Qt::UserRole; }
+    static const constexpr int flagged_for_update_role()
+    { return boost::pfr::tuple_size<T>::value + Qt::UserRole; }
+
     static const constexpr int now_loading_role() { return flagged_for_update_role() + 1; }
 
     static QHash<int, QByteArray> roleNames()
@@ -50,7 +49,7 @@ struct model final
 
         if (role == flagged_for_update_role())
         {
-            for (bool f : dirtyFlag_)
+            for (bool f : this->dirtyFlag_)
             {
                 if (f)
                 {
@@ -63,11 +62,11 @@ struct model final
         }
         else if (role == now_loading_role())
         {
-            v = loading;
+            v = this->loading;
         }
         else
         {
-            boost::pfr::for_each_field(aggregate,
+            boost::pfr::for_each_field(this->aggregate,
                                        [&v, role](const auto& f, size_t i)
                                        {
                                            if (role - Qt::UserRole == i)
@@ -80,7 +79,7 @@ struct model final
 
     void setData(const QVariant& v, int role)
     {
-        boost::pfr::for_each_field(aggregate,
+        boost::pfr::for_each_field(this->aggregate,
                                    [&v, role, this](auto& f, size_t i)
                                    {
                                        // prevent from manually setting primary key
@@ -94,61 +93,15 @@ struct model final
                                            if (f.value != new_val)
                                            {
                                                f.value = new_val;
-                                               dirtyFlag_[i] = true;
+                                               this->dirtyFlag_[i] = true;
                                            }
                                        }
                                    });
 
         if (role == now_loading_role())
-            loading = v.toBool();
+            this->loading = v.toBool();
     }
     // --
-
-    void read(const QJsonObject& obj)
-    {
-        boost::pfr::for_each_field(aggregate, crudpp::visitor::json_reader{.json = obj});
-        reset_flags();
-    }
-
-    void write(QJsonObject& obj)
-    {
-        boost::pfr::for_each_field(aggregate,
-                                   [&obj, this](const r_c_name auto& f, size_t i)
-                                   {
-                                       if constexpr(is_primary_key<decltype(f), T>)
-                                       {
-                                           // skip primary key for insert
-                                           // ie. when it's flag is true (default)
-                                           if (dirtyFlag_[i]) return;
-                                       }
-                                       else
-                                       {
-                                           // skip non primary key values that have not been updated
-                                           if (!dirtyFlag_[i]) return;
-                                       }
-
-                                       obj[f.c_name()] = to_qt(f.value);
-                                   });
-    }
-
-    // set all flags to false
-    void reset_flags()
-    {
-        for (bool& v : dirtyFlag_)
-            if (v) v = false;
-    }
-
-    // check if the item was inserted in the database
-    // ie. if it's primary key is not flagged
-    bool inserted() { return !dirtyFlag_[get_primary_key_index<T>()]; }
-
-    T& get_aggregate() { return aggregate; }
-
-private:
-    // all true by default to set all fields upon insert
-    bool dirtyFlag_[boost::pfr::tuple_size<T>::value] = { true };
-    T aggregate{};
-    bool loading{false};
 };
 
 } // namespace crudpp

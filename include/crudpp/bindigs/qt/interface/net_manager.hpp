@@ -11,7 +11,8 @@
 #include <wobjectdefs.h>
 
 #include <crudpp/macros.hpp>
-#include <crudpp/bindigs/qt/wrappers/model.hpp>
+#include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
+#include <singleton.hpp>
 #include STRINGIFY_MACRO(INCLUDE)
 
 namespace crudpp
@@ -60,24 +61,25 @@ public:
 
     void authenticate(const QString& identifier, const QString& secret)
     {
-        model<USER_CLASS> usr{};
-        auto& agg{usr.get_aggregate()};
+        USER_CLASS usr{};
 
         QJsonObject json;
-        json[agg.username.c_name()] = identifier;
-        json[agg.password.c_name()] = secret;
+        json[usr.username.c_name()] = identifier;
+        json[usr.password.c_name()] = secret;
 
-        std::string url{agg.table()};
+        std::string url{usr.table()};
         url += "/auth";
 
         authenticating = true;
         postToKey(url.c_str(),
                   QJsonDocument{json}.toJson(),
-                  [usr, this](const QJsonObject& obj)
-                  mutable {
-                      usr.read(obj);
-                      emit loggedIn(true);
+                  [this] (const QJsonObject& obj)
+            {
+                singleton<property_holder<USER_CLASS>>::instance().read(obj);
 
+                auto& g{singleton<property_holder<USER_CLASS>>::instance().get_aggregate()};
+
+                emit loggedIn(true);
                       //                    if (reply->error())
                       //                    {
                       //                        if (authenticating)
@@ -118,10 +120,9 @@ public:
                       //                    }
 
                       //                    reply->deleteLater();
-                  },
+            },
             "Authentication",
-            [this]() { emit loggedIn(false); }
-            );
+            [this]() { emit loggedIn(false); });
     }
 
     void loggedIn(bool success,
@@ -153,7 +154,6 @@ public:
                         if (file.open(QIODevice::WriteOnly))
                         {
                             file.write(bytes);
-
                             if (file.commit())
                                 callback(true, "");
                             else
@@ -293,7 +293,7 @@ private:
                         QString error_str{};
 
                         if (json.contains("error") && json["error"].isString())
-                            error_str = json["error"].toSrting();
+                            error_str = json["error"].toString();
                         else
                             error_str = reply->errorString();
 

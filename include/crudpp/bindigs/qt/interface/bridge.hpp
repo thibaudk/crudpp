@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QObject>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
 

@@ -12,6 +12,7 @@
 #include <wobjectimpl.h>
 
 #include <crudpp/required.hpp>
+#include "base_wrapper.hpp"
 
 namespace crudpp
 {
@@ -19,8 +20,7 @@ template <r_c_name T>
 constexpr auto get_property_name() -> w_cpp::StringView
 {
     return {T::c_name(),
-            T::c_name() +
-                (std::char_traits<char>::length(T::c_name()))};
+            T::c_name() + (std::char_traits<char>::length(T::c_name()))};
 }
 
 // constexpr char* concatenation adapted from https://stackoverflow.com/a/53190554/14999126
@@ -53,13 +53,13 @@ constexpr auto get_property_changed_name()
 }
 
 template <typename T>
-class property_holder : public QObject
+class property_holder : public base_wrapper<T>
+                      , public QObject
 {
     W_OBJECT(property_holder)
 
     template <size_t I>
-    using property_at =
-        std::remove_reference_t<decltype(boost::pfr::get<I>(std::declval<T>()))>;
+    using property_at = std::remove_reference_t<decltype(boost::pfr::get<I>(std::declval<T>()))>;
 
 public:
     property_holder(QObject* parent = nullptr)
@@ -88,14 +88,14 @@ private:
     template <size_t I>
     auto get_property_value() const -> QVariant
     {
-        const auto& property{boost::pfr::get<I>(aggregate)};
+        const auto& property{boost::pfr::get<I>(this->aggregate)};
         return QVariant::fromValue(property.value);
     }
 
     template <size_t I>
     void set_property_value(QVariant variant)
     {
-        auto& property{boost::pfr::get<I>(aggregate)};
+        auto& property{boost::pfr::get<I>(this->aggregate)};
         using value_t = decltype(std::declval<property_at<I>>().value);
         property.value = variant.value<value_t>();
         property_changed<I>();
@@ -112,10 +112,7 @@ private:
                                            .setGetter(&property_holder::get_property_value<I>)};
     };
     W_CPP_PROPERTY(register_properties)
-
-    T aggregate{};
 };
 } // namespace crudpp
-
 
 W_OBJECT_IMPL_INLINE(crudpp::property_holder<T>, template <typename T>)
