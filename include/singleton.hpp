@@ -11,7 +11,6 @@ public:
     }
 
     singleton(singleton const&) = delete;
-
     void operator = (singleton const&) = delete;
 
 private:

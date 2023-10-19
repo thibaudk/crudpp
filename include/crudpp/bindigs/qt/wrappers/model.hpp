@@ -9,13 +9,13 @@ namespace crudpp
 template <typename T>
 struct model final : public base_wrapper<T>
 {
-    base_wrapper(const QJsonObject& json) { read(json); }
-    base_wrapper() = default;
+    model(const QJsonObject& json) { read(json); }
+    model() = default;
 
     void read(const QJsonObject& obj)
     {
-        boost::pfr::for_each_field(aggregate, crudpp::visitor::json_reader{.json = obj});
-        reset_flags();
+        boost::pfr::for_each_field(this->aggregate, crudpp::visitor::json_reader{.json = obj});
+        this->reset_flags();
     }
 
     static const constexpr int flagged_for_update_role()

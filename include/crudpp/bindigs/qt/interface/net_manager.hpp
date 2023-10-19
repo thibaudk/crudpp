@@ -75,9 +75,7 @@ public:
                   QJsonDocument{json}.toJson(),
                   [this] (const QJsonObject& obj)
             {
-                singleton<property_holder<USER_CLASS>>::instance().read(obj);
-
-                auto& g{singleton<property_holder<USER_CLASS>>::instance().get_aggregate()};
+//                singleton<property_holder<USER_CLASS>>::instance().read(obj);
 
                 emit loggedIn(true);
                       //                    if (reply->error())

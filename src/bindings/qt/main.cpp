@@ -32,8 +32,14 @@ int main(int argc, char* argv[])
     bridge& b{bridge::instance()};
     b.init();
     b.registerQml<CLASSES_STRING>();
-    b.context()->setContextProperty(USER_CLASS::table(),
-                                    &singleton<property_holder<USER_CLASS>>::instance());
+
+    USER_CLASS u{};
+    auto User = property_holder{boost::pfr::structure_tie(u)};
+
+    const auto uri{make_uri<USER_CLASS>()};
+    qmlRegisterUncreatableType<decltype(User)>(uri.c_str(), 1, 0, uri.c_str(), "");
+
+    b.context()->setContextProperty(USER_CLASS::table(), &User);
 
     make_ctls<CLASSES_STRING>();
 
