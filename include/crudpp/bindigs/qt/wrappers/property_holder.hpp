@@ -13,6 +13,7 @@
 
 #include <crudpp/required.hpp>
 #include "base_wrapper.hpp"
+#include "utils.hpp"
 
 namespace crudpp
 {
@@ -60,20 +61,14 @@ class property_holder : public QObject
     using storage = std::tuple<Properties...>;
     storage m_storage{};
 
+    template <size_t I>
+    using property_at = std::remove_reference_t<decltype(std::get<I>(std::declval<storage>()))>;
+
 public:
     property_holder(storage&& properties, QObject* parent = nullptr)
         : QObject{parent}
         , m_storage{std::move(properties)}
     {}
-
-    template <size_t I>
-    using property_at = std::remove_reference_t<decltype(std::get<I>(std::declval<storage>()))>;
-
-//    void read(const QJsonObject& obj)
-//    {
-//        boost::pfr::for_each_field(this->aggregate, crudpp::visitor::json_reader{.json = obj});
-//        this->reset_flags();
-//    }
 
 private:
     template <size_t I>
@@ -88,7 +83,8 @@ private:
     template <size_t I, class = std::enable_if_t<(I < sizeof...(Properties))>>
     struct property_changed_signals
     {
-        constexpr static auto signal{w_cpp::makeSignalBuilder(get_property_name<std::remove_reference_t<decltype(std::get<I>(m_storage))>>(),
+        constexpr static auto base_name{get_property_changed_name<property_at<I>>()};
+        constexpr static auto signal{w_cpp::makeSignalBuilder(w_cpp::viewLiteral(base_name.c),
                                                               &property_holder::property_changed<I>)
                                                              .build()};
     };
@@ -98,27 +94,25 @@ private:
     auto get_property_value() const -> QVariant
     {
         const auto& property = std::get<I>(m_storage);
-        return QVariant::fromValue(property.value);
+        return QVariant::fromValue(to_qt(property.value));
     }
 
     template <size_t I>
     void set_property_value(QVariant variant)
     {
         auto& property = std::get<I>(m_storage);
-        using value_t = decltype(std::declval<property_at<I>>().value);
-        property.value = variant.value<value_t>();
+        property.value = from_qt<decltype(property.value)>(variant);
         property_changed<I>();
     }
 
     template <size_t I, class = std::enable_if_t<(I < sizeof...(Properties))>>
     struct register_properties
     {
-        constexpr static auto name{get_property_changed_name<property_at<I>>()};
-        constexpr static auto property{w_cpp::makeProperty<QVariant>(w_cpp::viewLiteral(name.c),
+        constexpr static auto property{w_cpp::makeProperty<QVariant>(get_property_name<property_at<I>>(),
                                                                      w_cpp::viewLiteral("QVariant"))
                                            .setGetter(&property_holder::get_property_value<I>)
-                                           .setGetter(&property_holder::get_property_value<I>)
-                                           .setGetter(&property_holder::get_property_value<I>)};
+                                           .setSetter(&property_holder::set_property_value<I>)
+                                           .setNotify(&property_holder::property_changed<I>)};
     };
     W_CPP_PROPERTY(register_properties)
 };

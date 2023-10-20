@@ -34,12 +34,11 @@ int main(int argc, char* argv[])
     b.registerQml<CLASSES_STRING>();
 
     USER_CLASS u{};
-    auto User = property_holder{boost::pfr::structure_tie(u)};
+    auto app_user = property_holder{boost::pfr::structure_tie(u), {}};
 
-    const auto uri{make_uri<USER_CLASS>()};
-    qmlRegisterUncreatableType<decltype(User)>(uri.c_str(), 1, 0, uri.c_str(), "");
+    qmlRegisterUncreatableType<decltype(app_user)>("QappUser", 1, 0, "QappUser", "");
 
-    b.context()->setContextProperty(USER_CLASS::table(), &User);
+    b.context()->setContextProperty(USER_CLASS::table(), &app_user);
 
     make_ctls<CLASSES_STRING>();
 
