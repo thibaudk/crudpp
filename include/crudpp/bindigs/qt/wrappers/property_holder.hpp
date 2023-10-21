@@ -53,21 +53,19 @@ constexpr auto get_property_changed_name()
     return result;
 }
 
-template <class... Properties>
+template <typename T>
 class property_holder : public QObject
 {
     W_OBJECT(property_holder)
 
-    using storage = std::tuple<Properties...>;
-    storage m_storage{};
+    T aggregate{};
 
     template <size_t I>
-    using property_at = std::remove_reference_t<decltype(std::get<I>(std::declval<storage>()))>;
+    using property_at = std::remove_reference_t<decltype(boost::pfr::get<I>(std::declval<T>()))>;
 
 public:
-    property_holder(storage&& properties, QObject* parent = nullptr)
+    property_holder(QObject* parent = nullptr)
         : QObject{parent}
-        , m_storage{std::move(properties)}
     {}
 
 private:
@@ -80,7 +78,7 @@ private:
                           0);
     }
 
-    template <size_t I, class = std::enable_if_t<(I < sizeof...(Properties))>>
+    template<size_t I, class = std::enable_if_t<(I < boost::pfr::tuple_size_v<T>)>>
     struct property_changed_signals
     {
         constexpr static auto base_name{get_property_changed_name<property_at<I>>()};
@@ -93,19 +91,19 @@ private:
     template <size_t I>
     auto get_property_value() const -> QVariant
     {
-        const auto& property = std::get<I>(m_storage);
+        const auto& property{boost::pfr::get<I>(aggregate)};
         return QVariant::fromValue(to_qt(property.value));
     }
 
     template <size_t I>
     void set_property_value(QVariant variant)
     {
-        auto& property = std::get<I>(m_storage);
+        auto& property{boost::pfr::get<I>(aggregate)};
         property.value = from_qt<decltype(property.value)>(variant);
         property_changed<I>();
     }
 
-    template <size_t I, class = std::enable_if_t<(I < sizeof...(Properties))>>
+    template <size_t I, class = std::enable_if_t<(I < boost::pfr::tuple_size_v<T>)>>
     struct register_properties
     {
         constexpr static auto property{w_cpp::makeProperty<QVariant>(get_property_name<property_at<I>>(),
@@ -118,4 +116,4 @@ private:
 };
 } // namespace crudpp
 
-W_OBJECT_IMPL_INLINE(crudpp::property_holder<Properties...>, template <class... Properties>)
+W_OBJECT_IMPL_INLINE(crudpp::property_holder<T>, template <typename T>)
