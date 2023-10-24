@@ -54,11 +54,10 @@ constexpr auto get_property_changed_name()
 }
 
 template <typename T>
-class property_holder : public QObject
+class property_holder : public base_wrapper<T>
+                      , public QObject
 {
     W_OBJECT(property_holder)
-
-    T aggregate{};
 
     template <size_t I>
     using property_at = std::remove_reference_t<decltype(boost::pfr::get<I>(std::declval<T>()))>;
@@ -67,6 +66,13 @@ public:
     property_holder(QObject* parent = nullptr)
         : QObject{parent}
     {}
+
+    void read(const QJsonObject& obj)
+    {
+        boost::pfr::for_each_field(this->aggregate, crudpp::visitor::json_reader{.json = obj});
+        this->reset_flags();
+        for_each_index<boost::pfr::tuple_size_v<T> - 1>([this](const auto i){ property_changed<i()>(); });
+    }
 
 private:
     template <size_t I>
@@ -91,14 +97,14 @@ private:
     template <size_t I>
     auto get_property_value() const -> QVariant
     {
-        const auto& property{boost::pfr::get<I>(aggregate)};
+        const auto& property{boost::pfr::get<I>(this->aggregate)};
         return QVariant::fromValue(to_qt(property.value));
     }
 
     template <size_t I>
     void set_property_value(QVariant variant)
     {
-        auto& property{boost::pfr::get<I>(aggregate)};
+        auto& property{boost::pfr::get<I>(this->aggregate)};
         property.value = from_qt<decltype(property.value)>(variant);
         property_changed<I>();
     }

@@ -304,8 +304,55 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
         drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
         mapper.findOne(
             Criteria{unmae.c_name(), CompareOperator::EQ, unmae.value},
-            [callbackPtr, req, this](model<T> r) {
-                // passwd encryption goes here
+            [callbackPtr, req, &pwd, this](model<T> r)
+            {
+                using namespace utils;
+                auto conf{HttpAppFramework::instance().getCustomConfig()["encryption"]};
+
+                auto (*hash)(const std::string&) = getSha256;
+
+                if (conf.isMember("hash") && conf["hash"].isString())
+                {
+                    std::string h_str{conf["hash"].asString()};
+
+                    if (h_str != "sha256")
+                    {
+                        if (h_str == "md5")
+                            hash = getMd5;
+                        else if (h_str == "sha1")
+                            hash = getSha1;
+                        else if (h_str == "sha3")
+                            hash = getSha3;
+                        else if (h_str == "blake2")
+                            hash = getBlake2b;
+                    }
+                }
+
+                std::string salt{};
+
+                if (conf.isMember("salt") && conf["salt"].isString())
+                    salt = conf["salt"].asString();
+
+                int iterations{1};
+
+                if (salt.empty())
+                    for (int i = 0; i < iterations; i++)
+                        pwd.value = hash(pwd.value);
+                else
+                    for (int i = 0; i < iterations; i++)
+                        pwd.value = hash(pwd.value + salt);
+
+
+                if (pwd.value != r.get_aggregate().password.value)
+                {
+                    Json::Value ret;
+                    ret["error"] = "incorrect password";
+                    auto resp= HttpResponse::newHttpJsonResponse(ret);
+                    resp->setStatusCode(k401Unauthorized);
+                    (*callbackPtr)(resp);
+                    return;
+                }
+
                 (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r)));
             },
             [callbackPtr](const DrogonDbException &e) {

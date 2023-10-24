@@ -47,4 +47,23 @@ const constexpr size_t get_primary_key_index()
     return pk_index;
 }
 
+// FIXME
+// possibly replacable with avendish introspection lib
+// iterate over size_t template arguments
+// copied from https://stackoverflow.com/a/49319521/14999126
+// --
+
+template <size_t ...Is, typename F>
+void for_each_index(std::index_sequence<Is...>, F&& f)
+{
+    int dummy[] = {0, (static_cast<void>(f(std::integral_constant<size_t, Is>())), 0)...};
+    static_cast<void>(dummy);
+}
+
+template <size_t N, typename F>
+void for_each_index(F&& f)
+{
+    for_each_index(std::make_index_sequence<N>(), std::forward<F>(f));
+}
+// --
 } // namespace crudpp

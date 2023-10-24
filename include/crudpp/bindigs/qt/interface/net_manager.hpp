@@ -75,49 +75,8 @@ public:
                   QJsonDocument{json}.toJson(),
                   [this] (const QJsonObject& obj)
             {
-//                singleton<property_holder<USER_CLASS>>::instance().read(obj);
-
+                singleton<property_holder<USER_CLASS>>::instance().read(obj);
                 emit loggedIn(true);
-                      //                    if (reply->error())
-                      //                    {
-                      //                        if (authenticating)
-                      //                        {
-                      //                            authenticating = false;
-                      //                            emit loggedIn(false, reply->errorString());
-                      //                        }
-                      //                    }
-                      //                    else
-                      //                    {
-                      //                        const auto res = reply->readAll();
-                      //                        const auto json = QJsonDocument::fromJson(res).object();
-
-                      //                        qDebug() << json;
-
-                      //                        if (json.contains("sessionId"))
-                      //                        {
-                      //                            if (authenticating)
-                      //                            {
-                      //                                authenticating = false;
-
-                      //                                if (json.contains("sessionId") && json["sessionId"].isString())
-                      //                                {
-                      //                                    const auto str{json["sessionId"].toString().toStdString()};
-                      //                                    rqst.setRawHeader("sessionId",
-                      //                                                      QByteArray::fromStdString(str));
-                      //                                }
-
-                      //                                if (json.contains("id") && json["id"].isDouble())
-                      //                                    emit userChanged(json["id"].toInt());
-
-                      //                                if (json.contains("clearance") && json["clearance"].isDouble())
-                      //                                    emit clearanceChanged(json["clearance"].toInt());
-
-                      //                                emit loggedIn(true);
-                      //                            }
-                      //                        }
-                      //                    }
-
-                      //                    reply->deleteLater();
             },
             "Authentication",
             [this]() { emit loggedIn(false); });
