@@ -33,13 +33,16 @@ const constexpr std::string get_primary_key_name()
     return "";
 }
 
+// FIXME
+// very ineficiant !! replace with avendish introspection lib
+// --
 template <typename T>
 const constexpr size_t get_primary_key_index()
 {
     size_t pk_index{};
 
     boost::pfr::for_each_field(T{},
-                               [&pk_index](const r_c_name auto& f, size_t i)
+                               [&pk_index](const auto& f, size_t i)
                                {
                                    if constexpr(is_primary_key<decltype(f), T>)
                                        pk_index = i;
@@ -47,12 +50,40 @@ const constexpr size_t get_primary_key_index()
     return pk_index;
 }
 
+template <typename F, typename Agg>
+const constexpr size_t get_field_index()
+{
+    size_t index{};
+
+    boost::pfr::for_each_field(Agg{},
+                               [&index](const auto& f, size_t i)
+                               {
+                                   if constexpr(is_field<F, decltype(f)>)
+                                       index = i;
+                               });
+    return index;
+}
+
+template <typename F, typename Agg>
+const constexpr size_t get_field_index(const Agg& agg)
+{
+    size_t index{};
+
+    boost::pfr::for_each_field(agg,
+                               [&index](const auto& f, size_t i)
+                               {
+                                   if constexpr(is_field<F, decltype(f)>)
+                                       index = i;
+                               });
+    return index;
+}
+// --
+
 // FIXME
 // possibly replacable with avendish introspection lib
 // iterate over size_t template arguments
 // copied from https://stackoverflow.com/a/49319521/14999126
 // --
-
 template <size_t ...Is, typename F>
 void for_each_index(std::index_sequence<Is...>, F&& f)
 {

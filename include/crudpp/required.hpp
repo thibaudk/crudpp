@@ -60,9 +60,11 @@ concept r_password = requires()
     std::is_class<decltype(T::password)>();
 };
 
+template <typename T, typename F>
+concept is_field = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<F>>;
+
 template <typename T, typename Agg>
-concept is_primary_key = std::same_as<std::remove_cvref_t<T>,
-                                      std::remove_cvref_t<decltype(Agg::primary_key)>>;
+concept is_primary_key = is_field<T, decltype(Agg::primary_key)>;
 
 template <typename T>
 concept authenticates = r_primary_key<T> &&

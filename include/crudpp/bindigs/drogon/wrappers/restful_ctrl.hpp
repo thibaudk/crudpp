@@ -85,7 +85,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
             [req, callbackPtr, this](model<T> r) {
                 (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r)));
             },
-            [callbackPtr](const DrogonDbException &e) {
+            [callbackPtr, this](const DrogonDbException &e) {
                 const drogon::orm::UnexpectedRows *s=dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
                 if(s)
                 {
@@ -94,12 +94,8 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
                     (*callbackPtr)(resp);
                     return;
                 }
-                LOG_ERROR<<e.base().what();
-                Json::Value ret;
-                ret["error"] = "database error";
-                auto resp = HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k500InternalServerError);
-                (*callbackPtr)(resp);
+
+                this->internal_error(e, callbackPtr);
             });
     }
 
@@ -201,14 +197,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
                     (*callbackPtr)(resp);
                 }
             },
-            [callbackPtr](const DrogonDbException &e) {
-                LOG_ERROR << e.base().what();
-                Json::Value ret;
-                ret["error"] = "database error";
-                auto resp = HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k500InternalServerError);
-                (*callbackPtr)(resp);
-            });
+            [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
     }
 
     void deleteOne(const HttpRequestPtr &req,
@@ -247,14 +236,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
                     (*callbackPtr)(resp);
                 }
             },
-            [callbackPtr](const DrogonDbException &e) {
-                LOG_ERROR << e.base().what();
-                Json::Value ret;
-                ret["error"] = "database error";
-                auto resp = HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k500InternalServerError);
-                (*callbackPtr)(resp);
-            });
+            [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
     }
 };
 
@@ -304,7 +286,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
         drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
         mapper.findOne(
             Criteria{unmae.c_name(), CompareOperator::EQ, unmae.value},
-            [callbackPtr, req, &pwd, this](model<T> r)
+            [callbackPtr, req, &pwd, &mapper, this](model<T> r)
             {
                 using namespace utils;
                 auto conf{HttpAppFramework::instance().getCustomConfig()["encryption"]};
@@ -335,13 +317,21 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
 
                 int iterations{1};
 
-                if (salt.empty())
-                    for (int i = 0; i < iterations; i++)
-                        pwd.value = hash(pwd.value);
-                else
-                    for (int i = 0; i < iterations; i++)
-                        pwd.value = hash(pwd.value + salt);
+                if (conf.isMember("iterations") && conf["iterations"].isInt())
+                    iterations = conf["iterations"].asInt();
 
+                int i{0};
+
+                if (!salt.empty())
+                {
+                    pwd.value = hash(pwd.value + salt);
+                    i++;
+                }
+
+                for (; i < iterations; i++)
+                    pwd.value = hash(pwd.value);
+
+                LOG_DEBUG << "encrypted password: " << pwd.value;
 
                 if (pwd.value != r.get_aggregate().password.value)
                 {
@@ -353,9 +343,14 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                     return;
                 }
 
-                (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r)));
+                r.template update<decltype(T::session_id)>(req->session()->sessionId());
+
+                mapper.update(r,
+                    [callbackPtr, req, &r, this](const size_t)
+                    { (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r))); },
+                    [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
             },
-            [callbackPtr](const DrogonDbException &e) {
+            [callbackPtr, this](const DrogonDbException &e) {
                 const drogon::orm::UnexpectedRows *s=dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
                 if(s)
                 {
@@ -366,12 +361,8 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                     (*callbackPtr)(resp);
                     return;
                 }
-                LOG_ERROR<<e.base().what();
-                Json::Value ret;
-                ret["error"] = "database error";
-                auto resp = HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k500InternalServerError);
-                (*callbackPtr)(resp);
+
+                this->internal_error(e, callbackPtr);
             });
     }
 };

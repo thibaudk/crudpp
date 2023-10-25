@@ -67,6 +67,8 @@ public:
         : QObject{parent}
     {}
 
+    // FIXME
+    // replace with "set_property_value" visitor
     void read(const QJsonObject& obj)
     {
         boost::pfr::for_each_field(this->aggregate, crudpp::visitor::json_reader{.json = obj});

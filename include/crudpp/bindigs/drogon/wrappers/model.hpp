@@ -106,6 +106,24 @@ public:
                                                                              pMasqueradingVector});
     }
 
+    // FIXME
+    // very ineficiant !! replace with avendish introspection lib
+    // --
+    template <typename F, typename Val_t>
+    void update(const Val_t& v)
+    {
+        boost::pfr::for_each_field(aggregate,
+                                   [&v, this](auto& f, size_t i)
+                                   {
+                                       if constexpr(is_field<F, decltype(f)>)
+                                       {
+                                           f.value = v;
+                                           dirtyFlag_[i] = true;
+                                       }
+                                   });
+    }
+    // --
+
 //    TODO : re-impelement checks
 //    static bool validJsonOfField(size_t index,
 //                                 const std::string &fieldName,

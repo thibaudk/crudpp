@@ -92,14 +92,7 @@ public:
                         }
                         (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
                     },
-                    [callbackPtr](const DrogonDbException &e) {
-                        LOG_ERROR << e.base().what();
-                        Json::Value ret;
-                        ret["error"] = "database error";
-                        auto resp = HttpResponse::newHttpJsonResponse(ret);
-                        resp->setStatusCode(k500InternalServerError);
-                        (*callbackPtr)(resp);
-                    });
+                    [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
             }
             catch(const std::exception &e)
             {
@@ -123,14 +116,7 @@ public:
                 }
                 (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
             },
-                           [callbackPtr](const DrogonDbException &e) {
-                               LOG_ERROR << e.base().what();
-                               Json::Value ret;
-                               ret["error"] = "database error";
-                               auto resp = HttpResponse::newHttpJsonResponse(ret);
-                               resp->setStatusCode(k500InternalServerError);
-                               (*callbackPtr)(resp);
-                           });
+            [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
         }
     }
 
@@ -170,14 +156,7 @@ public:
                     (*callbackPtr)(HttpResponse::newHttpJsonResponse(
                         this->makeJson(req, newObject)));
                 },
-                [callbackPtr](const DrogonDbException &e){
-                    LOG_ERROR << e.base().what();
-                    Json::Value ret;
-                    ret["error"] = "database error";
-                    auto resp = HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k500InternalServerError);
-                    (*callbackPtr)(resp);
-                });
+                [callbackPtr, this](const DrogonDbException &e){ internal_error(e, callbackPtr); });
         }
         catch(const Json::Exception &e)
         {
@@ -209,4 +188,15 @@ protected:
     }
 
     const std::string dbClientName_{"default"};
+
+    void internal_error(const DrogonDbException &e,
+                        const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>> callbackPtr)
+    {
+        LOG_ERROR << e.base().what();
+        Json::Value ret;
+        ret["error"] = "database error";
+        auto resp = HttpResponse::newHttpJsonResponse(ret);
+        resp->setStatusCode(k500InternalServerError);
+        (*callbackPtr)(resp);
+    }
 };
