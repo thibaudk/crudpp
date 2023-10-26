@@ -199,4 +199,32 @@ protected:
         resp->setStatusCode(k500InternalServerError);
         (*callbackPtr)(resp);
     }
+
+    void internal_error(const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>> callbackPtr)
+    {
+        Json::Value ret;
+        ret["error"] = "database error";
+        auto resp = HttpResponse::newHttpJsonResponse(ret);
+        resp->setStatusCode(k500InternalServerError);
+        (*callbackPtr)(resp);
+    }
+
+    void error(const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>> callbackPtr,
+               const HttpStatusCode&& status)
+    {
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setStatusCode(status);
+        (*callbackPtr)(resp);
+    }
+
+    void error(const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>> callbackPtr,
+               const HttpStatusCode&& status,
+               const char* error_str)
+    {
+        Json::Value ret;
+        ret["error"] = error_str;
+        auto resp = HttpResponse::newHttpJsonResponse(ret);
+        resp->setStatusCode(k500InternalServerError);
+        (*callbackPtr)(resp);
+    }
 };

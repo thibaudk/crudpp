@@ -97,4 +97,11 @@ void for_each_index(F&& f)
     for_each_index(std::make_index_sequence<N>(), std::forward<F>(f));
 }
 // --
+
+enum permissions
+{
+    none,
+    read,
+    write
+};
 } // namespace crudpp

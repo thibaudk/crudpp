@@ -170,7 +170,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
 
         mapper.update(
             object,
-            [callbackPtr](const size_t count)
+            [callbackPtr, this](const size_t count)
             {
                 if(count == 1)
                 {
@@ -190,11 +190,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
                 else
                 {
                     LOG_FATAL << "More than one resource is updated: " << count;
-                    Json::Value ret;
-                    ret["error"] = "database error";
-                    auto resp = HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k500InternalServerError);
-                    (*callbackPtr)(resp);
+                    this->internal_error(callbackPtr);
                 }
             },
             [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
@@ -229,11 +225,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
                 else
                 {
                     LOG_FATAL << "Delete more than one records: " << count;
-                    Json::Value ret;
-                    ret["error"] = "Database error";
-                    auto resp = HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k500InternalServerError);
-                    (*callbackPtr)(resp);
+                    this->internal_error(callbackPtr);
                 }
             },
             [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
@@ -288,9 +280,9 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
             Criteria{unmae.c_name(), CompareOperator::EQ, unmae.value},
             [callbackPtr, req, &pwd, &mapper, this](model<T> r)
             {
-                using namespace utils;
                 auto conf{HttpAppFramework::instance().getCustomConfig()["encryption"]};
 
+                using namespace utils;
                 auto (*hash)(const std::string&) = getSha256;
 
                 if (conf.isMember("hash") && conf["hash"].isString())
@@ -315,12 +307,10 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 if (conf.isMember("salt") && conf["salt"].isString())
                     salt = conf["salt"].asString();
 
-                int iterations{1};
+                int iterations{1}, i{0};
 
                 if (conf.isMember("iterations") && conf["iterations"].isInt())
                     iterations = conf["iterations"].asInt();
-
-                int i{0};
 
                 if (!salt.empty())
                 {
@@ -336,7 +326,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 if (pwd.value != r.get_aggregate().password.value)
                 {
                     Json::Value ret;
-                    ret["error"] = "incorrect password";
+                    ret["error"] = "incorrect credentials";
                     auto resp= HttpResponse::newHttpJsonResponse(ret);
                     resp->setStatusCode(k401Unauthorized);
                     (*callbackPtr)(resp);
@@ -346,7 +336,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 r.template update<decltype(T::session_id)>(req->session()->sessionId());
 
                 mapper.update(r,
-                    [callbackPtr, req, &r, this](const size_t)
+                    [callbackPtr, req, r, this](const size_t)
                     { (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r))); },
                     [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
             },
@@ -355,9 +345,9 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 if(s)
                 {
                     Json::Value ret;
-                    ret["error"] = "incorrect username";
+                    ret["error"] = "incorrect credentials";
                     auto resp= HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k404NotFound);
+                    resp->setStatusCode(k401Unauthorized);
                     (*callbackPtr)(resp);
                     return;
                 }
