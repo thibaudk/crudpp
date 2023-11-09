@@ -13,6 +13,9 @@ using namespace drogon;
 template <typename T>
 class restful_ctrl_base : public RestfulController
 {
+    using callback_ptr =
+        const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>>;
+
 public:
     void get(const HttpRequestPtr &req,
              std::function<void(const HttpResponsePtr &)> &&callback)
@@ -190,7 +193,7 @@ protected:
     const std::string dbClientName_{"default"};
 
     void internal_error(const DrogonDbException &e,
-                        const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>> callbackPtr)
+                        callback_ptr callbackPtr) const
     {
         LOG_ERROR << e.base().what();
         Json::Value ret;
@@ -200,7 +203,7 @@ protected:
         (*callbackPtr)(resp);
     }
 
-    void internal_error(const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>> callbackPtr)
+    void internal_error(callback_ptr callbackPtr) const
     {
         Json::Value ret;
         ret["error"] = "database error";
@@ -209,17 +212,17 @@ protected:
         (*callbackPtr)(resp);
     }
 
-    void error(const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>> callbackPtr,
-               const HttpStatusCode&& status)
+    void error(callback_ptr callbackPtr,
+               const HttpStatusCode&& status) const
     {
         auto resp = HttpResponse::newHttpResponse();
         resp->setStatusCode(status);
         (*callbackPtr)(resp);
     }
 
-    void error(const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>> callbackPtr,
+    void error(callback_ptr callbackPtr,
                const HttpStatusCode&& status,
-               const char* error_str)
+               const char* error_str) const
     {
         Json::Value ret;
         ret["error"] = error_str;

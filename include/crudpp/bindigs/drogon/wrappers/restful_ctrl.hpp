@@ -207,7 +207,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
         drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
         mapper.deleteByPrimaryKey(
             id,
-            [callbackPtr](const size_t count) {
+            [callbackPtr, this](const size_t count) {
                 if(count == 1)
                 {
                     auto resp = HttpResponse::newHttpResponse();
@@ -320,8 +320,6 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
 
                 for (; i < iterations; i++)
                     pwd.value = hash(pwd.value);
-
-                LOG_DEBUG << "encrypted password: " << pwd.value;
 
                 if (pwd.value != r.get_aggregate().password.value)
                 {
