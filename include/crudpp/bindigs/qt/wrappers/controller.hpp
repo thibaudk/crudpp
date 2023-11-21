@@ -19,11 +19,32 @@ public:
     controller() : QObject{}
     {
         const auto uri{make_uri<T>()};
-        QString str{T::table()};
-        str += "List";
-
         qmlRegisterUncreatableType<T>(uri.c_str(), 1, 0, uri.c_str(), "");
+
+        QString str{T::table()};
+
+        str += "_list";
         bridge::instance().context()->setContextProperty(str, m_list);
+
+        str.chop(4);
+        str.prepend("current_");
+        qmlRegisterUncreatableType<property_holder<T>>(uri.c_str(), 1, 0, uri.c_str(), "");
+        bridge::instance().context()->setContextProperty(str, m_item);
+
+        connect(m_list,
+                &list<T>::addWith,
+                [this] (const QJsonObject& obj)
+                {
+                    net_manager::instance().postToKey(T::table(),
+                        QJsonDocument{obj}.toJson(),
+                        [](const QJsonObject& rep)
+                        { m_list->append(model<T>{rep}); },
+                        "AddWith error");
+                });
+
+        // not sure why the regular syntax for connection does not work here
+        // connect(m_list, &list<T>::get, &controller<T>::clear_get);
+        connect(m_list, &list<T>::get, [this](){ get(); });
 
         connect(m_list,
                 &list<T>::save,
@@ -66,17 +87,6 @@ public:
                 });
 
         connect(m_list,
-                &list<T>::addWith,
-                [this] (const QJsonObject& obj)
-                {
-                    net_manager::instance().postToKey(T::table(),
-                        QJsonDocument{obj}.toJson(),
-                        [](const QJsonObject& rep)
-                        { m_list->append(model<T>{rep}); },
-                        "AddWith error");
-                });
-
-        connect(m_list,
                 &list<T>::remove,
                 [this] (int row)
                 {
@@ -101,8 +111,6 @@ public:
                     // only remove localy otherwise
                     m_list->removeItem(row);
                 });
-
-        get();
     }
 
     void get()
@@ -111,6 +119,7 @@ public:
                                            [this](const QByteArray& bytes)
                                            { m_list->read(bytes); });
     }
+    W_SLOT(get)
 
     const std::string make_key(model<T>&& item) const
     {
@@ -129,6 +138,7 @@ public:
     }
 
     static list<T>* m_list;
+    static property_holder<T>* m_item;
 };
 
 template <typename T>

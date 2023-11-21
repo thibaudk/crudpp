@@ -11,6 +11,12 @@ namespace visitor
 struct m_vector_reader
 {
     void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), bool>
+    {
+        f.value = json[m_vector[index]].asBool();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
         requires std::same_as<decltype(f.value), int32_t>
     {
         f.value = json[m_vector[index]].asInt64();

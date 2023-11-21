@@ -2,6 +2,8 @@
 
 #include <concepts>
 #include <string>
+#include <utility>
+//#include <crudpp/utils.hpp>
 
 namespace crudpp
 {
@@ -71,4 +73,9 @@ concept authenticates = r_primary_key<T> &&
                         r_username<T> &&
                         r_password<T>;
 
+//template <typename T, typename ...Args>
+//concept r_permission = requires(Args... args)
+//{
+//    { T::permission(args) } -> std::same_as<std::to_undelying(utils::permissions)>;
+//};
 } // namespace crudpp

@@ -11,6 +11,12 @@ namespace visitor
 struct json_reader
 {
     void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), bool>
+    {
+        f.value = json[f.c_name()].toBool();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
         requires std::same_as<decltype(f.value), int32_t>
     {
         f.value = json[f.c_name()].toInt();

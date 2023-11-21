@@ -33,6 +33,9 @@ public:
         return QVector<Type>(m_items.begin(), m_items.end());
     }
 
+    void get()
+    W_SIGNAL(get)
+
     void save(int row)
     W_SIGNAL(save, row)
 

@@ -14,6 +14,13 @@ struct row_reader
     const drogon::orm::Row& row;
 
     void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), bool>
+    {
+        if (!row[f.c_name()].isNull())
+            f.value = row[f.c_name()].template as<bool>();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
         requires std::same_as<decltype(f.value), int32_t>
     {
         if (!row[f.c_name()].isNull())
@@ -26,7 +33,6 @@ struct row_reader
         if (!row[f.c_name()].isNull())
             f.value = row[f.c_name()].template as<int8_t>();
     }
-
     void operator()(r_c_name auto& f) noexcept
         requires std::is_enum_v<decltype(f.value)>
     {
@@ -47,6 +53,13 @@ struct offset_row_reader
     const drogon::orm::Row& row;
     const ssize_t offset;
     ssize_t index = offset;
+
+    void operator()(auto& f) noexcept
+        requires std::same_as<decltype(f.value), bool>
+    {
+        if (!row.at(index).isNull())
+            f.value = row.at(index).as<bool>();
+    }
 
     void operator()(auto& f) noexcept
         requires std::same_as<decltype(f.value), int32_t>
