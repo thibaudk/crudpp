@@ -7,6 +7,7 @@
 #include <crudpp/utils.hpp>
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
 #include "list.hpp"
+#include "property_holder.hpp"
 
 namespace crudpp
 {
@@ -26,10 +27,13 @@ public:
         str += "_list";
         bridge::instance().context()->setContextProperty(str, m_list);
 
-        str.chop(4);
+        auto holder_uri{uri};
+        holder_uri += "_holder";
+        qmlRegisterUncreatableType<property_holder<T>>(uri.c_str(), 1, 0, holder_uri.c_str(), "");
+
+        str.chop(5);
         str.prepend("current_");
-        qmlRegisterUncreatableType<property_holder<T>>(uri.c_str(), 1, 0, uri.c_str(), "");
-        bridge::instance().context()->setContextProperty(str, m_item);
+        bridge::instance().context()->setContextProperty(str, m_holder);
 
         connect(m_list,
                 &list<T>::addWith,
@@ -138,11 +142,14 @@ public:
     }
 
     static list<T>* m_list;
-    static property_holder<T>* m_item;
+    static property_holder<T>* m_holder;
 };
 
 template <typename T>
 list<T>* controller<T>::m_list{new list<T>{}};
+
+template <typename T>
+property_holder<T>* controller<T>::m_holder{new property_holder<T>{}};
 
 } // namespace crudpp
 
