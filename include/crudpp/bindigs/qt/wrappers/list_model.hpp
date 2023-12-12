@@ -5,7 +5,7 @@
 
 #include "list.hpp"
 
-namespace crudpp
+namespace qt
 {
 template <typename T>
 class list_model : public QAbstractListModel
@@ -130,7 +130,7 @@ private:
     }
 };
 
-} //namespace crudpp
+} //namespace qt
 
 #include "wobjectimpl.h"
-W_OBJECT_IMPL(crudpp::list_model<T>, template <typename T>)
+W_OBJECT_IMPL(qt::list_model<T>, template <typename T>)

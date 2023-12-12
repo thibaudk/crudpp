@@ -8,7 +8,7 @@
 
 #include "model.hpp"
 
-namespace crudpp
+namespace qt
 {
 template <typename T>
 class list final : public QObject
@@ -183,7 +183,7 @@ private:
     std::vector<Type> m_items{};
 };
 
-} // namespace crudpp
+} // namespace qt
 
 #include <wobjectimpl.h>
-W_OBJECT_IMPL(crudpp::list<T>, template <typename T>)
+W_OBJECT_IMPL(qt::list<T>, template <typename T>)

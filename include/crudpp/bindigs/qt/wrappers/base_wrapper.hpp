@@ -6,10 +6,9 @@
 
 #include <crudpp/utils.hpp>
 #include <crudpp/required.hpp>
-#include <crudpp/bindigs/qt/visitors/json_reader.hpp>
-#include "utils.hpp"
+#include <crudpp/bindigs/qt/utils.hpp>
 
-namespace crudpp
+namespace qt
 {
 template <typename T>
 struct base_wrapper
@@ -17,9 +16,9 @@ struct base_wrapper
     void write(QJsonObject& obj)
     {
         boost::pfr::for_each_field(aggregate,
-                                   [&obj, this](const r_c_name auto& f, size_t i)
+                                   [&obj, this](const crudpp::r_c_name auto& f, size_t i)
                                    {
-                                       if constexpr(is_primary_key<decltype(f), T>)
+                                       if constexpr(crudpp::is_primary_key<decltype(f), T>)
                                        {
                                            // skip primary key for insert
                                            // ie. when it's flag is true (default)
@@ -44,7 +43,7 @@ struct base_wrapper
 
     // check if the item was inserted in the database
     // ie. if it's primary key is not flagged
-    bool inserted() { return !dirtyFlag_[get_primary_key_index<T>()]; }
+    bool inserted() { return !dirtyFlag_[crudpp::get_primary_key_index<T>()]; }
 
     T& get_aggregate() { return aggregate; }
 

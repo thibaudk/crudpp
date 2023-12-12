@@ -10,7 +10,7 @@
 
 class QQmlContext;
 
-namespace crudpp
+namespace qt
 {
 class bridge final : public QObject
 {
@@ -141,7 +141,7 @@ private:
     }
 };
 
-} // namespace crudpp
+} // namespace qt
 
 #include <wobjectimpl.h>
-W_OBJECT_IMPL(crudpp::bridge)
+W_OBJECT_IMPL(qt::bridge)

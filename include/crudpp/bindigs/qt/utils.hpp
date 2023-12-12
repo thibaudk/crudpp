@@ -5,7 +5,7 @@
 #include <QVariant>
 #include <QDate>
 
-namespace crudpp
+namespace qt
 {
 template <typename T>
 class controller;
@@ -85,4 +85,4 @@ template <typename ...Ts>
 std::tuple<controller<Ts>...> make_ctls()
 { return std::tuple<controller<Ts>...>{}; }
 
-} // namespace crudpp
+} // namespace qt

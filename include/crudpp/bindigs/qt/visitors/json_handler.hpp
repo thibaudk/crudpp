@@ -2,20 +2,17 @@
 
 #include "json_reader.hpp"
 
-namespace crudpp
-{
-namespace visitor
+namespace qt
 {
 struct json_handler
 {
-    explicit json_handler(const Json::Value& pJson)
+    explicit json_handler(const QJsonObject& pJson)
         : vis{.json = pJson}
     {}
 
-    void operator()(r_c_name auto& f) noexcept
+    void operator()(crudpp::r_c_name auto& f) noexcept
     {
-//        if constexpr ()
-        if (vis.json.isMember(f.c_name()))
+        if (vis.json.contains(f.c_name()))
         {
             if (!vis.json[f.c_name()].isNull())
                 vis(f);
@@ -24,5 +21,4 @@ struct json_handler
 
     json_reader vis;
 };
-} // namespace visitor
-} // namespace crudpp
+} // namespace qt

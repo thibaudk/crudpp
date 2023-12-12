@@ -12,12 +12,13 @@
 #include <wobjectimpl.h>
 
 #include <crudpp/required.hpp>
+#include <crudpp/bindigs/qt/utils.hpp>
+#include <crudpp/bindigs/qt/visitors/json_handler.hpp>
 #include "base_wrapper.hpp"
-#include "utils.hpp"
 
-namespace crudpp
+namespace qt
 {
-template <r_c_name T>
+template <crudpp::r_c_name T>
 constexpr auto get_property_name() -> w_cpp::StringView
 {
     return {T::c_name(),
@@ -33,7 +34,7 @@ struct String
     char c[N];
 };
 
-template <r_c_name T>
+template <crudpp::r_c_name T>
 constexpr auto get_property_changed_name()
 {
     constexpr size_t length{std::char_traits<char>::length(T::c_name()) + 7};
@@ -71,9 +72,10 @@ public:
     // replace with "set_property_value" visitor
     void read(const QJsonObject& obj)
     {
-        boost::pfr::for_each_field(this->aggregate, crudpp::visitor::json_reader{.json = obj});
+        boost::pfr::for_each_field(this->aggregate, json_handler{obj});
         this->reset_flags();
-        for_each_index<boost::pfr::tuple_size_v<T> - 1>([this](const auto i){ property_changed<i()>(); });
+        crudpp::for_each_index<boost::pfr::tuple_size_v<T> - 1>
+            ([this](const auto i){ property_changed<i()>(); });
     }
 
 private:
@@ -122,6 +124,6 @@ private:
     };
     W_CPP_PROPERTY(register_properties)
 };
-} // namespace crudpp
+} // namespace qt
 
-W_OBJECT_IMPL_INLINE(crudpp::property_holder<T>, template <typename T>)
+W_OBJECT_IMPL_INLINE(qt::property_holder<T>, template <typename T>)

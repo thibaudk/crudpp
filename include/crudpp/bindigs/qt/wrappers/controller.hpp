@@ -9,7 +9,7 @@
 #include "list.hpp"
 #include "property_holder.hpp"
 
-namespace crudpp
+namespace qt
 {
 template <typename T>
 class controller final : QObject
@@ -59,7 +59,7 @@ public:
                     item.write(obj);
 
                     // update if primary key is set
-                    if (obj.contains(to_qt(get_primary_key_name<T>())))
+                    if (obj.contains(to_qt(crudpp::get_primary_key_name<T>())))
                     {
                         // skip if nothing needs updating
                         if (obj.size() == 1) return;
@@ -135,7 +135,7 @@ public:
         std::string key{T::table()};
         key += '/';
 
-        if constexpr (r_primary_key<T>)
+        if constexpr (crudpp::r_primary_key<T>)
             key += std::to_string(item.get_aggregate().primary_key.value);
 
         return key;
@@ -151,7 +151,7 @@ list<T>* controller<T>::m_list{new list<T>{}};
 template <typename T>
 property_holder<T>* controller<T>::m_holder{new property_holder<T>{}};
 
-} // namespace crudpp
+} // namespace qt
 
 #include <wobjectimpl.h>
-W_OBJECT_IMPL(crudpp::controller<T>, template <typename T>)
+W_OBJECT_IMPL(qt::controller<T>, template <typename T>)

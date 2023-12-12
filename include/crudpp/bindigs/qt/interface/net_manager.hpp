@@ -15,7 +15,7 @@
 #include <singleton.hpp>
 #include STRINGIFY_MACRO(INCLUDE)
 
-namespace crudpp
+namespace qt
 {
 class smtp;
 
@@ -274,4 +274,4 @@ private:
 } // crudpp
 
 #include "wobjectimpl.h"
-W_OBJECT_IMPL(crudpp::net_manager)
+W_OBJECT_IMPL(qt::net_manager)

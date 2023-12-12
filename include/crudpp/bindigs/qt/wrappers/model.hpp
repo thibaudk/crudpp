@@ -3,8 +3,9 @@
 #include "qnamespace.h"
 
 #include "base_wrapper.hpp"
+#include <crudpp/bindigs/qt/visitors/json_handler.hpp>
 
-namespace crudpp
+namespace qt
 {
 template <typename T>
 struct model final : public base_wrapper<T>
@@ -14,7 +15,7 @@ struct model final : public base_wrapper<T>
 
     void read(const QJsonObject& obj)
     {
-        boost::pfr::for_each_field(this->aggregate, crudpp::visitor::json_reader{.json = obj});
+        boost::pfr::for_each_field(this->aggregate, json_handler{obj});
         this->reset_flags();
     }
 
@@ -31,7 +32,7 @@ struct model final : public base_wrapper<T>
             return rn;
 
         boost::pfr::for_each_field(T{},
-                                   [](const r_c_name auto& f, size_t i)
+                                   [](const crudpp::r_c_name auto& f, size_t i)
                                    { rn[i + Qt::UserRole] = f.c_name(); });
 
         rn[flagged_for_update_role()] = "flagged_for_update";
@@ -83,7 +84,7 @@ struct model final : public base_wrapper<T>
                                    [&v, role, this](auto& f, size_t i)
                                    {
                                        // prevent from manually setting primary key
-                                       if constexpr(is_primary_key<decltype(f), T>)
+                                       if constexpr(crudpp::is_primary_key<decltype(f), T>)
                                            return;
 
                                        if (role - Qt::UserRole == i)
@@ -104,4 +105,4 @@ struct model final : public base_wrapper<T>
     // --
 };
 
-} // namespace crudpp
+} // namespace qt
