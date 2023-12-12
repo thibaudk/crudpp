@@ -3,6 +3,7 @@
 #include <json/value.h>
 
 #include <crudpp/required.hpp>
+#include <crudpp/bindigs/drogon/wrappers/utils.hpp>
 
 namespace crudpp
 {
@@ -17,13 +18,25 @@ struct m_vector_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), int32_t>
+        requires std::same_as<decltype(f.value), uint64_t>
     {
-        f.value = json[m_vector[index]].asInt64();
+        f.value = json[m_vector[index]].asLargestUInt();
     }
 
     void operator()(r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), int8_t>
+        requires unsigned_integral_different<decltype(f.value), bool, uint64_t>
+    {
+        f.value = json[m_vector[index]].asUInt();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), int64_t>
+    {
+        f.value = json[m_vector[index]].asLargestInt();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires signed_integral_different<decltype(f.value), int64_t>
     {
         f.value = json[m_vector[index]].asInt();
     }
@@ -38,6 +51,12 @@ struct m_vector_reader
         requires std::same_as<decltype(f.value), std::string>
     {
         f.value = json[m_vector[index]].asString();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::year_month_day>
+    {
+        f.value = from_drgn(json[f.c_name()].asString());
     }
 
     const Json::Value& json;

@@ -1,9 +1,12 @@
 #pragma once
 
+#include <chrono>
+
 #include <drogon/orm/Field.h>
 #include <drogon/orm/Row.h>
 
 #include <crudpp/required.hpp>
+#include <crudpp/bindigs/drogon/wrappers/utils.hpp>
 
 namespace crudpp
 {
@@ -14,25 +17,12 @@ struct row_reader
     const drogon::orm::Row& row;
 
     void operator()(r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), bool>
+        requires std::is_arithmetic_v<decltype(f.value)>
     {
         if (!row[f.c_name()].isNull())
-            f.value = row[f.c_name()].template as<bool>();
+            f.value = row[f.c_name()].template as<decltype(f.value)>();
     }
 
-    void operator()(r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), int32_t>
-    {
-        if (!row[f.c_name()].isNull())
-            f.value = row[f.c_name()].template as<int32_t>();
-    }
-
-    void operator()(r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), int8_t>
-    {
-        if (!row[f.c_name()].isNull())
-            f.value = row[f.c_name()].template as<int8_t>();
-    }
     void operator()(r_c_name auto& f) noexcept
         requires std::is_enum_v<decltype(f.value)>
     {
@@ -46,6 +36,13 @@ struct row_reader
         if (!row[f.c_name()].isNull())
             f.value = row[f.c_name()].template as<std::string>();
     }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::year_month_day>
+    {
+        if (!row[f.c_name()].isNull())
+            f.value = from_drgn(row[f.c_name()].template as<std::string>());
+    }
 };
 
 struct offset_row_reader
@@ -55,24 +52,10 @@ struct offset_row_reader
     ssize_t index = offset;
 
     void operator()(auto& f) noexcept
-        requires std::same_as<decltype(f.value), bool>
+        requires std::is_arithmetic_v<decltype(f.value)>
     {
         if (!row.at(index).isNull())
-            f.value = row.at(index).as<bool>();
-    }
-
-    void operator()(auto& f) noexcept
-        requires std::same_as<decltype(f.value), int32_t>
-    {
-        if (!row.at(index).isNull())
-            f.value = row.at(index).as<int32_t>();
-    }
-
-    void operator()(auto& f) noexcept
-        requires std::same_as<decltype(f.value), int8_t>
-    {
-        if (!row.at(index).isNull())
-            f.value = row.at(index).as<int8_t>();
+            f.value = row.at(index).as<decltype(f.value)>();
     }
 
     void operator()(auto& f) noexcept
@@ -87,6 +70,15 @@ struct offset_row_reader
     {
         if (!row.at(index).isNull())
             f.value = row.at(index).as<std::string>();
+    }
+
+    void operator()(auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::year_month_day>
+    {
+        if (!row.at(index).isNull())
+        {
+            f.value = from_drgn(row.at(index).as<std::string>());
+        }
     }
 };
 } // namespace visitor

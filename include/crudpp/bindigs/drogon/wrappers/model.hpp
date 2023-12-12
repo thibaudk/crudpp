@@ -20,6 +20,7 @@
 #include <crudpp/bindigs/drogon/visitors/m_vector_handler.hpp>
 #include <crudpp/bindigs/drogon/visitors/m_vector_handler_omit_primary.hpp>
 #include <crudpp/bindigs/drogon/visitors/row_handler.hpp>
+#include "utils.hpp"
 
 namespace crudpp
 {
@@ -173,7 +174,8 @@ public:
         Json::Value ret;
 
         boost::pfr::for_each_field(aggregate,
-                                   [&ret](const r_c_name auto& f) { ret[f.c_name()] = f.value; });
+                                   [&ret](const r_c_name auto& f)
+                                   { ret[f.c_name()] = to_drgn(f.value); });
         return ret;
     }
 
@@ -186,8 +188,8 @@ public:
             boost::pfr::for_each_field(aggregate,
                                        [&ret, &pMasqueradingVector](const r_c_name auto& f, size_t i)
                                        {
-                                           if(!pMasqueradingVector[i].empty())
-                                               ret[pMasqueradingVector[i]] = f.value;
+                                           if (!pMasqueradingVector[i].empty())
+                                                   ret[pMasqueradingVector[i]] = to_drgn(f.value);
                                        });
             return ret;
         }
@@ -306,7 +308,7 @@ private:
                                            return;
 
                                        if (dirtyFlag_[i])
-                                           binder << f.value;
+                                           binder << to_drgn(f.value);
                                    });
     }
 

@@ -31,7 +31,7 @@ struct base_wrapper
                                            if (!dirtyFlag_[i]) return;
                                        }
 
-                                       obj[f.c_name()] = to_qt(f.value);
+                                       obj[f.c_name()] = to_qjson(to_qt(f.value));
                                    });
     }
 

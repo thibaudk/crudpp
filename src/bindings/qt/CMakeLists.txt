@@ -1,5 +1,8 @@
 project(${PROJECT_NAME})
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 string(REPLACE ";" "," CLASSES_STRING "${CRUDPP_CLASSES}")
 
 add_compile_definitions(CLIENT

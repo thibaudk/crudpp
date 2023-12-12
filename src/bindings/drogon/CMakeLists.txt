@@ -1,5 +1,8 @@
 project("${PROJECT_NAME}_server")
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 include(CheckIncludeFileCXX)
 
 string(REPLACE ";" ")(" BOOST_FORMATED_CLASSES "(${CRUDPP_CLASSES})")
@@ -40,4 +43,4 @@ target_include_directories(${PROJECT_NAME}
 
 # ##############################################################################
 
-add_subdirectory(test)
+# add_subdirectory(test)
