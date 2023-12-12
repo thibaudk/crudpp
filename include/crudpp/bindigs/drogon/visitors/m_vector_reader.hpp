@@ -3,12 +3,12 @@
 #include <json/value.h>
 
 #include <crudpp/required.hpp>
-#include <crudpp/bindigs/drogon/wrappers/utils.hpp>
+#include <crudpp/bindigs/drogon/utils.hpp>
 
-namespace crudpp
+namespace drgn
 {
-namespace visitor
-{
+using namespace crudpp;
+
 struct m_vector_reader
 {
     void operator()(r_c_name auto& f) noexcept
@@ -24,7 +24,8 @@ struct m_vector_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
-        requires unsigned_integral_different<decltype(f.value), bool, uint64_t>
+        requires(std::unsigned_integral<decltype(f.value)> &&
+                 is_different<decltype(f.value), bool, uint64_t>)
     {
         f.value = json[m_vector[index]].asUInt();
     }
@@ -36,7 +37,8 @@ struct m_vector_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
-        requires signed_integral_different<decltype(f.value), int64_t>
+        requires(std::signed_integral<decltype(f.value)> &&
+                 !std::same_as<decltype(f.value), int64_t>)
     {
         f.value = json[m_vector[index]].asInt();
     }
@@ -63,5 +65,4 @@ struct m_vector_reader
     const std::vector<std::string>& m_vector;
     ssize_t index{0};
 };
-} // namespace visitor
-} // namespace crudpp
+} // namespace drgn

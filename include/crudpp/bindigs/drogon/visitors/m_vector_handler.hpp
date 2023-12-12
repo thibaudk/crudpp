@@ -2,9 +2,7 @@
 
 #include "m_vector_reader.hpp"
 
-namespace crudpp
-{
-namespace visitor
+namespace drgn
 {
 struct m_vector_handler
 {
@@ -15,7 +13,7 @@ struct m_vector_handler
         , vis{.json = pJson, .m_vector = pMasqueradingVector}
     {}
 
-    void operator()(r_c_name auto& f) noexcept
+    void operator()(crudpp::r_c_name auto& f) noexcept
     {
         if (!vis.m_vector[vis.index].empty() && vis.json.isMember(vis.m_vector[vis.index]))
         {
@@ -31,5 +29,4 @@ struct m_vector_handler
     bool* flags;
     m_vector_reader vis;
 };
-} // namespace visitor
-} // namespace crudpp
+} // namespace drgn

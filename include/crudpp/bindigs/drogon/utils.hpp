@@ -5,7 +5,7 @@
 #include <json/value.h>
 #include <trantor/utils/Date.h>
 
-namespace crudpp
+namespace drgn
 {
 // FIXME : workaround conversion from string to year_month_day
 
@@ -20,5 +20,6 @@ std::chrono::year_month_day from_drgn(const std::string&& str)
 template <typename T>
 T to_drgn(const T& v) { return v; }
 
-std::string to_drgn(const std::chrono::year_month_day& d) { return std::format("%Y-%m-%d", d); }
-} // namespace crudpp
+std::string to_drgn(const std::chrono::year_month_day& d)
+{ return std::format("%Y-%m-%d", d); }
+} // namespace drgn

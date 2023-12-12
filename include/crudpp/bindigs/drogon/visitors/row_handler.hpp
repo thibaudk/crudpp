@@ -1,10 +1,8 @@
 #pragma once
 
-#include "row_reader.hpp"
+#include "offset_row_reader.hpp"
 
-namespace crudpp
-{
-namespace visitor
+namespace drgn
 {
 struct row_handler
 {
@@ -20,5 +18,4 @@ struct row_handler
 
     offset_row_reader vis;
 };
-} // namespace visitor
-} // namespace crudpp
+} // namespace drgn

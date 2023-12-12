@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
 {
     QGuiApplication app(argc, argv);
 
-    using namespace crudpp;
+    using namespace qt;
 
     qDebug() << "Device supports OpenSSL: " << QSslSocket::supportsSsl();
 

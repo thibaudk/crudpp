@@ -20,27 +20,25 @@
 #include <crudpp/bindigs/drogon/visitors/m_vector_handler.hpp>
 #include <crudpp/bindigs/drogon/visitors/m_vector_handler_omit_primary.hpp>
 #include <crudpp/bindigs/drogon/visitors/row_handler.hpp>
-#include "utils.hpp"
+#include <crudpp/bindigs/drogon/utils.hpp>
 
-namespace crudpp
-{
-namespace wrapper
+namespace drgn
 {
 using namespace drogon::orm;
 
-template <r_table T>
+template <crudpp::r_table T>
 class model
 {
 public:
     static const constexpr std::string tableName = T::table();
-    static const constexpr bool hasPrimaryKey = r_primary_key<T>;
+    static const constexpr bool hasPrimaryKey = crudpp::r_primary_key<T>;
     static const constexpr std::string primaryKeyName = get_primary_key_name<T>();
-    using PrimaryKeyType = typename trait<T, r_primary_key<T>>::type;
+    using PrimaryKeyType = typename crudpp::trait<T, crudpp::r_primary_key<T>>::type;
 
-    const typename internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
+    const typename internal::Traits<model<T>, crudpp::r_primary_key<T>>::type getPrimaryKey() const
     {
-        if constexpr(r_primary_key<T>)
-            if constexpr(requires { r_value<T, PrimaryKeyType>; })
+        if constexpr(crudpp::r_primary_key<T>)
+            if constexpr(requires { crudpp::r_value<T, PrimaryKeyType>; })
             {
                 return aggregate.primary_key.value;
             }
@@ -54,7 +52,7 @@ public:
         using namespace boost::pfr;
 
         if (indexOffset < 0)
-            for_each_field(aggregate, visitor::row_reader{.row = r});
+            for_each_field(aggregate, row_reader{.row = r});
         else
         {
             if (getColumnNumber() + indexOffset > r.size())
@@ -63,13 +61,12 @@ public:
                 return;
             }
 
-            for_each_field(aggregate, visitor::row_handler{r, indexOffset});
+            for_each_field(aggregate, row_handler{r, indexOffset});
         }
     }
 
     explicit model(const Json::Value& pJson) noexcept(false)
     {
-        using namespace visitor;
         boost::pfr::for_each_field(aggregate, json_handler{dirtyFlag_, pJson});
     }
 
@@ -82,14 +79,14 @@ public:
         }
 
         boost::pfr::for_each_field(aggregate,
-                                   visitor::m_vector_handler{dirtyFlag_, pJson, pMasqueradingVector});
+                                   m_vector_handler{dirtyFlag_, pJson, pMasqueradingVector});
     }
 
     model() = default;
 
     void updateByJson(const Json::Value &pJson) noexcept(false)
     {
-        boost::pfr::for_each_field(aggregate, visitor::json_handler_omit_primary<T>{dirtyFlag_, pJson});
+        boost::pfr::for_each_field(aggregate, json_handler_omit_primary<T>{dirtyFlag_, pJson});
     }
 
     void updateByMasqueradedJson(const Json::Value &pJson,
@@ -102,9 +99,9 @@ public:
         }
 
         boost::pfr::for_each_field(aggregate,
-                                   visitor::m_vector_handler_omit_primary<T>{dirtyFlag_,
-                                                                             pJson,
-                                                                             pMasqueradingVector});
+                                   m_vector_handler_omit_primary<T>{dirtyFlag_,
+                                                                    pJson,
+                                                                    pMasqueradingVector});
     }
 
     // FIXME
@@ -329,5 +326,4 @@ private:
     bool dirtyFlag_[boost::pfr::tuple_size<T>::value] = { false };
     T aggregate{};
 };
-} // namespace wrapper
-} // namespace crudpp
+} // namespace drgn

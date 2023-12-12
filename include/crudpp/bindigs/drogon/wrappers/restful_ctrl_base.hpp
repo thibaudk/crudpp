@@ -6,9 +6,8 @@
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/drogon/wrappers/model.hpp>
 
-using namespace crudpp::wrapper;
-
 using namespace drogon;
+using namespace drgn;
 
 template <typename T>
 class restful_ctrl_base : public RestfulController

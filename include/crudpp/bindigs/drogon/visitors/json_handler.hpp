@@ -2,9 +2,7 @@
 
 #include "json_reader.hpp"
 
-namespace crudpp
-{
-namespace visitor
+namespace drgn
 {
 struct json_handler
 {
@@ -13,7 +11,7 @@ struct json_handler
         , vis{.json = pJson}
     {}
 
-    void operator()(r_c_name auto& f) noexcept
+    void operator()(crudpp::r_c_name auto& f) noexcept
     {
         if (vis.json.isMember(f.c_name()))
         {
@@ -28,5 +26,4 @@ struct json_handler
     bool* flags;
     json_reader vis;
 };
-} // namespace visitor
-} // namespace crudpp
+} // namespace drgn
