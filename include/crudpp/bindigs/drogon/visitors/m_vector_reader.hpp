@@ -25,7 +25,7 @@ struct m_vector_reader
 
     void operator()(r_c_name auto& f) noexcept
         requires(std::unsigned_integral<decltype(f.value)> &&
-                 is_different<decltype(f.value), bool, uint64_t>)
+                 different_than<decltype(f.value), bool, uint64_t>)
     {
         f.value = json[m_vector[index]].asUInt();
     }
@@ -44,6 +44,19 @@ struct m_vector_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), double>
+    {
+        f.value = json[m_vector[index]].asDouble();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires(std::floating_point<decltype(f.value)> &&
+                 !std::same_as<decltype(f.value), double>)
+    {
+        f.value = json[m_vector[index]].asFloat();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
         requires std::is_enum_v<decltype(f.value)>
     {
         f.value = decltype(f.value)(json[m_vector[index]].asInt());
@@ -58,7 +71,13 @@ struct m_vector_reader
     void operator()(r_c_name auto& f) noexcept
         requires std::same_as<decltype(f.value), std::chrono::year_month_day>
     {
-        f.value = from_drgn(json[f.c_name()].asString());
+        f.value = from_drgn_date(json[m_vector[index]].asString());
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::time_point<std::chrono::system_clock>>
+    {
+        f.value = from_drgn_time(json[m_vector[index]].asString());
     }
 
     const Json::Value& json;

@@ -13,31 +13,31 @@ struct offset_row_reader
     void operator()(auto& f) noexcept
         requires std::is_arithmetic_v<decltype(f.value)>
     {
-        if (!row.at(index).isNull())
-            f.value = row.at(index).as<decltype(f.value)>();
+        f.value = row.at(index).as<decltype(f.value)>();
     }
 
     void operator()(auto& f) noexcept
         requires std::is_enum_v<decltype(f.value)>
     {
-        if (!row.at(index).isNull())
-            f.value = decltype(f.value)(row.at(index).as<int>());
+        f.value = decltype(f.value)(row.at(index).as<int>());
     }
 
     void operator()(auto& f) noexcept
         requires std::same_as<decltype(f.value), std::string>
     {
-        if (!row.at(index).isNull())
-            f.value = row.at(index).as<std::string>();
+        f.value = row.at(index).as<std::string>();
     }
 
     void operator()(auto& f) noexcept
         requires std::same_as<decltype(f.value), std::chrono::year_month_day>
     {
-        if (!row.at(index).isNull())
-        {
-            f.value = from_drgn(row.at(index).as<std::string>());
-        }
+        f.value = from_drgn_date(row.at(index).as<std::string>());
+    }
+
+    void operator()(auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::time_point<std::chrono::system_clock>>
+    {
+        f.value = from_drgn_time(row.at(index).as<std::string>());
     }
 };
 } // namespace drgn

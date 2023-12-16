@@ -14,12 +14,12 @@
 
 #include <crudpp/required.hpp>
 #include <crudpp/utils.hpp>
-#include <crudpp/bindigs/drogon/visitors/row_reader.hpp>
 #include <crudpp/bindigs/drogon/visitors/json_handler.hpp>
 #include <crudpp/bindigs/drogon/visitors/json_handler_omit_primary.hpp>
 #include <crudpp/bindigs/drogon/visitors/m_vector_handler.hpp>
 #include <crudpp/bindigs/drogon/visitors/m_vector_handler_omit_primary.hpp>
 #include <crudpp/bindigs/drogon/visitors/row_handler.hpp>
+#include <crudpp/bindigs/drogon/visitors/offset_row_handler.hpp>
 #include <crudpp/bindigs/drogon/utils.hpp>
 
 namespace drgn
@@ -52,7 +52,7 @@ public:
         using namespace boost::pfr;
 
         if (indexOffset < 0)
-            for_each_field(aggregate, row_reader{.row = r});
+            for_each_field(aggregate, row_handler{r});
         else
         {
             if (getColumnNumber() + indexOffset > r.size())
@@ -61,7 +61,7 @@ public:
                 return;
             }
 
-            for_each_field(aggregate, row_handler{r, indexOffset});
+            for_each_field(aggregate, offset_row_handler{r, indexOffset});
         }
     }
 

@@ -80,30 +80,8 @@ concept authenticates = r_primary_key<T> &&
 //};
 
 template <typename T, typename ...Exc_T>
-concept is_same = (std::same_as<T, Exc_T> || ...);
+concept same_as = (std::same_as<T, Exc_T> || ...);
 
 template <typename T, typename ...Exc_T>
-concept is_different = !is_same<T, Exc_T...>;
-
-// adapted from https://stackoverflow.com/a/44616039/14999126
-
-template<typename T, template<typename> typename... Concept>
-concept satisfies_all = (... && Concept<T>::value);
-
-template<typename T, template<typename> typename Concept, typename ...Same>
-concept satisfies_and_same = Concept<T>::value &&
-                             is_same<T, Same...>;
-
-template<typename T, template<typename> typename Concept, typename ...Diff>
-concept satisfies_and_different = Concept<T>::value &&
-                                  is_different<T, Diff...>;
-
-template<typename T, typename ...Diff>
-concept signed_integral_different = std::signed_integral<T> &&
-                                    is_different<T, Diff...>;
-
-template<typename T, typename ...Diff>
-concept unsigned_integral_different = std::unsigned_integral<T> &&
-                                      is_different<T, Diff...>;
-
+concept different_than = !same_as<T, Exc_T...>;
 } // namespace crudpp

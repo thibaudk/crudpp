@@ -1,21 +1,21 @@
 #pragma once
 
-#include "offset_row_reader.hpp"
+#include "row_reader.hpp"
 
 namespace drgn
 {
 struct row_handler
 {
-    explicit row_handler(const drogon::orm::Row& r, const ssize_t indexOffset)
-        : vis{.row = r, .offset = indexOffset}
+    explicit row_handler(const drogon::orm::Row& r)
+        : vis{.row = r}
     {}
 
     void operator()(auto& f) noexcept
     {
-        vis(f);
-        vis.index++;
+        if (!vis.row[f.c_name()].isNull())
+            vis(f);
     }
 
-    offset_row_reader vis;
+    row_reader vis;
 };
 } // namespace drgn
