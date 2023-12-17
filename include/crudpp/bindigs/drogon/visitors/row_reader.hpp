@@ -33,15 +33,21 @@ struct row_reader
     }
 
     void operator()(crudpp::r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), std::chrono::year_month_day>
+        requires std::convertible_to<decltype(f.value), std::chrono::sys_days>
     {
         f.value = from_drgn_date(row[f.c_name()].template as<std::string>());
     }
 
     void operator()(crudpp::r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), std::chrono::time_point<std::chrono::system_clock>>
+        requires std::same_as<decltype(f.value), std::chrono::sys_seconds>
     {
         f.value = from_drgn_time(row[f.c_name()].template as<std::string>());
+    }
+
+    void operator()(crudpp::r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::sys_time<std::chrono::milliseconds>>
+    {
+        f.value = from_drgn_time_ms(row[f.c_name()].template as<std::string>());
     }
 };
 } // namespace drgn

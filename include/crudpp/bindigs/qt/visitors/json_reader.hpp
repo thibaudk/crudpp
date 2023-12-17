@@ -25,6 +25,12 @@ struct json_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
+        requires(std::floating_point<decltype(f.value)>)
+    {
+        f.value = json[f.c_name()].toFloat();
+    }
+
+    void operator()(r_c_name auto& f) noexcept
         requires std::is_enum_v<decltype(f.value)>
     {
         f.value = decltype(f.value)(json[f.c_name()].toInt());
@@ -37,9 +43,22 @@ struct json_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), std::chrono::year_month_day>
+        requires std::convertible_to<decltype(f.value), std::chrono::sys_days>
     {
         f.value = from_qdate(QDate::fromString(json[f.c_name()].toString(), Qt::ISODate));
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::sys_seconds>
+    {
+        f.value = from_qdate_time(QDateTime::fromString(json[f.c_name()].toString(), Qt::ISODate));
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::sys_time<std::chrono::milliseconds>>
+    {
+        f.value = from_qdate_time_ms(QDateTime::fromString(json[f.c_name()].toString(),
+                                                           Qt::ISODateWithMs));
     }
 
     const QJsonObject& json;

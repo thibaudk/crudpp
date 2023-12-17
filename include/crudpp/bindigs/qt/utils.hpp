@@ -5,6 +5,8 @@
 #include <QVariant>
 #include <QDate>
 
+#include <crudpp/required.hpp>
+
 namespace qt
 {
 template <typename T>
@@ -12,7 +14,7 @@ class controller;
 
 template <typename T>
 T to_qt(T v)
-    requires std::is_integral_v<T>
+    requires std::integral<T>
 { return v; }
 
 template <typename T>
@@ -21,8 +23,13 @@ int to_qt(T v)
 { return (int)v; }
 
 template <typename T>
+T to_qt(const T& v)
+    requires std::floating_point<T>
+{ return v; }
+
+template <typename T>
 QString to_qt(const T& v)
-    requires std::is_same_v<T, std::string>
+    requires std::same_as<T, std::string>
 { return QString::fromStdString(v); }
 
 // FIXME : workaround conversion from year_month_day to QDate
@@ -37,6 +44,13 @@ QDate to_qt(const T& v)
 }
 
 template <typename T>
+QDateTime to_qt(const T& v)
+    requires std::is_same_v<T, std::chrono::system_clock::time_point>
+{
+    return QDateTime::fromMSecsSinceEpoch(time_point_cast<std::chrono::milliseconds>(v));
+}
+
+template <typename T>
 QJsonValue to_qjson(const T&& v) { return v; }
 
 template <>
@@ -44,7 +58,7 @@ QJsonValue to_qjson(const QDate&& d) { return d.toString(Qt::ISODate); }
 
 template <typename T>
 T from_qt(const QVariant& v)
-    requires std::is_integral_v<T>
+    requires std::integral<T>
 { return v.toInt(); }
 
 template <typename T>
@@ -54,23 +68,60 @@ T from_qt(const QVariant& v)
 
 template <typename T>
 T from_qt(const QVariant& v)
+    requires(std::floating_point<T> &&
+             !std::same_as<T, double>)
+{ return v.toFloat(); }
+
+template <typename T>
+T from_qt(const QVariant& v)
+    requires std::same_as<T, double>
+{ return v.toDouble(); }
+
+template <typename T>
+T from_qt(const QVariant& v)
     requires std::is_same_v<T, std::string>
 { return v.toString().toStdString(); }
 
 // FIXME : workaround conversion from QDate to year_month_day
 
-std::chrono::year_month_day from_qdate(const QDate&& v)
+std::chrono::sys_days from_qdate(const QDate&& v)
 {
-    return {std::chrono::year{v.year()},
-            std::chrono::month{unsigned(v.month())},
-            std::chrono::day{unsigned(v.day())}};
+    return std::chrono::year_month_day{std::chrono::year{v.year()},
+                                       std::chrono::month{unsigned(v.month())},
+                                       std::chrono::day{unsigned(v.day())}};
 }
 
 template <typename T>
 T from_qt(const QVariant& v)
-    requires std::is_same_v<T, std::chrono::year_month_day>
+    requires std::convertible_to<T, std::chrono::sys_days>
 {
     return from_qdate(v.toDate());
+}
+
+std::chrono::sys_seconds from_qdate_time(const QDateTime&& v)
+{
+    auto epoch{v.toSecsSinceEpoch()};
+    return std::chrono::sys_seconds{std::chrono::duration<qint64>{epoch}};
+}
+
+std::chrono::sys_time<std::chrono::milliseconds> from_qdate_time_ms(const QDateTime&& v)
+{
+    auto epoch{v.toMSecsSinceEpoch()};
+    return std::chrono::sys_time<std::chrono::milliseconds>{std::chrono::duration<qint64>{epoch}};
+}
+
+template <typename T>
+T from_qt(const QVariant& v)
+    requires std::same_as<T, std::chrono::sys_seconds>
+{
+    return from_qdate_time(v.toDateTime());
+}
+
+template <typename T>
+T from_qt(const QVariant& v)
+    requires std::same_as<T, std::chrono::sys_time<std::chrono::milliseconds>>
+{
+    return from_qdate_time_ms(v.toDateTime());
 }
 
 template <typename T>

@@ -69,15 +69,21 @@ struct m_vector_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), std::chrono::year_month_day>
+        requires std::convertible_to<decltype(f.value), std::chrono::sys_days>
     {
         f.value = from_drgn_date(json[m_vector[index]].asString());
     }
 
     void operator()(r_c_name auto& f) noexcept
-        requires std::same_as<decltype(f.value), std::chrono::time_point<std::chrono::system_clock>>
+        requires std::same_as<decltype(f.value), std::chrono::sys_seconds>
     {
         f.value = from_drgn_time(json[m_vector[index]].asString());
+    }
+
+    void operator()(r_c_name auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::sys_time<std::chrono::milliseconds>>
+    {
+        f.value = from_drgn_time_ms(json[m_vector[index]].asString());
     }
 
     const Json::Value& json;
