@@ -29,15 +29,21 @@ struct offset_row_reader
     }
 
     void operator()(auto& f) noexcept
-        requires std::same_as<decltype(f.value), std::chrono::year_month_day>
+        requires std::same_as<decltype(f.value), std::chrono::sys_days>
     {
         f.value = from_drgn_date(row.at(index).as<std::string>());
     }
 
     void operator()(auto& f) noexcept
-        requires std::same_as<decltype(f.value), std::chrono::time_point<std::chrono::system_clock>>
+        requires std::same_as<decltype(f.value), std::chrono::sys_seconds>
     {
         f.value = from_drgn_time(row.at(index).as<std::string>());
+    }
+
+    void operator()(auto& f) noexcept
+        requires std::same_as<decltype(f.value), std::chrono::sys_time<std::chrono::milliseconds>>
+    {
+        f.value = from_drgn_time_ms(row.at(index).as<std::string>());
     }
 };
 } // namespace drgn

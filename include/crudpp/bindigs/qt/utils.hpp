@@ -36,25 +36,46 @@ QString to_qt(const T& v)
 
 template <typename T>
 QDate to_qt(const T& v)
-    requires std::is_same_v<T, std::chrono::year_month_day>
+    requires std::convertible_to<T, std::chrono::sys_days>
 {
-    return {static_cast<int>(v.year()),
-            static_cast<int>(unsigned(v.month())),
-            static_cast<int>(unsigned(v.day()))};
+    const std::chrono::year_month_day d{v};
+    return {static_cast<int>(d.year()),
+            static_cast<int>(unsigned(d.month())),
+            static_cast<int>(unsigned(d.day()))};
 }
 
 template <typename T>
 QDateTime to_qt(const T& v)
-    requires std::is_same_v<T, std::chrono::system_clock::time_point>
+    requires std::same_as<T, std::chrono::sys_seconds>
 {
-    return QDateTime::fromMSecsSinceEpoch(time_point_cast<std::chrono::milliseconds>(v));
+    return QDateTime::fromSecsSinceEpoch(std::chrono::duration_cast<std::chrono::seconds>(
+                                             v.time_since_epoch()).count());
 }
 
 template <typename T>
+QDateTime to_qt(const T& v)
+    requires std::same_as<T, std::chrono::sys_time<std::chrono::milliseconds>>
+{
+    return QDateTime::fromMSecsSinceEpoch(std::chrono::duration_cast<std::chrono::milliseconds>(
+                                              v.time_since_epoch()).count());
+}
+
+template <typename T>
+    requires std::signed_integral<T>
+QJsonValue to_qjson(T v) { return v; }
+
+template <typename T>
+    requires std::unsigned_integral<T>
+QJsonValue to_qjson(T v) { return (int)v; }
+
+template <typename T>
+    requires(std::same_as<T, QString> ||
+             std::floating_point<T>)
 QJsonValue to_qjson(const T&& v) { return v; }
 
-template <>
 QJsonValue to_qjson(const QDate&& d) { return d.toString(Qt::ISODate); }
+
+QJsonValue to_qjson(const QDateTime&& d) { return d.toString(Qt::ISODateWithMs); }
 
 template <typename T>
 T from_qt(const QVariant& v)
@@ -79,7 +100,7 @@ T from_qt(const QVariant& v)
 
 template <typename T>
 T from_qt(const QVariant& v)
-    requires std::is_same_v<T, std::string>
+    requires std::same_as<T, std::string>
 { return v.toString().toStdString(); }
 
 // FIXME : workaround conversion from QDate to year_month_day
