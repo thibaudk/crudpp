@@ -69,6 +69,12 @@ template <typename T, typename Agg>
 concept is_primary_key = is_field<T, decltype(Agg::primary_key)>;
 
 template <typename T>
+concept is_foreign_key = requires(T t)
+{
+    std::is_member_object_pointer_v<decltype(t.foreign_key())>;
+};
+
+template <typename T>
 concept authenticates = r_primary_key<T> &&
                         r_username<T> &&
                         r_password<T>;

@@ -31,14 +31,14 @@ class model
 {
 public:
     static const constexpr std::string tableName = T::table();
-    static const constexpr bool hasPrimaryKey = crudpp::r_primary_key<T>;
+    static const constexpr bool hasPrimaryKey = r_primary_key<T>;
     static const constexpr std::string primaryKeyName = get_primary_key_name<T>();
-    using PrimaryKeyType = typename crudpp::trait<T, crudpp::r_primary_key<T>>::type;
+    using PrimaryKeyType = typename trait<T, r_primary_key<T>>::type;
 
-    const typename internal::Traits<model<T>, crudpp::r_primary_key<T>>::type getPrimaryKey() const
+    const typename internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
     {
-        if constexpr(crudpp::r_primary_key<T>)
-            if constexpr(requires { crudpp::r_value<T, PrimaryKeyType>; })
+        if constexpr(r_primary_key<T>)
+            if constexpr(requires { r_value<T, PrimaryKeyType>; })
             {
                 return aggregate.primary_key.value;
             }
@@ -219,7 +219,7 @@ public:
                        [this, &sql, &parametersCount](const r_c_name auto& f, size_t i)
                        {
                            if constexpr(!is_primary_key<decltype(f), T>)
-                               if (!dirtyFlag_[i]) return;
+                               return;
 
                            sql += f.c_name();
                            sql += ',';
@@ -241,7 +241,7 @@ public:
                        [this, &sql](const auto& f, size_t i)
                        {
                            if constexpr(is_primary_key<decltype(f), T>)
-                               sql +="default,";
+                               return;
 
                            if (dirtyFlag_[i])
                                sql.append("?,");
@@ -299,13 +299,36 @@ private:
     void outputArgs(internal::SqlBinder& binder) const
     {
         boost::pfr::for_each_field(aggregate,
-                                   [this, &binder](auto& f, size_t i)
+                                   [this, &binder](const auto& f, size_t i)
                                    {
                                        if constexpr(is_primary_key<decltype(f), T>)
                                            return;
 
                                        if (dirtyFlag_[i])
+                                       {
+                                           if constexpr(is_foreign_key<decltype(f)>)
+                                           {
+                                               if constexpr(std::integral<decltype(f.value)>)
+                                               {
+                                                   if (f.value == 0)
+                                                   {
+                                                       binder << nullptr;
+                                                       return;
+                                                   }
+                                               }
+
+                                               if constexpr(std::same_as<decltype(f.value), std::string>)
+                                               {
+                                                   if (f.value.empty())
+                                                   {
+                                                       binder << nullptr;
+                                                       return;
+                                                   }
+                                               }
+                                           }
+
                                            binder << to_drgn(f.value);
+                                       }
                                    });
     }
 
