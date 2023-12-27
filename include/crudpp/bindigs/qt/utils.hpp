@@ -9,7 +9,7 @@
 
 namespace qt
 {
-template <typename T>
+template <typename T, bool>
 class controller;
 
 template <typename T>
@@ -154,7 +154,7 @@ std::string make_uri()
 }
 
 template <typename ...Ts>
-std::tuple<controller<Ts>...> make_ctls()
-{ return std::tuple<controller<Ts>...>{}; }
+std::tuple<controller<Ts, crudpp::r_primary_key<Ts>>...> make_ctls()
+{ return std::tuple<controller<Ts, crudpp::r_primary_key<Ts>>...>{}; }
 
 } // namespace qt

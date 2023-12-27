@@ -11,8 +11,8 @@
 
 namespace qt
 {
-template <typename T>
-class controller final : QObject
+template <typename T, bool has_primary_key = false>
+class controller : QObject
 {
     W_OBJECT(controller)
 
@@ -26,14 +26,6 @@ public:
 
         str += "_list";
         bridge::instance().context()->setContextProperty(str, m_list);
-
-        auto holder_uri{uri};
-        holder_uri += "_holder";
-        qmlRegisterUncreatableType<property_holder<T>>(uri.c_str(), 1, 0, holder_uri.c_str(), "");
-
-        str.chop(5);
-        str.prepend("current_");
-        bridge::instance().context()->setContextProperty(str, m_holder);
 
         connect(m_list,
                 &list<T>::addWith,
@@ -117,6 +109,7 @@ public:
                 });
     }
 
+private:
     void get()
     {
         net_manager::instance().getFromKey(T::table(),
@@ -142,16 +135,35 @@ public:
     }
 
     static list<T>* m_list;
-    static property_holder<T>* m_holder;
 };
 
 template <typename T>
-list<T>* controller<T>::m_list{new list<T>{}};
+struct controller<T, true> : public controller<T, false>
+{
+    controller() : controller<T, false>{}
+    {
+        const auto uri{make_uri<T>()};
+
+        auto holder_uri{uri};
+        holder_uri += "_holder";
+        qmlRegisterUncreatableType<property_holder<T>>(uri.c_str(), 1, 0, holder_uri.c_str(), "");
+
+        QString str{T::table()};
+        str.prepend("current_");
+        bridge::instance().context()->setContextProperty(str, m_holder);
+    }
+
+private:
+    static property_holder<T>* m_holder;
+};
+
+template <typename T, bool has_primary_key>
+list<T>* controller<T, has_primary_key>::m_list{new list<T>{}};
 
 template <typename T>
-property_holder<T>* controller<T>::m_holder{new property_holder<T>{}};
+property_holder<T>* controller<T, true>::m_holder{new property_holder<T>{}};
 
 } // namespace qt
 
 #include <wobjectimpl.h>
-W_OBJECT_IMPL(qt::controller<T>, template <typename T>)
+W_OBJECT_IMPL((qt::controller<T, has_primary_key>), template <typename T, bool has_primary_key>)
