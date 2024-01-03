@@ -26,6 +26,7 @@ public:
 
         str += "_list";
         bridge::instance().context()->setContextProperty(str, m_list);
+        qDebug() << str << ": " << bridge::instance().context()->contextProperty(str);
 
         connect(m_list,
                 &list<T>::addWith,
@@ -38,9 +39,14 @@ public:
                         "AddWith error");
                 });
 
-        // not sure why the regular syntax for connection does not work here
-        // connect(m_list, &list<T>::get, &controller<T>::clear_get);
-        connect(m_list, &list<T>::get, [this](){ get(); });
+        connect(m_list,
+                &list<T>::get,
+                [this] ()
+                {
+                    net_manager::instance().getFromKey(T::table(),
+                                                       [this](const QByteArray& bytes)
+                                                       { m_list->read(bytes); });
+                });
 
         connect(m_list,
                 &list<T>::save,
@@ -110,14 +116,6 @@ public:
     }
 
 private:
-    void get()
-    {
-        net_manager::instance().getFromKey(T::table(),
-                                           [this](const QByteArray& bytes)
-                                           { m_list->read(bytes); });
-    }
-    W_SLOT(get)
-
     const std::string make_key(model<T>&& item) const
     {
         return make_key(std::move(item));
@@ -135,6 +133,7 @@ private:
     }
 
     static list<T>* m_list;
+    // static property_holder<T>* m_holder;
 };
 
 template <typename T>
@@ -151,6 +150,7 @@ struct controller<T, true> : public controller<T, false>
         QString str{T::table()};
         str.prepend("current_");
         bridge::instance().context()->setContextProperty(str, m_holder);
+        qDebug() << str << ": " << bridge::instance().context()->contextProperty(str);
     }
 
 private:
