@@ -30,11 +30,14 @@ public:
 
     QVector<Type> items() const
     {
-        return QVector<Type>(m_items.begin(), m_items.end());
+        return m_items;
     }
 
     void get()
     W_SIGNAL(get)
+
+    void getOne(int row)
+    W_SIGNAL(getOne, row)
 
     void save(int row)
     W_SIGNAL(save, row)
@@ -105,9 +108,9 @@ public:
     }
     W_SLOT(removeItem, (int))
 
-    void set_list(const std::vector<Type>& list) { m_items = list; }
+    void set_list(const QVector<Type>& list) { m_items = list; }
 
-    std::vector<Type>& get_list(const std::vector<Type>& list) { return m_items; }
+    QVector<Type>& get_list(const QVector<Type>& list) { return m_items; }
 
     void clear()
     {
@@ -122,18 +125,6 @@ public:
 
     void remove(int row)
     W_SIGNAL(remove, row)
-
-    void erase(int id)
-    {
-        int index{index_at_id(id)};
-
-        if (index == -1)
-            return;
-
-        emit preItemsRemoved(index, index);
-        this->m_items.erase(m_items.begin() + index);
-        emit postItemsRemoved();
-    }
 
     void read(const QJsonArray& array)
     {
@@ -178,9 +169,8 @@ public:
 
 private:
     void checkCompleted();
-    int index_at_id(int id) const noexcept;
 
-    std::vector<Type> m_items{};
+    QVector<Type> m_items{};
 };
 
 } // namespace qt

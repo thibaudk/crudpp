@@ -13,6 +13,13 @@ namespace qt
 template <typename T>
 struct base_wrapper
 {
+    void read(const QJsonObject& obj)
+    {
+        boost::pfr::for_each_field(aggregate, json_handler{obj});
+        reset_flags();
+        m_inserted = true;
+    }
+
     void write(QJsonObject& obj)
     {
         boost::pfr::for_each_field(aggregate,
@@ -42,15 +49,26 @@ struct base_wrapper
     }
 
     // check if the item was inserted in the database
-    // ie. if it's primary key is not flagged
-    bool inserted() { return !dirtyFlag_[crudpp::get_primary_key_index<T>()]; }
+    // ie. if the default false value is now true
+    bool inserted() const { return m_inserted; }
+
+    bool flagged_for_update() const
+    {
+        for (bool f : this->dirtyFlag_)
+            if (f) return true;
+
+        return false;
+    }
 
     T& get_aggregate() { return aggregate; }
 
 protected:
+    base_wrapper() = default;
+
     // all true by default to set all fields upon insert
     bool dirtyFlag_[boost::pfr::tuple_size<T>::value] = { true };
-    T aggregate{};
+    bool m_inserted{false};
     bool loading{false};
+    T aggregate{};
 };
 } //crudpp

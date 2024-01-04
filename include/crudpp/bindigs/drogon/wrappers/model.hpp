@@ -218,7 +218,10 @@ public:
         for_each_field(aggregate,
                        [this, &sql, &parametersCount](const r_c_name auto& f, size_t i)
                        {
-                           if constexpr(!is_primary_key<decltype(f), T>)
+                           if constexpr(is_primary_key<decltype(f), T>)
+                               return;
+
+                           if (!dirtyFlag_[i])
                                return;
 
                            sql += f.c_name();

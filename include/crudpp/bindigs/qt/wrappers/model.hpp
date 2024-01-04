@@ -10,14 +10,8 @@ namespace qt
 template <typename T>
 struct model final : public base_wrapper<T>
 {
-    model(const QJsonObject& json) { read(json); }
+    model(const QJsonObject& json) { this->read(json); }
     model() = default;
-
-    void read(const QJsonObject& obj)
-    {
-        boost::pfr::for_each_field(this->aggregate, json_handler{obj});
-        this->reset_flags();
-    }
 
     static const constexpr int flagged_for_update_role()
     { return boost::pfr::tuple_size<T>::value + Qt::UserRole; }
@@ -50,16 +44,7 @@ struct model final : public base_wrapper<T>
 
         if (role == flagged_for_update_role())
         {
-            for (bool f : this->dirtyFlag_)
-            {
-                if (f)
-                {
-                    v = true;
-                    break;
-                }
-            }
-
-            if (!v.isValid()) v = false;
+            v = this->flagged_for_update();
         }
         else if (role == now_loading_role())
         {

@@ -57,7 +57,7 @@ public:
                     item.write(obj);
 
                     // update if primary key is set
-                    if (obj.contains(to_qt(crudpp::get_primary_key_name<T>())))
+                    if (item.inserted())
                     {
                         // skip if nothing needs updating
                         if (obj.size() == 1) return;
@@ -124,21 +124,23 @@ private:
     const std::string make_key(model<T>& item) const
     {
         std::string key{T::table()};
-        key += '/';
 
         if constexpr (crudpp::r_primary_key<T>)
+        {
+            key += '/';
             key += std::to_string(item.get_aggregate().primary_key.value);
+        }
 
         return key;
     }
 
     static list<T>* m_list;
-    // static property_holder<T>* m_holder;
 };
 
 template <typename T>
-struct controller<T, true> : public controller<T, false>
+class controller<T, true> : public controller<T, false>
 {
+public:
     controller() : controller<T, false>{}
     {
         const auto uri{make_uri<T>()};

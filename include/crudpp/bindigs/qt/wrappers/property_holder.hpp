@@ -72,8 +72,7 @@ public:
     // replace with "set_property_value" visitor
     void read(const QJsonObject& obj)
     {
-        boost::pfr::for_each_field(this->aggregate, json_handler{obj});
-        this->reset_flags();
+        base_wrapper<T>::read(obj);
         crudpp::for_each_index<boost::pfr::tuple_size_v<T> - 1>
             ([this](const auto i){ property_changed<i()>(); });
     }
