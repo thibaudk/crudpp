@@ -16,7 +16,7 @@ struct model final : public base_wrapper<T>
     static const constexpr int flagged_for_update_role()
     { return boost::pfr::tuple_size<T>::value + Qt::UserRole; }
 
-    static const constexpr int now_loading_role() { return flagged_for_update_role() + 1; }
+    static const constexpr int loading_role() { return flagged_for_update_role() + 1; }
 
     static QHash<int, QByteArray> roleNames()
     {
@@ -30,7 +30,7 @@ struct model final : public base_wrapper<T>
                                    { rn[i + Qt::UserRole] = f.c_name(); });
 
         rn[flagged_for_update_role()] = "flagged_for_update";
-        rn[now_loading_role()] = "now_loading";
+        rn[loading_role()] = "loading";
 
         return rn;
     }
@@ -46,7 +46,7 @@ struct model final : public base_wrapper<T>
         {
             v = this->flagged_for_update();
         }
-        else if (role == now_loading_role())
+        else if (role == loading_role())
         {
             v = this->loading;
         }
@@ -84,7 +84,7 @@ struct model final : public base_wrapper<T>
                                        }
                                    });
 
-        if (role == now_loading_role())
+        if (role == loading_role())
             this->loading = v.toBool();
     }
     // --

@@ -122,7 +122,7 @@ protected:
 private:
     void setLoading(int row, bool value)
     {
-        int role{model<T>::now_loading_role()};
+        int role{model<T>::loading_role()};
         m_list->item_at(row).setData(value, role);
         emit dataChanged(index(row),
                          index(row),

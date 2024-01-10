@@ -60,6 +60,19 @@ class property_holder : public base_wrapper<T>
 {
     W_OBJECT(property_holder)
 
+    void save()
+    W_SIGNAL(save)
+
+    bool get_loading() const { return base_wrapper<T>::loading; }
+
+    void loadingChanged()
+    W_SIGNAL(loadingChanged)
+    void flaggedChanged()
+    W_SIGNAL(flaggedChanged)
+
+    W_PROPERTY(bool, loading READ get_loading NOTIFY loadingChanged)
+    W_PROPERTY(bool, flagged_for_update READ flagged_for_update NOTIFY flaggedChanged)
+
     template <size_t I>
     using property_at = std::remove_reference_t<decltype(boost::pfr::get<I>(std::declval<T>()))>;
 
@@ -73,8 +86,31 @@ public:
     void read(const QJsonObject& obj)
     {
         base_wrapper<T>::read(obj);
-        crudpp::for_each_index<boost::pfr::tuple_size_v<T> - 1>
+        crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
             ([this](const auto i){ property_changed<i()>(); });
+
+        emit flaggedChanged();
+    }
+
+    void clear()
+    {
+        crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
+            ([this](const auto i)
+             {
+                 const std::remove_reference_t<decltype(boost::pfr::get<i()>(this->aggregate))> init{};
+                 set_property_value<i()>(QVariant::fromValue(to_qt(init.value)));
+             }
+             );
+    }
+    W_INVOKABLE(clear)
+
+    void set_loading(bool l)
+    {
+        if (l == base_wrapper<T>::loading)
+            return;
+
+        base_wrapper<T>::loading = l;
+        emit loadingChanged();
     }
 
 private:
@@ -110,6 +146,7 @@ private:
         auto& property{boost::pfr::get<I>(this->aggregate)};
         property.value = from_qt<decltype(property.value)>(variant);
         property_changed<I>();
+        emit flaggedChanged();
     }
 
     template <size_t I, class = std::enable_if_t<(I < boost::pfr::tuple_size_v<T>)>>
