@@ -111,6 +111,46 @@ public:
                              }
                          });
 
+        connect(m_holder,
+                &property_holder<T>::save,
+                [this] ()
+                {
+                    QJsonObject obj{};
+                    m_holder.write(obj);
+
+                    // update if the item was already inserted
+                    if (m_holder.inserted())
+                    {
+                        // skip if nothing needs updating
+                        // ie. if only the primary key was writen to json
+                        if (obj.size() == 1) return;
+
+                        net_manager::instance().putToKey(make_key(m_holder).c_str(),
+                            QJsonDocument{obj}.toJson(),
+                            [&m_holder, this](const QJsonObject& rep)
+                            {
+                                m_holder.reset_flags();
+                                // emit this->m_list->loaded(row);
+                            },
+                            "save error",
+                            [this]()
+                            { /*emit this->m_list->loaded(row);*/ });
+                    }
+                    else // insert otherwise
+                    {
+                        net_manager::instance().postToKey(T::table(),
+                            QJsonDocument{obj}.toJson(),
+                            [&item, this](const QJsonObject& rep)
+                            {
+                                m_holder.read(rep);
+                                // emit this->m_list->loaded(row);
+                            },
+                            "save error",
+                            [this]()
+                            { /*emit this->m_list->loaded(row);*/ });
+                    }
+                });
+
         QObject::connect(this->m_list,
                          &list<T>::remove,
                          [this] (int row)
