@@ -116,10 +116,9 @@ public:
 
     W_PROPERTY(list<T>*, list READ getList WRITE setList)
 
-protected:
+private:
     list<T>* m_list{nullptr};
 
-private:
     void setLoading(int row, bool value)
     {
         int role{model<T>::loading_role()};

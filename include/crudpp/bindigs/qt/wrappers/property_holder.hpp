@@ -60,9 +60,6 @@ class property_holder : public base_wrapper<T>
 {
     W_OBJECT(property_holder)
 
-    void save()
-    W_SIGNAL(save)
-
     bool get_loading() const { return base_wrapper<T>::loading; }
 
     void loadingChanged()
@@ -113,6 +110,11 @@ public:
         emit loadingChanged();
     }
 
+    void save()
+    W_SIGNAL(save)
+    void remove()
+    W_SIGNAL(remove)
+
 private:
     template <size_t I>
     void property_changed()
@@ -145,6 +147,7 @@ private:
     {
         auto& property{boost::pfr::get<I>(this->aggregate)};
         property.value = from_qt<decltype(property.value)>(variant);
+        this->dirtyFlag_[I] = true;
         property_changed<I>();
         emit flaggedChanged();
     }

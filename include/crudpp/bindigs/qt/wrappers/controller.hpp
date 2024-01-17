@@ -83,12 +83,20 @@ public:
                              {
                                  // skip if nothing needs updating
                                  // ie. if only the primary key was writen to json
-                                 if (obj.size() == 1) return;
+                                 if (obj.size() == 1)
+                                 {
+                                     emit this->m_list->loaded(row);
+                                     return;
+                                 }
 
                                  net_manager::instance().putToKey(make_key(item).c_str(),
                                      QJsonDocument{obj}.toJson(),
-                                     [&item, row, this](const QJsonObject& rep)
+                                     [&item, row, obj, this](const QJsonObject& rep)
                                      {
+                                         if (item.get_aggregate().primary_key.value ==
+                                             m_holder->get_aggregate().primary_key.value)
+                                             m_holder->read(obj);
+
                                          item.reset_flags();
                                          emit this->m_list->loaded(row);
                                      },
@@ -111,45 +119,71 @@ public:
                              }
                          });
 
-        connect(m_holder,
-                &property_holder<T>::save,
-                [this] ()
-                {
-                    QJsonObject obj{};
-                    m_holder.write(obj);
+        QObject::connect(m_holder,
+                         &property_holder<T>::save,
+                         [this] ()
+                         {
+                             m_holder->set_loading(true);
 
-                    // update if the item was already inserted
-                    if (m_holder.inserted())
-                    {
-                        // skip if nothing needs updating
-                        // ie. if only the primary key was writen to json
-                        if (obj.size() == 1) return;
+                             auto a{m_holder->get_aggregate()};
 
-                        net_manager::instance().putToKey(make_key(m_holder).c_str(),
-                            QJsonDocument{obj}.toJson(),
-                            [&m_holder, this](const QJsonObject& rep)
-                            {
-                                m_holder.reset_flags();
-                                // emit this->m_list->loaded(row);
-                            },
-                            "save error",
-                            [this]()
-                            { /*emit this->m_list->loaded(row);*/ });
-                    }
-                    else // insert otherwise
-                    {
-                        net_manager::instance().postToKey(T::table(),
-                            QJsonDocument{obj}.toJson(),
-                            [&item, this](const QJsonObject& rep)
-                            {
-                                m_holder.read(rep);
-                                // emit this->m_list->loaded(row);
-                            },
-                            "save error",
-                            [this]()
-                            { /*emit this->m_list->loaded(row);*/ });
-                    }
-                });
+                             QJsonObject obj{};
+                             m_holder->write(obj);
+
+                             // update if the item was already inserted
+                             if (m_holder->inserted())
+                             {
+                                 // skip if nothing needs updating
+                                 // ie. if only the primary key was writen to json
+                                 if (obj.size() == 1)
+                                 {
+                                     m_holder->set_loading(true);
+                                     return;
+                                 };
+
+
+                                 net_manager::instance().putToKey(make_key().c_str(),
+                                     QJsonDocument{obj}.toJson(),
+                                     [obj, this](const QJsonObject& rep)
+                                     {
+                                         m_holder->reset_flags();
+
+                                         const auto id{m_holder->get_aggregate().primary_key.value};
+
+                                         for (auto& item : this->m_list->get_list())
+                                             if (item.get_aggregate().primary_key.value == id)
+                                             {
+                                                 item.read(obj);
+                                                 break;
+                                             }
+
+                                         m_holder->set_loading(false);
+                                     },
+                                     "save error",
+                                     [this] ()
+                                     { m_holder->set_loading(false); });
+                             }
+                             else // insert otherwise
+                             {
+                                 net_manager::instance().postToKey(T::table(),
+                                     QJsonDocument{obj}.toJson(),
+                                     [this, obj](const QJsonObject& rep)
+                                     {
+                                         m_holder->read(rep);
+
+                                         auto map{rep.toVariantMap()};
+                                         map.insert(obj.toVariantMap());
+                                         const auto json{QJsonObject::fromVariantMap(map)};
+
+                                         this->m_list->append(model<T>{json});
+
+                                         m_holder->set_loading(false);
+                                     },
+                                     "save error",
+                                     [this] ()
+                                     { m_holder->set_loading(false); });
+                             }
+                         });
 
         QObject::connect(this->m_list,
                          &list<T>::remove,
@@ -161,13 +195,18 @@ public:
                              if (item.inserted())
                              {
                                  net_manager::instance().deleteToKey(make_key(item).c_str(),
-                                     [this, row](const QJsonValue& rep)
+                                     [this, &item, row](const QJsonValue& rep)
                                      {
                                          this->m_list->removeItem(row);
+
+                                         if (item.get_aggregate().primary_key.value ==
+                                             m_holder->get_aggregate().primary_key.value)
+                                             m_holder->clear();
+
                                          emit this->m_list->loaded(row);
                                      },
                                      "Remove Error",
-                                     [this, row]()
+                                     [this, row] ()
                                      { emit this->m_list->loaded(row); });
 
                                  return;
@@ -176,20 +215,64 @@ public:
                              // only remove localy otherwise
                              this->m_list->removeItem(row);
                          });
+
+        QObject::connect(m_holder,
+                         &property_holder<T>::remove,
+                         [this] ()
+                         {
+                             // delete on the server if it exists
+                             if (m_holder->inserted())
+                             {
+                                 m_holder->set_loading(true);
+
+                                 net_manager::instance().deleteToKey(make_key().c_str(),
+                                     [this](const QJsonValue& rep)
+                                     {
+                                         const auto id{m_holder->get_aggregate().primary_key.value};
+
+                                         for (int i = 0; i < this->m_list->size(); i++)
+                                         {
+                                             auto& item{this->m_list->item_at(i)};
+
+                                             if (item.get_aggregate().primary_key.value == id)
+                                             {
+                                                 this->m_list->removeItem(i);
+                                                 break;
+                                             }
+                                         }
+
+                                         m_holder->clear();
+                                         m_holder->set_loading(false);
+                                     },
+                                     "Remove Error",
+                                     [this] ()
+                                     { m_holder->set_loading(false); });
+
+                                 return;
+                             }
+
+                             // only remove localy otherwise
+                             m_holder->clear();
+                         });
     }
 
 private:
-    const std::string make_key(model<T>&& item) const
+    const std::string make_key(model<T>& item) const
     {
-        return make_key(std::move(item));
+        return make_key(std::move(item.get_aggregate()));
     }
 
-    const std::string make_key(model<T>& item) const
+    const std::string make_key() const
+    {
+        return make_key(std::move(m_holder->get_aggregate()));
+    }
+
+    const std::string make_key(const T&& aggregate) const
     {
         std::string key{T::table()};
 
         key += '/';
-        key += std::to_string(item.get_aggregate().primary_key.value);
+        key += std::to_string(aggregate.primary_key.value);
 
         return key;
     }

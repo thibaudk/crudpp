@@ -28,16 +28,13 @@ public:
 
     Type& item_at(int index) { return m_items[index]; }
 
-    QVector<Type> items() const
-    {
-        return m_items;
-    }
+    QVector<Type> items() const { return m_items; }
 
     void get()
     W_SIGNAL(get)
 
-    void getOne(int row)
-    W_SIGNAL(getOne, row)
+    // void getOne(int row)
+    // W_SIGNAL(getOne, row)
 
     void save(int row)
     W_SIGNAL(save, row)
@@ -110,7 +107,7 @@ public:
 
     void set_list(const QVector<Type>& list) { m_items = list; }
 
-    QVector<Type>& get_list(const QVector<Type>& list) { return m_items; }
+    QVector<Type>& get_list() { return m_items; }
 
     void clear()
     {
