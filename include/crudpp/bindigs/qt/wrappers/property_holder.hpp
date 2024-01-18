@@ -89,10 +89,20 @@ public:
         emit flaggedChanged();
     }
 
+    void set(T&& new_agg)
+    {
+        this->aggregate = new_agg;
+        crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
+            ([this](const auto i){ property_changed<i()>(); });
+
+        this->reset_flags();
+        emit flaggedChanged();
+    }
+
     void clear()
     {
         crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
-            ([this](const auto i)
+            ([this] (const auto i)
              {
                  const std::remove_reference_t<decltype(boost::pfr::get<i()>(this->aggregate))> init{};
                  set_property_value<i()>(QVariant::fromValue(to_qt(init.value)));

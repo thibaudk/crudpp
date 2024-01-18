@@ -98,6 +98,22 @@ void for_each_index(F&& f)
 }
 // --
 
+template <typename T>
+bool valid_key(const auto& f)
+{
+    if constexpr(std::integral<decltype(f.value)>)
+    {
+        if (f.value > 0) return true;
+    }
+
+    if constexpr(std::same_as<decltype(f.value), std::string>)
+    {
+        if (!f.value.empty()) return true;
+    }
+
+    return false;
+}
+
 enum permissions
 {
     none,

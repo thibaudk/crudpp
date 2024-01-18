@@ -310,25 +310,11 @@ private:
                                        if (dirtyFlag_[i])
                                        {
                                            if constexpr(is_foreign_key<decltype(f)>)
-                                           {
-                                               if constexpr(std::integral<decltype(f.value)>)
+                                               if (!crudpp::valid_key<decltype(f)>(f))
                                                {
-                                                   if (f.value == 0)
-                                                   {
-                                                       binder << nullptr;
-                                                       return;
-                                                   }
+                                                   binder << nullptr;
+                                                   return;
                                                }
-
-                                               if constexpr(std::same_as<decltype(f.value), std::string>)
-                                               {
-                                                   if (f.value.empty())
-                                                   {
-                                                       binder << nullptr;
-                                                       return;
-                                                   }
-                                               }
-                                           }
 
                                            binder << to_drgn(f.value);
                                        }

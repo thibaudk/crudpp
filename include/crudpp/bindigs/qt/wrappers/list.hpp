@@ -33,11 +33,11 @@ public:
     void get()
     W_SIGNAL(get)
 
-    // void getOne(int row)
-    // W_SIGNAL(getOne, row)
-
     void save(int row)
     W_SIGNAL(save, row)
+
+    void select(int row)
+    W_SIGNAL(select, row)
 
     void loaded(int row)
     W_SIGNAL(loaded, row)

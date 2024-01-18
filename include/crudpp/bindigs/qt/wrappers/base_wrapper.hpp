@@ -7,6 +7,7 @@
 #include <crudpp/utils.hpp>
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
+#include "record.hpp"
 
 namespace qt
 {
@@ -23,7 +24,7 @@ struct base_wrapper
     void write(QJsonObject& obj)
     {
         boost::pfr::for_each_field(aggregate,
-                                   [&obj, this](const crudpp::r_c_name auto& f, size_t i)
+                                   [&obj, this] (const crudpp::r_c_name auto& f, size_t i)
                                    {
                                        if constexpr(crudpp::is_primary_key<decltype(f), T>)
                                        {

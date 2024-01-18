@@ -137,7 +137,7 @@ public:
                                  // ie. if only the primary key was writen to json
                                  if (obj.size() == 1)
                                  {
-                                     m_holder->set_loading(true);
+                                     m_holder->set_loading(false);
                                      return;
                                  };
 
@@ -146,8 +146,6 @@ public:
                                      QJsonDocument{obj}.toJson(),
                                      [obj, this](const QJsonObject& rep)
                                      {
-                                         m_holder->reset_flags();
-
                                          const auto id{m_holder->get_aggregate().primary_key.value};
 
                                          for (auto& item : this->m_list->get_list())
@@ -157,6 +155,7 @@ public:
                                                  break;
                                              }
 
+                                         m_holder->reset_flags();
                                          m_holder->set_loading(false);
                                      },
                                      "save error",
@@ -253,6 +252,14 @@ public:
 
                              // only remove localy otherwise
                              m_holder->clear();
+                         });
+
+        QObject::connect(this->m_list,
+                         &list<T>::select,
+                         [this] (int row)
+                         {
+                             auto& item{this->m_list->item_at(row)};
+                             m_holder->set(T{item.get_aggregate()});
                          });
     }
 
