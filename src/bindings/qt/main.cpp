@@ -33,7 +33,12 @@ int main(int argc, char* argv[])
     b.init();
     b.registerQml<CLASSES_STRING>();
 
-    qmlRegisterUncreatableType<singleton<property_holder<USER_CLASS>>>("QappUser", 1, 0, "QappUser", "");
+    qmlRegisterUncreatableType<singleton<property_holder<USER_CLASS>>>("QappUser",
+                                                                       1,
+                                                                       0,
+                                                                       "QappUser",
+                                                                       "");
+
     b.context()->setContextProperty(USER_CLASS::table(),
                                     &singleton<property_holder<USER_CLASS>>::instance());
 
@@ -51,7 +56,8 @@ int main(int argc, char* argv[])
                 QCoreApplication::exit(-1);
             else
                 b.setQmlObject(obj);
-        }, Qt::QueuedConnection);
+        },
+        Qt::QueuedConnection);
 
     b.engine->load(url);
 

@@ -33,31 +33,34 @@ public:
     void init(const QString& url)
     {
         rqst = {};
-        prefix = url + '/';
+        set_pregix(url);
 
         auto conf = QSslConfiguration::defaultConfiguration();
         rqst.setSslConfiguration(conf);
-        rqst.setHeader(QNetworkRequest::ContentTypeHeader,
-                       "application/json");
+        rqst.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
         setTransferTimeout();
 
         connect(this, &QNetworkAccessManager::sslErrors,
-                this, [](QNetworkReply* reply,
-                   const QList<QSslError>& errors)
+                this, [] (QNetworkReply* reply, const QList<QSslError>& errors)
                 { reply->ignoreSslErrors(errors); });
 
         connect(this, &QNetworkAccessManager::finished,
-                this, [this](QNetworkReply* reply)
+                this, [this] (QNetworkReply* reply)
                 {
                     if (reply->error() != QNetworkReply::NoError)
-                        emit replyError("net_manager reply error",
-                                        reply->errorString());
+                        emit replyError("net_manager reply error", reply->errorString());
                 });
     }
 
     net_manager(net_manager const&) = delete;
     void operator = (net_manager const&) = delete;
+
+    void set_pregix(const QString& url)
+    {
+        const auto new_prefix = url + '/';
+        if (prefix != new_prefix) prefix = new_prefix;
+    }
 
     void authenticate(const QString& identifier, const QString& secret)
     {
@@ -82,12 +85,10 @@ public:
             [this]() { emit loggedIn(false); });
     }
 
-    void loggedIn(bool success,
-                  const QString& errorString = "")
+    void loggedIn(bool success, const QString& errorString = "")
     W_SIGNAL(loggedIn, success, errorString)
 
-    void replyError(const QString& prefix = "",
-                    const QString& errorString = "")
+    void replyError(const QString& prefix = "", const QString& errorString = "")
     W_SIGNAL(replyError, prefix, errorString)
 
     void downloadFile(const char* key,
@@ -98,7 +99,7 @@ public:
         setRequest(key);
         auto* reply = get(rqst);
         setCallback(reply,
-                    [path, callback](const QByteArray& bytes)
+                    [path, callback] (const QByteArray& bytes)
                     {
                         if (bytes.isValidUtf8())
                         {

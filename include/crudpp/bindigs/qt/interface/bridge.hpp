@@ -64,6 +64,12 @@ public:
                                   Q_ARG(QString, errorString));
     }
 
+    void setHost(const QString& newHost) const
+    {
+        net_manager::instance().set_pregix(newHost);
+    }
+    W_INVOKABLE(setHost)
+
     void authenticate(const QString& username, const QString& password) const
     {
         net_manager::instance().authenticate(username, password);

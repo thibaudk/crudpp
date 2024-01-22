@@ -7,7 +7,6 @@
 #include <crudpp/utils.hpp>
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
-#include "record.hpp"
 
 namespace qt
 {
