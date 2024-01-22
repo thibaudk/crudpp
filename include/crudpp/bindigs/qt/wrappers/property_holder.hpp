@@ -15,6 +15,7 @@
 #include <crudpp/bindigs/qt/utils.hpp>
 #include <crudpp/bindigs/qt/visitors/json_handler.hpp>
 #include "base_wrapper.hpp"
+#include "model.hpp"
 
 namespace qt
 {
@@ -89,14 +90,16 @@ public:
         emit flaggedChanged();
     }
 
-    void set(T&& new_agg)
+    void set(model<T>& source_model)
     {
-        this->aggregate = new_agg;
+        this->aggregate = source_model.get_aggregate();
+
         crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
             ([this](const auto i){ property_changed<i()>(); });
 
-        this->reset_flags();
-        emit flaggedChanged();
+        this->m_inserted = source_model.get_inserted();
+
+        reset_flags();
     }
 
     void clear()
@@ -108,6 +111,10 @@ public:
                  set_property_value<i()>(QVariant::fromValue(to_qt(init.value)));
              }
              );
+
+        this->m_inserted = false;
+
+        reset_flags();
     }
     W_INVOKABLE(clear)
 
@@ -118,6 +125,12 @@ public:
 
         base_wrapper<T>::loading = l;
         emit loadingChanged();
+    }
+
+    void reset_flags()
+    {
+        base_wrapper<T>::reset_flags();
+        emit flaggedChanged();
     }
 
     void save()

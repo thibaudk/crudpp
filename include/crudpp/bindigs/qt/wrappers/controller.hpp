@@ -141,19 +141,25 @@ public:
                                      return;
                                  };
 
-
                                  net_manager::instance().putToKey(make_key().c_str(),
                                      QJsonDocument{obj}.toJson(),
                                      [obj, this](const QJsonObject& rep)
                                      {
                                          const auto id{m_holder->get_aggregate().primary_key.value};
 
+                                         int i{0};
+
                                          for (auto& item : this->m_list->get_list())
+                                         {
                                              if (item.get_aggregate().primary_key.value == id)
                                              {
                                                  item.read(obj);
+                                                 emit this->m_list->dataChangedAt(i);
                                                  break;
                                              }
+
+                                             i++;
+                                         }
 
                                          m_holder->reset_flags();
                                          m_holder->set_loading(false);
@@ -257,10 +263,7 @@ public:
         QObject::connect(this->m_list,
                          &list<T>::select,
                          [this] (int row)
-                         {
-                             auto& item{this->m_list->item_at(row)};
-                             m_holder->set(T{item.get_aggregate()});
-                         });
+                         { m_holder->set(this->m_list->item_at(row)); });
     }
 
 private:
