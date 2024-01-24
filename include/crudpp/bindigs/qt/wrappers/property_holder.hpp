@@ -61,14 +61,9 @@ class property_holder : public base_wrapper<T>
 {
     W_OBJECT(property_holder)
 
-    bool get_loading() const { return base_wrapper<T>::loading; }
-
-    void loadingChanged()
-    W_SIGNAL(loadingChanged)
     void flaggedChanged()
     W_SIGNAL(flaggedChanged)
 
-    W_PROPERTY(bool, loading READ get_loading NOTIFY loadingChanged)
     W_PROPERTY(bool, flagged_for_update READ flagged_for_update NOTIFY flaggedChanged)
 
     template <size_t I>
@@ -120,8 +115,7 @@ public:
 
     void set_loading(bool l)
     {
-        if (l == base_wrapper<T>::loading)
-            return;
+        if (l == base_wrapper<T>::loading) return;
 
         base_wrapper<T>::loading = l;
         emit loadingChanged();
@@ -137,8 +131,14 @@ public:
     W_SIGNAL(save)
     void remove()
     W_SIGNAL(remove)
+    void loadingChanged()
+    W_SIGNAL(loadingChanged)
 
 private:
+
+    bool get_loading() const { return base_wrapper<T>::loading; }
+    W_PROPERTY(bool, loading READ get_loading NOTIFY loadingChanged)
+
     template <size_t I>
     void property_changed()
     {

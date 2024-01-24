@@ -43,8 +43,7 @@ public:
         m_list->item_at(index.row()).setData(value, role);
         // emit dataChanged for both the curent role and the "flagged_for_update role"
         emit dataChanged(index, index,
-                         QVector<int>() << role
-                                        << model<T>::flagged_for_update_role());
+                         QVector<int>() << role << model<T>::flagged_for_update_role());
         return true;
     }
 
@@ -72,26 +71,26 @@ public:
         if (m_list)
         {
             connect(m_list, &list<T>::preItemsAppended,
-                    this, [=](int number)
+                    this, [this](int number)
                     {
                         const int index = m_list->size();
                         beginInsertRows(QModelIndex(), index, index + number - 1);
                     });
 
             connect(m_list, &list<T>::postItemsAppended,
-                    this, [=]()
+                    this, [this]()
                     { endInsertRows(); });
 
             connect(m_list, &list<T>::preItemsRemoved,
-                    this, [=](int first, int last)
+                    this, [this](int first, int last)
                     { beginRemoveRows(QModelIndex(), first, last); });
 
             connect(m_list, &list<T>::preItemsRemoved,
-                    this, [=](int first, int last)
+                    this, [this](int first, int last)
                     { beginRemoveRows(QModelIndex(), first, last); });
 
             connect(m_list, &list<T>::postItemsRemoved,
-                    this, [=]()
+                    this, [this]()
                     { endRemoveRows(); });
 
             connect(m_list, &list<T>::dataChangedAt,

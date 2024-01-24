@@ -235,15 +235,17 @@ public:
                                      {
                                          const auto id{m_holder->get_aggregate().primary_key.value};
 
-                                         for (int i = 0; i < this->m_list->size(); i++)
-                                         {
-                                             auto& item{this->m_list->item_at(i)};
+                                         int i{0};
 
+                                         for (auto& item : this->m_list->get_list())
+                                         {
                                              if (item.get_aggregate().primary_key.value == id)
                                              {
                                                  this->m_list->removeItem(i);
                                                  break;
                                              }
+
+                                             i++;
                                          }
 
                                          m_holder->clear();
@@ -264,6 +266,27 @@ public:
                          &list<T>::select,
                          [this] (int row)
                          { m_holder->set(this->m_list->item_at(row)); });
+
+        QObject::connect(this->m_list,
+                         &list<T>::select_by,
+                         [this] (const QByteArray& roleName, const QVariant& value)
+                         {
+                             int role{model<T>::roleNames().key(roleName)};
+                             int i{0};
+
+                             for (const auto& item : this->m_list->get_list())
+                             {
+                                 if (item.data(role) == value)
+                                 {
+                                     m_holder->set(this->m_list->item_at(i));
+                                     return;
+                                 }
+
+                                 i++;
+                             }
+
+                             m_holder->clear();
+                         });
     }
 
 private:

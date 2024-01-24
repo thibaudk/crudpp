@@ -7,6 +7,12 @@
 
 namespace crudpp
 {
+template <typename T, typename ...Exc_T>
+concept same_as = (std::same_as<T, Exc_T> || ...);
+
+template <typename T, typename ...Exc_T>
+concept different_than = !same_as<T, Exc_T...>;
+
 template <typename T>
 concept r_table = requires()
 {
@@ -84,10 +90,4 @@ concept authenticates = r_primary_key<T> &&
 //{
 //    { T::permission(args) } -> std::same_as<std::to_undelying(utils::permissions)>;
 //};
-
-template <typename T, typename ...Exc_T>
-concept same_as = (std::same_as<T, Exc_T> || ...);
-
-template <typename T, typename ...Exc_T>
-concept different_than = !same_as<T, Exc_T...>;
 } // namespace crudpp

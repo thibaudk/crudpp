@@ -39,6 +39,9 @@ public:
     void select(int row)
     W_SIGNAL(select, row)
 
+    void select_by(const QByteArray& roleName, const QVariant& value)
+    W_SIGNAL(select_by, roleName, value)
+
     void loaded(int row)
     W_SIGNAL(loaded, row)
 
