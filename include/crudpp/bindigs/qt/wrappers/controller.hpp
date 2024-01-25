@@ -225,11 +225,11 @@ public:
                          &property_holder<T>::remove,
                          [this] ()
                          {
+                             m_holder->set_loading(true);
+
                              // delete on the server if it exists
                              if (m_holder->inserted())
                              {
-                                 m_holder->set_loading(true);
-
                                  net_manager::instance().deleteToKey(make_key().c_str(),
                                      [this](const QJsonValue& rep)
                                      {
@@ -260,6 +260,7 @@ public:
 
                              // only remove localy otherwise
                              m_holder->clear();
+                             m_holder->set_loading(false);
                          });
 
         QObject::connect(this->m_list,
