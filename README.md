@@ -1,15 +1,14 @@
 # crudpp
 
-declarative three-tier architecture based on [avendish](https://github.com/celtera/avendish). \
-Wright classes once, compile to a client app, and a server connected to database.
+A declarative 3-tier architecture, based on [avendish](https://github.com/celtera/avendish). \
+Write framework agnostic classes, then compile to a client app, and a server connected to a database.
 
 ## Dependecies
 
 * C++ 20 compiler
 * CMake >= 3.13
 * [Boost.PFR](https://github.com/boostorg/pfr)
-* [Boost.preprocessor](https://github.com/boostorg/preprocessor)
-* [Drogon Framework](https://github.com/drogonframework/drogon): currently the only suported server binding
+* [Drogon Framework](https://github.com/drogonframework/drogon) & [Boost.preprocessor](https://github.com/boostorg/preprocessor) : currently the only suported server binding
 * [Qt](https://github.com/drogonframework/drogon) & [Verdigris](https://github.com/woboq/verdigris): currently the only suported client binding
 
 ## Developement state

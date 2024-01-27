@@ -74,11 +74,11 @@ std::string to_drgn(const T& v)
 { return v; }
 
 std::string to_drgn(const std::chrono::sys_days& d)
-{ return std::format("%Y-%m-%d", d); }
+{ return std::format("{0:%F}", d); }
 
 std::string to_drgn(const std::chrono::sys_seconds& d)
-{ return std::format("%Y-%m-%d %H:%M:%S", d); }
+{ return std::format("{0:%F} {0:%T}", d); }
 
 std::string to_drgn(const std::chrono::sys_time<std::chrono::milliseconds>& d)
-{ return std::format("%Y-%m-%d %H:%M:%S.%z", d); }
+{ return std::format("{0:%F} {0:%T}.{0:%z}", d); }
 } // namespace drgn
