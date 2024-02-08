@@ -125,8 +125,6 @@ public:
                          {
                              m_holder->set_loading(true);
 
-                             auto a{m_holder->get_aggregate()};
-
                              QJsonObject obj{};
                              m_holder->write(obj);
 
