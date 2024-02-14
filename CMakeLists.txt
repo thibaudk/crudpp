@@ -23,11 +23,19 @@ function(make_all)
 
     add_compile_definitions(INCLUDE=${CRUDPP_INCLUDE})
 
-    add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/drogon
-        ${CMAKE_BINARY_DIR}/drogon)
+    find_package(Drogon CONFIG)
+    if(${Drogon_FOUND})
+        add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/drogon
+            ${CMAKE_BINARY_DIR}/drogon)
+    endif()
 
-    add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/qt
-        ${CMAKE_BINARY_DIR}/qt)
+    find_package(Qt6 COMPONENTS
+        Core
+        Quick)
+    if(${Qt6_FOUND})
+        add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/qt
+            ${CMAKE_BINARY_DIR}/qt)
+    endif()
 
 endfunction()
 

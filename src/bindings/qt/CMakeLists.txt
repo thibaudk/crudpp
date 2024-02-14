@@ -13,10 +13,6 @@ set(CMAKE_AUTOUIC OFF)
 set(CMAKE_AUTOMOC OFF)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS
-    Core
-    Quick)
-
 option(VERDIGRIS_PATH "Path to the verdigris repository" ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${VERDIGRIS_PATH}/src)
 

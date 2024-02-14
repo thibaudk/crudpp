@@ -13,7 +13,6 @@ add_compile_definitions(SERVER
 
 add_executable(${PROJECT_NAME} main.cc)
 
-find_package(Drogon CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 
 #aux_source_directory(filters FILTER_SRC)
