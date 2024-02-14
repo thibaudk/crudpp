@@ -65,7 +65,11 @@ template <typename T>
 QJsonValue to_qjson(T v) { return v; }
 
 template <typename T>
-    requires std::unsigned_integral<T>
+    requires std::same_as<T, bool>
+QJsonValue to_qjson(T v) { return v; }
+
+template <typename T>
+    requires(std::unsigned_integral<T> && !std::same_as<T, bool>)
 QJsonValue to_qjson(T v) { return (int)v; }
 
 template <typename T>

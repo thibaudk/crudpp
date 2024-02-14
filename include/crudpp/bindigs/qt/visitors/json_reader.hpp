@@ -25,7 +25,7 @@ struct json_reader
     }
 
     void operator()(r_c_name auto& f) noexcept
-        requires(std::floating_point<decltype(f.value)>)
+        requires std::floating_point<decltype(f.value)>
     {
         f.value = json[f.c_name()].toDouble();
     }

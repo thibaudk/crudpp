@@ -135,7 +135,6 @@ public:
     W_SIGNAL(loadingChanged)
 
 private:
-
     bool get_loading() const { return base_wrapper<T>::loading; }
     W_PROPERTY(bool, loading READ get_loading NOTIFY loadingChanged)
 
