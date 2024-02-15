@@ -5,17 +5,17 @@ project(crudpp VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(PFR_PATH "Path to the independent Boost::pfr repository (boostorg/pfr)")
-if(IS_DIRECTORY ${PFR_PATH})
-    include_directories(${PFR_PATH}/include)
-else()
-    find_package(Boost QUIET REQUIRED)
-endif()
-
 set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 
 function(make_all)
+
+    option(PFR_PATH "Path to the independent Boost::pfr repository (boostorg/pfr)")
+    if(IS_DIRECTORY ${PFR_PATH})
+        include_directories(${PFR_PATH}/include)
+    else()
+        find_package(Boost QUIET REQUIRED)
+    endif()
 
     include_directories(${CRUDPP_SOURCE_DIR}/include)
 
