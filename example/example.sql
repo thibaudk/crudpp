@@ -4,21 +4,21 @@ CREATE TABLE user
     PRIMARY KEY(id),
     username VARCHAR(63),
     password VARCHAR(63)
-)
+);
 
 CREATE TABLE products 
 (
     id INT AUTO_INCREMENT,
     PRIMARY KEY(id),
     product_name VARCHAR(63)
-)
+);
 
 CREATE TABLE skus 
 (
     unit CHAR(8) UNIQUE,
     product_id INT UNIQUE,
     CONSTRAINT FOREIGN KEY(product_id) REFERENCES products (id)
-)
+);
 
 CREATE TABLE reviews 
 (
@@ -27,7 +27,7 @@ CREATE TABLE reviews
     text VARCHAR(255),
     product_id INT,
     CONSTRAINT FOREIGN KEY(product_id) REFERENCES products (id)
-)
+);
 
 CREATE TABLE carts 
 (
@@ -35,12 +35,14 @@ CREATE TABLE carts
     PRIMARY KEY(id),
     user_id INT UNIQUE,
     CONSTRAINT FOREIGN KEY(user_id) REFERENCES user (id)
-)
+);
 
 CREATE TABLE carts_products 
 (
     cart_id INT,
+    -- contraint needed to be comented out before running drogon_ctl
     CONSTRAINT FOREIGN KEY(cart_id) REFERENCES carts (id),
     product_id INT,
     CONSTRAINT FOREIGN KEY(product_id) REFERENCES products (id)
-)
+    PRIMARY KEY(cart_id, product_id)
+);
