@@ -15,13 +15,13 @@ using namespace drogon_model::example;
 
 const std::string CartsProducts::Cols::_cart_id = "cart_id";
 const std::string CartsProducts::Cols::_product_id = "product_id";
-const std::string CartsProducts::primaryKeyName = "";
-const bool CartsProducts::hasPrimaryKey = false;
+const std::vector<std::string> CartsProducts::primaryKeyName = {"cart_id","product_id"};
+const bool CartsProducts::hasPrimaryKey = true;
 const std::string CartsProducts::tableName = "carts_products";
 
 const std::vector<typename CartsProducts::MetaData> CartsProducts::metaData_={
-{"cart_id","int32_t","int(11)",4,0,0,0},
-{"product_id","int32_t","int(11)",4,0,0,0}
+{"cart_id","int32_t","int(11)",4,0,1,1},
+{"product_id","int32_t","int(11)",4,0,1,1}
 };
 const std::string &CartsProducts::getColumnName(size_t index) noexcept(false)
 {
@@ -119,7 +119,6 @@ void CartsProducts::updateByMasqueradedJson(const Json::Value &pJson,
     }
     if(!pMasqueradingVector[0].empty() && pJson.isMember(pMasqueradingVector[0]))
     {
-        dirtyFlag_[0] = true;
         if(!pJson[pMasqueradingVector[0]].isNull())
         {
             cartId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[0]].asInt64());
@@ -127,7 +126,6 @@ void CartsProducts::updateByMasqueradedJson(const Json::Value &pJson,
     }
     if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
     {
-        dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
             productId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
@@ -139,7 +137,6 @@ void CartsProducts::updateByJson(const Json::Value &pJson) noexcept(false)
 {
     if(pJson.isMember("cart_id"))
     {
-        dirtyFlag_[0] = true;
         if(!pJson["cart_id"].isNull())
         {
             cartId_=std::make_shared<int32_t>((int32_t)pJson["cart_id"].asInt64());
@@ -147,7 +144,6 @@ void CartsProducts::updateByJson(const Json::Value &pJson) noexcept(false)
     }
     if(pJson.isMember("product_id"))
     {
-        dirtyFlag_[1] = true;
         if(!pJson["product_id"].isNull())
         {
             productId_=std::make_shared<int32_t>((int32_t)pJson["product_id"].asInt64());
@@ -171,11 +167,6 @@ void CartsProducts::setCartId(const int32_t &pCartId) noexcept
     cartId_ = std::make_shared<int32_t>(pCartId);
     dirtyFlag_[0] = true;
 }
-void CartsProducts::setCartIdToNull() noexcept
-{
-    cartId_.reset();
-    dirtyFlag_[0] = true;
-}
 
 const int32_t &CartsProducts::getValueOfProductId() const noexcept
 {
@@ -193,14 +184,13 @@ void CartsProducts::setProductId(const int32_t &pProductId) noexcept
     productId_ = std::make_shared<int32_t>(pProductId);
     dirtyFlag_[1] = true;
 }
-void CartsProducts::setProductIdToNull() noexcept
-{
-    productId_.reset();
-    dirtyFlag_[1] = true;
-}
 
 void CartsProducts::updateId(const uint64_t id)
 {
+}
+typename CartsProducts::PrimaryKeyType CartsProducts::getPrimaryKey() const
+{
+    return std::make_tuple(*cartId_,*productId_);
 }
 
 const std::vector<std::string> &CartsProducts::insertColumns() noexcept
@@ -356,10 +346,20 @@ bool CartsProducts::validateJsonForCreation(const Json::Value &pJson, std::strin
         if(!validJsonOfField(0, "cart_id", pJson["cart_id"], err, true))
             return false;
     }
+    else
+    {
+        err="The cart_id column cannot be null";
+        return false;
+    }
     if(pJson.isMember("product_id"))
     {
         if(!validJsonOfField(1, "product_id", pJson["product_id"], err, true))
             return false;
+    }
+    else
+    {
+        err="The product_id column cannot be null";
+        return false;
     }
     return true;
 }
@@ -380,6 +380,11 @@ bool CartsProducts::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, true))
                   return false;
           }
+        else
+        {
+            err="The " + pMasqueradingVector[0] + " column cannot be null";
+            return false;
+        }
       }
       if(!pMasqueradingVector[1].empty())
       {
@@ -388,6 +393,11 @@ bool CartsProducts::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, true))
                   return false;
           }
+        else
+        {
+            err="The " + pMasqueradingVector[1] + " column cannot be null";
+            return false;
+        }
       }
     }
     catch(const Json::LogicError &e)
@@ -404,10 +414,20 @@ bool CartsProducts::validateJsonForUpdate(const Json::Value &pJson, std::string 
         if(!validJsonOfField(0, "cart_id", pJson["cart_id"], err, false))
             return false;
     }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
     if(pJson.isMember("product_id"))
     {
         if(!validJsonOfField(1, "product_id", pJson["product_id"], err, false))
             return false;
+    }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
     }
     return true;
 }
@@ -426,11 +446,21 @@ bool CartsProducts::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
           if(!validJsonOfField(0, pMasqueradingVector[0], pJson[pMasqueradingVector[0]], err, false))
               return false;
       }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
       if(!pMasqueradingVector[1].empty() && pJson.isMember(pMasqueradingVector[1]))
       {
           if(!validJsonOfField(1, pMasqueradingVector[1], pJson[pMasqueradingVector[1]], err, false))
               return false;
       }
+    else
+    {
+        err = "The value of primary key must be set in the json object for update";
+        return false;
+    }
     }
     catch(const Json::LogicError &e)
     {
@@ -450,7 +480,8 @@ bool CartsProducts::validJsonOfField(size_t index,
         case 0:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt())
             {
@@ -461,7 +492,8 @@ bool CartsProducts::validJsonOfField(size_t index,
         case 1:
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
             if(!pJson.isInt())
             {

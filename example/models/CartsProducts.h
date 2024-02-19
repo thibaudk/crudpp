@@ -19,6 +19,7 @@
 #include <trantor/utils/Logger.h>
 #include <json/json.h>
 #include <string>
+#include <string_view>
 #include <memory>
 #include <vector>
 #include <tuple>
@@ -50,9 +51,9 @@ class CartsProducts
     const static int primaryKeyNumber;
     const static std::string tableName;
     const static bool hasPrimaryKey;
-    const static std::string primaryKeyName;
-    using PrimaryKeyType = void;
-    int getPrimaryKey() const { assert(false); return 0; }
+    const static std::vector<std::string> primaryKeyName;
+    using PrimaryKeyType = std::tuple<int32_t,int32_t>;//cart_id,product_id
+    PrimaryKeyType getPrimaryKey() const;
 
     /**
      * @brief constructor
@@ -103,7 +104,6 @@ class CartsProducts
     const std::shared_ptr<int32_t> &getCartId() const noexcept;
     ///Set the value of the column cart_id
     void setCartId(const int32_t &pCartId) noexcept;
-    void setCartIdToNull() noexcept;
 
     /**  For column product_id  */
     ///Get the value of the column product_id, returns the default value if the column is null
@@ -112,7 +112,6 @@ class CartsProducts
     const std::shared_ptr<int32_t> &getProductId() const noexcept;
     ///Set the value of the column product_id
     void setProductId(const int32_t &pProductId) noexcept;
-    void setProductIdToNull() noexcept;
 
 
     static size_t getColumnNumber() noexcept {  return 2;  }
@@ -153,13 +152,13 @@ class CartsProducts
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="";
+        static const std::string sql="select * from " + tableName + " where cart_id = ? and product_id = ?";
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="";
+        static const std::string sql="delete from " + tableName + " where cart_id = ? and product_id = ?";
         return sql;
     }
     std::string sqlForInserting(bool &needSelection) const

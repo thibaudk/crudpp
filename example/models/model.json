@@ -82,7 +82,7 @@
                 "target_table_name": "carts",
                 "target_key": "user_id",
                 "enable_reverse": true
-            },
+            }
         ]
     },
     "restful_api_controllers": {
