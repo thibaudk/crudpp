@@ -14,7 +14,7 @@ function(make_all)
     if(IS_DIRECTORY ${PFR_PATH})
         include_directories(${PFR_PATH}/include)
     else()
-        find_package(Boost QUIET REQUIRED)
+        find_package(Boost REQUIRED)
     endif()
 
     include_directories(${CRUDPP_SOURCE_DIR}/include)
@@ -29,14 +29,17 @@ function(make_all)
     add_compile_definitions(INCLUDE=${CRUDPP_INCLUDE})
 
     find_package(Drogon CONFIG)
-    if(${Drogon_FOUND})
+    if(${Drogon_FOUND} AND NOT IS_DIRECTORY ${PFR_PATH})
+        # Boost preprocessor is also required for the Drogon binding
+        # Only add if Boost is FOUND
         add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/drogon
             ${CMAKE_BINARY_DIR}/drogon)
     endif()
 
     find_package(Qt6 COMPONENTS
         Core
-        Quick)
+        Quick
+        REQUIRED)
     if(${Qt6_FOUND})
         add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/qt
             ${CMAKE_BINARY_DIR}/qt)
