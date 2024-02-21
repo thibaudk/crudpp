@@ -7,6 +7,7 @@
 #include <crudpp/utils.hpp>
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
+#include <crudpp/bindigs/qt/visitors/json_handler.hpp>
 
 namespace qt
 {
@@ -70,5 +71,15 @@ protected:
     bool m_inserted{false};
     bool loading{false};
     T aggregate{};
+
+    const std::string make_key(const T&& aggregate) const
+    {
+        std::string key{T::table()};
+
+        key += '/';
+        key += std::to_string(aggregate.primary_key.value);
+
+        return key;
+    }
 };
 } //crudpp

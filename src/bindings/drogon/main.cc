@@ -1,5 +1,6 @@
 #include <drogon/drogon.h>
 #include <crudpp/macros.hpp>
+#include <crudpp/bindigs/drogon/ctrl_macro.hpp>
 
 #include STRINGIFY_MACRO(INCLUDE)
 

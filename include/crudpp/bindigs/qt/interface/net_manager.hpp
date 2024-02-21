@@ -2,16 +2,10 @@
 
 #include <QObject>
 #include <QNetworkAccessManager>
-#include <QSslConfiguration>
-#include <QSaveFile>
-#include <QNetworkReply>
-#include <QJsonDocument>
-#include <QJsonObject>
 
 #include <wobjectdefs.h>
 
 #include <crudpp/macros.hpp>
-#include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
 #include <singleton.hpp>
 #include STRINGIFY_MACRO(INCLUDE)
 
@@ -30,60 +24,14 @@ public:
         return instance;
     }
 
-    void init(const QString& url)
-    {
-        rqst = {};
-        set_pregix(url);
-
-        auto conf = QSslConfiguration::defaultConfiguration();
-        rqst.setSslConfiguration(conf);
-        rqst.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-
-        setTransferTimeout();
-
-        connect(this, &QNetworkAccessManager::sslErrors,
-                this, [] (QNetworkReply* reply, const QList<QSslError>& errors)
-                { reply->ignoreSslErrors(errors); });
-
-        connect(this, &QNetworkAccessManager::finished,
-                this, [this] (QNetworkReply* reply)
-                {
-                    if (reply->error() != QNetworkReply::NoError)
-                        emit replyError("net_manager reply error", reply->errorString());
-                });
-    }
+    void init(const QString& url);
 
     net_manager(net_manager const&) = delete;
     void operator = (net_manager const&) = delete;
 
-    void set_pregix(const QString& url)
-    {
-        const auto new_prefix = url + '/';
-        if (prefix != new_prefix) prefix = new_prefix;
-    }
+    void set_prefix(const QString& url);
 
-    void authenticate(const QString& identifier, const QString& secret)
-    {
-        USER_CLASS usr{};
-
-        QJsonObject json;
-        json[usr.username.c_name()] = identifier;
-        json[usr.password.c_name()] = secret;
-
-        std::string url{usr.table()};
-        url += "/auth";
-
-        authenticating = true;
-        postToKey(url.c_str(),
-                  QJsonDocument{json}.toJson(),
-                  [this] (const QJsonObject& obj)
-            {
-                singleton<property_holder<USER_CLASS>>::instance().read(obj);
-                emit loggedIn(true);
-            },
-            "Authentication",
-            [this]() { emit loggedIn(false); });
-    }
+    void authenticate(const QString& identifier, const QString& secret);
 
     void loggedIn(bool success, const QString& errorString = "")
     W_SIGNAL(loggedIn, success, errorString)
@@ -94,110 +42,35 @@ public:
     void downloadFile(const char* key,
                       const QString& path,
                       const std::function<void (bool, const QString &)>&& callback,
-                      const std::function<void (qint64, qint64)>&& onProgress = [](qint64 byteSent, qint64 totalBytes){})
-    {
-        setRequest(key);
-        auto* reply = get(rqst);
-        setCallback(reply,
-                    [path, callback] (const QByteArray& bytes)
-                    {
-                        if (bytes.isValidUtf8())
-                        {
-                            qDebug() << QString(bytes);
-                            callback(false, QString(bytes));
-                            return;
-                        }
-
-                        QSaveFile file(path);
-                        if (file.open(QIODevice::WriteOnly))
-                        {
-                            file.write(bytes);
-                            if (file.commit())
-                                callback(true, "");
-                            else
-                                callback(false, file.errorString());
-                        }
-                        else
-                            callback(false, file.errorString());
-                    });
-
-        connect(reply,
-                &QNetworkReply::uploadProgress,
-                onProgress);
-    }
+                      const std::function<void (qint64, qint64)>&& onProgress = [](qint64 byteSent, qint64 totalBytes){});
 
     void getFromKey(const char* key,
                     const std::function<void (const QByteArray &)>&& callback,
-                    const char* params = "")
-    {
-        setRequest(key);
-        auto* reply = get(rqst);
-        setCallback(reply,
-                    std::forward<const std::function<void (const QByteArray &)>&&>(callback));
-    }
+                    const char* params = "");
 
     void putToKey(const char* key,
                   const QByteArray&& data,
                   const std::function<void (const QJsonObject &)>&& callback,
                   const QString&& errorPrefix = "",
                   const std::function<void ()>&& errorCallback = [](){},
-                  const std::function<void (qint64, qint64)>&& onProgress = [](qint64 byteSent, qint64 totalBytes){})
-    {
-        setRequest(key);
-        auto* reply = put(rqst, data);
-        setCallback(reply,
-                    std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
-                    std::forward<const QString&&>(errorPrefix),
-                    std::forward<const std::function<void ()>&&>(errorCallback));
-
-        connect(reply,
-                &QNetworkReply::uploadProgress,
-                onProgress);
-    }
+                  const std::function<void (qint64, qint64)>&& onProgress = [](qint64 byteSent, qint64 totalBytes){});
 
     void postToKey(const char* key,
                    const QByteArray&& data,
                    const std::function<void (const QJsonObject &)>&& callback,
                    const QString&& errorPrefix = "",
                    const std::function<void ()>&& errorCallback = [](){},
-                   const std::function<void (qint64, qint64)>&& onProgress = [](qint64 byteSent, qint64 totalBytes){})
-    {
-        setRequest(key);
-        auto* reply = post(rqst, data);
-        setCallback(reply,
-                    std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
-                    std::forward<const QString&&>(errorPrefix),
-                    std::forward<const std::function<void ()>&&>(errorCallback));
-
-        connect(reply,
-                &QNetworkReply::uploadProgress,
-                onProgress);
-    }
+                   const std::function<void (qint64, qint64)>&& onProgress = [](qint64 byteSent, qint64 totalBytes){});
 
     void deleteToKey(const char* key,
                      const QByteArray&& data,
                      const std::function<void (const QJsonObject &)>&& callback,
-                     const QString&& errorPrefix = "")
-    {
-        setRequest(key);
-        auto* reply = sendCustomRequest(rqst, "DELETE", data);
-        setCallback(reply,
-                    std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
-                    std::forward<const QString&&>(errorPrefix));
-    }
+                     const QString&& errorPrefix = "");
 
     void deleteToKey(const char* key,
                      const std::function<void (const QJsonObject &)>&& callback,
                      const QString&& errorPrefix = "",
-                     const std::function<void ()>&& errorCallback = [](){})
-    {
-        setRequest(key);
-        auto* reply = deleteResource(rqst);
-        setCallback(reply,
-                    std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
-                    std::forward<const QString&&>(errorPrefix),
-                    std::forward<const std::function<void ()>&&>(errorCallback));
-    }
+                     const std::function<void ()>&& errorCallback = [](){});
 
     void userChanged(int newId)
     W_SIGNAL(userChanged, newId)
@@ -212,67 +85,16 @@ private:
     QString prefix;
 
     void setCallback(QNetworkReply* reply,
-                     const std::function<void (const QByteArray &)>&& callback)
-    {
-        connect(reply, &QNetworkReply::finished,
-                [reply, callback, this]()
-                {
-                    if (reply->error() == QNetworkReply::NoError)
-                        callback(reply->readAll());
-                    else
-                    {
-                        const auto json{QJsonDocument::fromJson(reply->readAll()).object()};
-                        QString error_str{};
-
-                        if (json.contains("error") && json["error"].isString())
-                            error_str = json["error"].toString();
-
-                        emit replyError(reply->errorString(), error_str);
-                    }
-
-                    reply->deleteLater();
-                });
-    }
+                     const std::function<void (const QByteArray &)>&& callback);
 
     void setCallback(QNetworkReply* reply,
                      const std::function<void (const QJsonObject &)>&& callback,
                      const QString&& errorPrefix,
-                     const std::function<void ()>&& errorCallback = [](){})
-    {
-        connect(reply, &QNetworkReply::finished,
-                this,
-                [reply, callback, errorPrefix, errorCallback, this]()
-                {
-                    const auto json{QJsonDocument::fromJson(reply->readAll()).object()};
-                    if (reply->error() == QNetworkReply::NoError)
-                            callback(json);
-                    else
-                    {
-                        QString error_str{};
+                     const std::function<void ()>&& errorCallback = [](){});
 
-                        if (json.contains("error") && json["error"].isString())
-                            error_str = json["error"].toString();
-                        else
-                            error_str = reply->errorString();
-
-                        emit replyError(errorPrefix, error_str);
-                        errorCallback();
-                    }
-
-                    reply->deleteLater();
-                });
-    }
-
-    void setRequest(const char* key, const char* params = "")
-    {
-        QUrl url{prefix + key + '?' + params};
-        rqst.setUrl(url);
-    }
+    void setRequest(const char* key, const char* params = "");
 
     bool authenticating{false};
 };
 
 } // crudpp
-
-#include "wobjectimpl.h"
-W_OBJECT_IMPL(qt::net_manager)

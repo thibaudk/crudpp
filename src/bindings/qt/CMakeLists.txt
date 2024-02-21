@@ -19,6 +19,9 @@ include_directories(${VERDIGRIS_PATH}/src)
 qt_add_executable(${PROJECT_NAME}
     MANUAL_FINALIZATION
     ${CRUDPP_EXTRA_CLIENT_SOURCES}
+    utils.cpp
+    net_manager.cpp
+    bridge.cpp
     main.cpp)
 
 target_compile_definitions(${PROJECT_NAME}

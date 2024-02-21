@@ -4,6 +4,7 @@
 
 #include <QVariant>
 #include <QDate>
+#include <QJsonValue>
 
 #include <crudpp/required.hpp>
 
@@ -13,30 +14,33 @@ template <typename T, bool>
 class controller;
 
 template <typename T>
-T to_qt(T v)
+class property_holder;
+
+template <typename T>
     requires std::integral<T>
+T to_qt(T v)
 { return v; }
 
 template <typename T>
-int to_qt(T v)
     requires std::is_enum_v<T>
+int to_qt(T v)
 { return (int)v; }
 
 template <typename T>
-T to_qt(const T& v)
     requires std::floating_point<T>
+T to_qt(const T& v)
 { return v; }
 
 template <typename T>
-QString to_qt(const T& v)
     requires std::same_as<T, std::string>
+QString to_qt(const T& v)
 { return QString::fromStdString(v); }
 
 // FIXME : workaround conversion from year_month_day to QDate
 
 template <typename T>
-QDate to_qt(const T& v)
     requires std::convertible_to<T, std::chrono::sys_days>
+QDate to_qt(const T& v)
 {
     const std::chrono::year_month_day d{v};
     return {static_cast<int>(d.year()),
@@ -45,16 +49,16 @@ QDate to_qt(const T& v)
 }
 
 template <typename T>
-QDateTime to_qt(const T& v)
     requires std::same_as<T, std::chrono::sys_seconds>
+QDateTime to_qt(const T& v)
 {
     return QDateTime::fromSecsSinceEpoch(std::chrono::duration_cast<std::chrono::seconds>(
                                              v.time_since_epoch()).count());
 }
 
 template <typename T>
-QDateTime to_qt(const T& v)
     requires std::same_as<T, std::chrono::sys_time<std::chrono::milliseconds>>
+QDateTime to_qt(const T& v)
 {
     return QDateTime::fromMSecsSinceEpoch(std::chrono::duration_cast<std::chrono::milliseconds>(
                                               v.time_since_epoch()).count());
@@ -73,78 +77,63 @@ template <typename T>
 QJsonValue to_qjson(T v) { return (int)v; }
 
 template <typename T>
-    requires(std::same_as<T, QString> ||
-             std::floating_point<T>)
+    requires(std::same_as<T, QString> || std::floating_point<T>)
 QJsonValue to_qjson(const T&& v) { return v; }
 
-QJsonValue to_qjson(const QDate&& d) { return d.toString(Qt::ISODate); }
-
-QJsonValue to_qjson(const QDateTime&& d) { return d.toString(Qt::ISODateWithMs); }
+template <typename T>
+    requires std::same_as<T, QDate>
+QJsonValue to_qjson(const T&& v) { return v.toString(Qt::ISODate); }
 
 template <typename T>
-T from_qt(const QVariant& v)
+    requires std::same_as<T, QDateTime>
+QJsonValue to_qjson(const T&& v) { return v.toString(Qt::ISODateWithMs); }
+
+template <typename T>
     requires std::integral<T>
+T from_qt(const QVariant& v)
 { return v.toInt(); }
 
 template <typename T>
-T from_qt(const QVariant& v)
     requires std::is_enum_v<T>
+T from_qt(const QVariant& v)
 { return T(v.toInt()); }
 
 template <typename T>
+    requires(std::floating_point<T> && !std::same_as<T, double>)
 T from_qt(const QVariant& v)
-    requires(std::floating_point<T> &&
-             !std::same_as<T, double>)
 { return v.toFloat(); }
 
 template <typename T>
-T from_qt(const QVariant& v)
     requires std::same_as<T, double>
+T from_qt(const QVariant& v)
 { return v.toDouble(); }
 
 template <typename T>
-T from_qt(const QVariant& v)
     requires std::same_as<T, std::string>
+T from_qt(const QVariant& v)
 { return v.toString().toStdString(); }
 
-// FIXME : workaround conversion from QDate to year_month_day
-
-std::chrono::sys_days from_qdate(const QDate&& v)
-{
-    return std::chrono::year_month_day{std::chrono::year{v.year()},
-                                       std::chrono::month{unsigned(v.month())},
-                                       std::chrono::day{unsigned(v.day())}};
-}
+std::chrono::sys_days from_qdate(const QDate&& v);
+std::chrono::sys_seconds from_qdate_time(const QDateTime&& v);
+std::chrono::sys_time<std::chrono::milliseconds> from_qdate_time_ms(const QDateTime&& v);
 
 template <typename T>
-T from_qt(const QVariant& v)
     requires std::convertible_to<T, std::chrono::sys_days>
+T from_qt(const QVariant& v)
 {
     return from_qdate(v.toDate());
 }
 
-std::chrono::sys_seconds from_qdate_time(const QDateTime&& v)
-{
-    auto epoch{v.toSecsSinceEpoch()};
-    return std::chrono::sys_seconds{std::chrono::duration<qint64>{epoch}};
-}
-
-std::chrono::sys_time<std::chrono::milliseconds> from_qdate_time_ms(const QDateTime&& v)
-{
-    auto epoch{v.toMSecsSinceEpoch()};
-    return std::chrono::sys_time<std::chrono::milliseconds>{std::chrono::duration<qint64>{epoch}};
-}
-
 template <typename T>
-T from_qt(const QVariant& v)
     requires std::same_as<T, std::chrono::sys_seconds>
+T from_qt(const QVariant& v)
 {
     return from_qdate_time(v.toDateTime());
 }
 
 template <typename T>
-T from_qt(const QVariant& v)
     requires std::same_as<T, std::chrono::sys_time<std::chrono::milliseconds>>
+T from_qt(const QVariant& v)
 {
     return from_qdate_time_ms(v.toDateTime());
 }
@@ -157,8 +146,21 @@ std::string make_uri()
     return s;
 }
 
+template <typename T>
+void make_clt()
+{
+    const auto uri{make_uri<T>()};
+    std::string qml_name{T::table()};
+    qml_name.insert(0, "Single_");
+    qmlRegisterType<property_holder<T>>(uri.c_str(), 1, 0, qml_name.c_str());
+}
+
 template <typename ...Ts>
 std::tuple<controller<Ts, crudpp::r_primary_key<Ts>>...> make_ctls()
-{ return std::tuple<controller<Ts, crudpp::r_primary_key<Ts>>...>{}; }
+{
+    (make_clt<Ts>(), ...);
+
+    return std::tuple<controller<Ts, crudpp::r_primary_key<Ts>>...>{};
+}
 
 } // namespace qt

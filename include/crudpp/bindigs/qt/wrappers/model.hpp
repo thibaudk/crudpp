@@ -3,7 +3,6 @@
 #include "qnamespace.h"
 
 #include "base_wrapper.hpp"
-#include <crudpp/bindigs/qt/visitors/json_handler.hpp>
 
 namespace qt
 {
