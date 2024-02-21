@@ -13,12 +13,13 @@
 
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
-#include <crudpp/bindigs/qt/visitors/json_handler.hpp>
 #include "base_wrapper.hpp"
 #include "model.hpp"
 
 namespace qt
 {
+class net_manager;
+
 template <crudpp::r_c_name T>
 constexpr auto get_property_name() -> w_cpp::StringView
 {
@@ -85,17 +86,45 @@ public:
         emit flaggedChanged();
     }
 
-    void set(model<T>& source_model)
-    {
-        this->aggregate = source_model.get_aggregate();
+    // void get()
+    // {
+    //     net_manager::instance().getFromKey(make_key(),
+    //                                        [this](const QByteArray& bytes)
+    //                                        { read(bytes); });
+    // }
+    // void set(model<T>& source_model)
+    // {
+    //     this->aggregate = source_model.get_aggregate();
 
-        crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
-            ([this](const auto i){ property_changed<i()>(); });
+    //     crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
+    //         ([this](const auto i){ property_changed<i()>(); });
 
-        this->m_inserted = source_model.get_inserted();
+    //     this->m_inserted = source_model.get_inserted();
 
-        reset_flags();
-    }
+    //     reset_flags();
+    // }
+    // W_INVOKABLE(set)
+
+    // // QObject::connect(this->m_list,
+    // //                  &list<T>::select_by,
+    // //                  [this] (const QByteArray& roleName, const QVariant& value)
+    // //                  {
+    // //                      int role{model<T>::roleNames().key(roleName)};
+    // //                      int i{0};
+
+    // //                      for (const auto& item : this->m_list->get_list())
+    // //                      {
+    // //                          if (item.data(role) == value)
+    // //                          {
+    // //                              m_holder->set(this->m_list->item_at(i));
+    // //                              return;
+    // //                          }
+
+    // //                          i++;
+    // //                      }
+
+    // //                      m_holder->clear();
+    // //                  });
 
     void clear()
     {
@@ -113,6 +142,123 @@ public:
     }
     W_INVOKABLE(clear)
 
+    void save()
+    {
+        set_loading(true);
+
+        QJsonObject obj{};
+        this->write(obj);
+
+        // update if the item was already inserted
+        if (this->inserted())
+        {
+            // skip if nothing needs updating
+            // ie. if only the primary key was writen to json
+            if (obj.size() == 1)
+            {
+                set_loading(false);
+                return;
+            };
+
+            net_manager::instance().putToKey(make_key().c_str(),
+                QJsonDocument{obj}.toJson(),
+                [obj, this] (const QJsonObject& rep)
+                {
+                    // const auto id{this->get_aggregate().primary_key.value};
+
+                    // int i{0};
+
+                    // for (auto& item : this->m_list->get_list())
+                    // {
+                    //     if (item.get_aggregate().primary_key.value == id)
+                    //     {
+                    //         item.read(obj);
+                    //         emit this->m_list->dataChangedAt(i);
+                    //         break;
+                    //     }
+
+                    //     i++;
+                    // }
+
+                    reset_flags();
+                    set_loading(false);
+                },
+                "save error",
+                [this] ()
+                { set_loading(false); });
+        }
+        else // insert otherwise
+        {
+            net_manager::instance().postToKey(T::table(),
+                QJsonDocument{obj}.toJson(),
+                [this, obj] (const QJsonObject& rep)
+                {
+                    read(rep);
+
+                    auto map{rep.toVariantMap()};
+                    map.insert(obj.toVariantMap());
+                    const auto json{QJsonObject::fromVariantMap(map)};
+
+                    // this->m_list->append(model<T>{json});
+
+                    set_loading(false);
+                },
+                "save error",
+                [this] ()
+                { set_loading(false); });
+        }
+
+    }
+    W_INVOKABLE(save)
+
+    void remove()
+    {
+        set_loading(true);
+
+        // delete on the server if it exists
+        if (this->inserted())
+        {
+            net_manager::instance().deleteToKey(make_key().c_str(),
+                [this](const QJsonValue& rep)
+                {
+                    const auto id{this->get_aggregate().primary_key.value};
+
+                    // int i{0};
+
+                    // for (auto& item : this->m_list->get_list())
+                    // {
+                    //     if (item.get_aggregate().primary_key.value == id)
+                    //     {
+                    //         this->m_list->removeItem(i);
+                    //         break;
+                    //     }
+
+                    //     i++;
+                    // }
+
+                    clear();
+                    set_loading(false);
+                },
+                "Remove Error",
+                [this] ()
+                { set_loading(false); });
+
+            return;
+        }
+
+        // only remove localy otherwise
+        clear();
+        set_loading(false);
+    }
+    W_INVOKABLE(remove)
+
+    void loadingChanged()
+    W_SIGNAL(loadingChanged)
+
+private:
+    bool get_loading() const { return base_wrapper<T>::loading; }
+    W_PROPERTY(bool, loading READ get_loading NOTIFY loadingChanged)
+
     void set_loading(bool l)
     {
         if (l == base_wrapper<T>::loading) return;
@@ -127,16 +273,10 @@ public:
         emit flaggedChanged();
     }
 
-    void save()
-    W_SIGNAL(save)
-    void remove()
-    W_SIGNAL(remove)
-    void loadingChanged()
-    W_SIGNAL(loadingChanged)
-
-private:
-    bool get_loading() const { return base_wrapper<T>::loading; }
-    W_PROPERTY(bool, loading READ get_loading NOTIFY loadingChanged)
+    const std::string make_key()
+    {
+        return base_wrapper<T>::make_key(std::move(this->get_aggregate()));
+    }
 
     template <size_t I>
     void property_changed()

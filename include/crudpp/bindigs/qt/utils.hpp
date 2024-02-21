@@ -48,21 +48,8 @@ QDate to_qt(const T& v)
             static_cast<int>(unsigned(d.day()))};
 }
 
-template <typename T>
-    requires std::same_as<T, std::chrono::sys_seconds>
-QDateTime to_qt(const T& v)
-{
-    return QDateTime::fromSecsSinceEpoch(std::chrono::duration_cast<std::chrono::seconds>(
-                                             v.time_since_epoch()).count());
-}
-
-template <typename T>
-    requires std::same_as<T, std::chrono::sys_time<std::chrono::milliseconds>>
-QDateTime to_qt(const T& v)
-{
-    return QDateTime::fromMSecsSinceEpoch(std::chrono::duration_cast<std::chrono::milliseconds>(
-                                              v.time_since_epoch()).count());
-}
+QDateTime to_qt(const std::chrono::sys_seconds& v);
+QDateTime to_qt(const std::chrono::sys_time<std::chrono::milliseconds>& v);
 
 template <typename T>
     requires std::signed_integral<T>
@@ -80,13 +67,8 @@ template <typename T>
     requires(std::same_as<T, QString> || std::floating_point<T>)
 QJsonValue to_qjson(const T&& v) { return v; }
 
-template <typename T>
-    requires std::same_as<T, QDate>
-QJsonValue to_qjson(const T&& v) { return v.toString(Qt::ISODate); }
-
-template <typename T>
-    requires std::same_as<T, QDateTime>
-QJsonValue to_qjson(const T&& v) { return v.toString(Qt::ISODateWithMs); }
+QJsonValue to_qjson(const QDate&& v);
+QJsonValue to_qjson(const QDateTime&& v);
 
 template <typename T>
     requires std::integral<T>
