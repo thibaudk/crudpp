@@ -42,12 +42,12 @@ void bridge::onException(const QString &prefix, const QString &errorString) cons
 
 void bridge::setHost(const QString &newHost) const
 {
-    // net_manager::instance().set_prefix(newHost);
+    net_manager::instance().set_prefix(newHost);
 }
 
 void bridge::authenticate(const QString &username, const QString &password) const
 {
-    // net_manager::instance().authenticate(username, password);
+    net_manager::instance().authenticate(username, password);
 }
 
 void bridge::updatePwd(const QString &newPwd) const
@@ -74,11 +74,11 @@ void bridge::setDownloadProgress(float newDownloadProgress)
 
 void bridge::changePwd(const char *key, const QJsonObject &json) const
 {
-    // net_manager::instance().putToKey(key,
-    //     QJsonDocument(json).toJson(),
-    //     [this] (const QJsonObject& rep)
-    //     { emit loaded(); },
-    //     "changePwd error");
+    net_manager::instance().putToKey(key,
+        QJsonDocument(json).toJson(),
+        [this] (const QJsonObject& rep)
+        { emit loaded(); },
+        "changePwd error");
 }
 
 } // qt

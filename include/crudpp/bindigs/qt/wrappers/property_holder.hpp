@@ -15,6 +15,7 @@
 #include <crudpp/bindigs/qt/utils.hpp>
 #include "base_wrapper.hpp"
 #include "model.hpp"
+#include "list.hpp"
 
 namespace qt
 {
@@ -92,39 +93,46 @@ public:
     //                                        [this](const QByteArray& bytes)
     //                                        { read(bytes); });
     // }
-    // void set(model<T>& source_model)
-    // {
-    //     this->aggregate = source_model.get_aggregate();
 
-    //     crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
-    //         ([this](const auto i){ property_changed<i()>(); });
+    void set(list<T>* list, int index)
+    {
+        auto item{list->item_at(index)};
+        const auto& agg{item.get_aggregate()};
 
-    //     this->m_inserted = source_model.get_inserted();
+        crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
+            ([this, agg](const auto i)
+             {
+                 const auto val{QVariant::fromValue(to_qt(boost::pfr::get<i()>(agg).value))};
+                 set_property_value<i()>(val);
+             }
+             );
 
-    //     reset_flags();
-    // }
-    // W_INVOKABLE(set)
+        this->m_inserted = item.get_inserted();
 
-    // // QObject::connect(this->m_list,
-    // //                  &list<T>::select_by,
-    // //                  [this] (const QByteArray& roleName, const QVariant& value)
-    // //                  {
-    // //                      int role{model<T>::roleNames().key(roleName)};
-    // //                      int i{0};
+        reset_flags();
+    }
+    W_INVOKABLE(set, (list<T>*, int))
 
-    // //                      for (const auto& item : this->m_list->get_list())
-    // //                      {
-    // //                          if (item.data(role) == value)
-    // //                          {
-    // //                              m_holder->set(this->m_list->item_at(i));
-    // //                              return;
-    // //                          }
+    // QObject::connect(this->m_list,
+    //                  &list<T>::select_by,
+    //                  [this] (const QByteArray& roleName, const QVariant& value)
+    //                  {
+    //                      int role{model<T>::roleNames().key(roleName)};
+    //                      int i{0};
 
-    // //                          i++;
-    // //                      }
+    //                      for (const auto& item : this->m_list->get_list())
+    //                      {
+    //                          if (item.data(role) == value)
+    //                          {
+    //                              m_holder->set(this->m_list->item_at(i));
+    //                              return;
+    //                          }
 
-    // //                      m_holder->clear();
-    // //                  });
+    //                          i++;
+    //                      }
+
+    //                      m_holder->clear();
+    //                  });
 
     void clear()
     {
@@ -317,9 +325,10 @@ private:
     template <size_t I, class = std::enable_if_t<(I < boost::pfr::tuple_size_v<T>)>>
     struct register_properties
     {
-        constexpr static auto property{w_cpp::makeProperty<QVariant>(get_property_name<property_at<I>>(),
-                                                                     w_cpp::viewLiteral("QVariant"))
-                                           .setGetter(&property_holder::get_property_value<I>)
+        constexpr static auto property{w_cpp::makeProperty<QVariant>(
+                                           get_property_name<property_at<I>>(),
+                                           w_cpp::viewLiteral("QVariant")
+                                           ).setGetter(&property_holder::get_property_value<I>)
                                            .setSetter(&property_holder::set_property_value<I>)
                                            .setNotify(&property_holder::property_changed<I>)};
     };
