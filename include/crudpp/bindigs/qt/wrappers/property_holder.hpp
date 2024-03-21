@@ -94,9 +94,8 @@ public:
     //                                        { read(bytes); });
     // }
 
-    void set(list<T>* list, int index)
+    void from_item(model<T>& item)
     {
-        auto item{list->item_at(index)};
         const auto& agg{item.get_aggregate()};
 
         crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
@@ -111,28 +110,32 @@ public:
 
         reset_flags();
     }
-    W_INVOKABLE(set, (list<T>*, int))
 
-    // QObject::connect(this->m_list,
-    //                  &list<T>::select_by,
-    //                  [this] (const QByteArray& roleName, const QVariant& value)
-    //                  {
-    //                      int role{model<T>::roleNames().key(roleName)};
-    //                      int i{0};
+    void from_list(list<T>* list, int index)
+    {
+        from_item(list->item_at(index));
+    }
+    W_INVOKABLE(from_list, (list<T>*, int))
 
-    //                      for (const auto& item : this->m_list->get_list())
-    //                      {
-    //                          if (item.data(role) == value)
-    //                          {
-    //                              m_holder->set(this->m_list->item_at(i));
-    //                              return;
-    //                          }
+    void from_list_by(list<T>* list, const QByteArray& roleName, const QVariant& value)
+    {
+        int role{model<T>::roleNames().key(roleName)};
+        int i{0};
 
-    //                          i++;
-    //                      }
+        for (const auto& item : list->get_list())
+        {
+            if (item.data(role) == value)
+            {
+                from_item(list->item_at(i));
+                return;
+            }
 
-    //                      m_holder->clear();
-    //                  });
+            i++;
+        }
+
+        clear();
+    }
+    W_INVOKABLE(from_list_by, (list<T>*, const QByteArray&, const QVariant&))
 
     void clear()
     {
