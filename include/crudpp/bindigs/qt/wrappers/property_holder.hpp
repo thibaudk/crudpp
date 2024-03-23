@@ -13,6 +13,7 @@
 
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
+#include <crudpp/bindigs/qt/interface/bridge.hpp>
 #include "base_wrapper.hpp"
 #include "model.hpp"
 #include "list.hpp"
@@ -175,21 +176,28 @@ public:
                 QJsonDocument{obj}.toJson(),
                 [obj, this] (const QJsonObject& rep)
                 {
-                    // const auto id{this->get_aggregate().primary_key.value};
+                    auto objects{bridge::instance().engine
+                                     ->rootObjects()[0]
+                                     ->findChildren<list_model<T>*>()};
 
-                    // int i{0};
+                    for (auto* m : objects)
+                    {
+                        const auto id{this->aggregate.primary_key.value};
 
-                    // for (auto& item : this->m_list->get_list())
-                    // {
-                    //     if (item.get_aggregate().primary_key.value == id)
-                    //     {
-                    //         item.read(obj);
-                    //         emit this->m_list->dataChangedAt(i);
-                    //         break;
-                    //     }
+                        int i{0};
 
-                    //     i++;
-                    // }
+                        for (auto& item : m->getList()->get_list())
+                        {
+                            if (item.get_aggregate().primary_key.value == id)
+                            {
+                                item.read(obj);
+                                emit m->getList()->dataChangedAt(i);
+                                break;
+                            }
+
+                            i++;
+                        }
+                    }
 
                     reset_flags();
                     set_loading(false);
@@ -210,7 +218,12 @@ public:
                     map.insert(obj.toVariantMap());
                     const auto json{QJsonObject::fromVariantMap(map)};
 
-                    // this->m_list->append(model<T>{json});
+                    auto objects{bridge::instance().engine
+                                     ->rootObjects()[0]
+                                     ->findChildren<list_model<T>*>()};
+
+                    for (auto* m : objects)
+                        m->getList()->append(model<T>{json});
 
                     set_loading(false);
                 },
@@ -234,18 +247,25 @@ public:
                 {
                     const auto id{this->get_aggregate().primary_key.value};
 
-                    // int i{0};
+                    auto objects{bridge::instance().engine
+                                     ->rootObjects()[0]
+                                     ->findChildren<list_model<T>*>()};
 
-                    // for (auto& item : this->m_list->get_list())
-                    // {
-                    //     if (item.get_aggregate().primary_key.value == id)
-                    //     {
-                    //         this->m_list->removeItem(i);
-                    //         break;
-                    //     }
+                    for (auto* m : objects)
+                    {
+                        int i{0};
 
-                    //     i++;
-                    // }
+                        for (auto& item : m->getList()->get_list())
+                        {
+                            if (item.get_aggregate().primary_key.value == id)
+                            {
+                                 m->getList()->removeItem(i);
+                                break;
+                            }
+
+                            i++;
+                        }
+                    }
 
                     clear();
                     set_loading(false);
