@@ -1,3 +1,4 @@
+#include <QJsonDocument>
 #include <QJsonObject>
 #include <wobjectimpl.h>
 

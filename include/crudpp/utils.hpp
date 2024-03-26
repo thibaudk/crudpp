@@ -114,10 +114,4 @@ bool valid_key(const auto& f)
     return false;
 }
 
-enum permissions
-{
-    none,
-    read,
-    write
-};
 } // namespace crudpp

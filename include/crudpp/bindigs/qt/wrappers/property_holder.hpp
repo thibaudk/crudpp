@@ -17,6 +17,7 @@
 #include "base_wrapper.hpp"
 #include "model.hpp"
 #include "list.hpp"
+#include "list_model.hpp"
 
 namespace qt
 {
@@ -88,12 +89,12 @@ public:
         emit flaggedChanged();
     }
 
-    // void get()
-    // {
-    //     net_manager::instance().getFromKey(make_key(),
-    //                                        [this](const QByteArray& bytes)
-    //                                        { read(bytes); });
-    // }
+    void get()
+    {
+        net_manager::instance().getFromKey(make_key(),
+                                           [this](const QByteArray& bytes)
+                                           { read(bytes); });
+    }
 
     void from_item(model<T>& item)
     {
@@ -178,7 +179,7 @@ public:
                 {
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
-                                     ->findChildren<list_model<T>*>()};
+                                     ->findChildren<list_model<T, true>*>()};
 
                     for (auto* m : objects)
                     {
@@ -220,7 +221,7 @@ public:
 
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
-                                     ->findChildren<list_model<T>*>()};
+                                     ->findChildren<list_model<T, true>*>()};
 
                     for (auto* m : objects)
                         m->getList()->append(model<T>{json});
@@ -249,7 +250,7 @@ public:
 
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
-                                     ->findChildren<list_model<T>*>()};
+                                     ->findChildren<list_model<T, true>*>()};
 
                     for (auto* m : objects)
                     {

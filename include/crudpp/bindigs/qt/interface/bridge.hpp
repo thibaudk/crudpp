@@ -5,12 +5,16 @@
 
 #include <wobjectdefs.h>
 
-#include <crudpp/bindigs/qt/wrappers/list_model.hpp>
+#include <crudpp/required.hpp>
+#include <crudpp/bindigs/qt/utils.hpp>
 
 class QQmlContext;
 
 namespace qt
 {
+template <typename T, bool>
+class list_model;
+
 class bridge final : public QObject
 {
     W_OBJECT(bridge)
@@ -41,7 +45,7 @@ public:
     W_INVOKABLE(setHost)
 
     void authenticate(const QString& username, const QString& password) const;
-    W_INVOKABLE(authenticate, (const QString&, const QString&))
+    W_INVOKABLE(authenticate)
 
     void updatePwd(const QString& newPwd) const;
     W_INVOKABLE(updatePwd)
@@ -52,7 +56,7 @@ public:
     void setQmlObject(QObject* obj) noexcept { qmlObject = obj; }
 
     bool hasFlag(int value, int flag) const noexcept { return value & flag; }
-    W_INVOKABLE(hasFlag, (int, int))
+    W_INVOKABLE(hasFlag)
 
     void logout() const
     W_SIGNAL(logout)
@@ -87,7 +91,7 @@ private:
         const auto uri{make_uri<T>()};
         const auto qmlName{uri + "ListModel"};
 
-        qmlRegisterType<list_model<T>>(uri.c_str(), 1, 0, qmlName.c_str());
+        qmlRegisterType<list_model<T, crudpp::r_primary_key<T>>>(uri.c_str(), 1, 0, qmlName.c_str());
     }
 };
 
