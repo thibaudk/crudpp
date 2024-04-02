@@ -16,7 +16,6 @@
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
 #include "base_wrapper.hpp"
 #include "model.hpp"
-#include "list.hpp"
 #include "list_model.hpp"
 
 namespace qt
@@ -113,18 +112,18 @@ public:
         reset_flags();
     }
 
-    void from_list(list<T>* list, int index)
+    void from_list(list_model<T, true>* list, int index)
     {
         from_item(list->item_at(index));
     }
-    W_INVOKABLE(from_list, (list<T>*, int))
+    W_INVOKABLE(from_list, (list_model<T, true>*, int))
 
-    void from_list_by(list<T>* list, const QByteArray& roleName, const QVariant& value)
+    void from_list_by(list_model<T>* list, const QByteArray& roleName, const QVariant& value)
     {
         int role{model<T>::roleNames().key(roleName)};
         int i{0};
 
-        for (const auto& item : list->get_list())
+        for (const auto& item : list->items())
         {
             if (item.data(role) == value)
             {
@@ -137,7 +136,7 @@ public:
 
         clear();
     }
-    W_INVOKABLE(from_list_by, (list<T>*, const QByteArray&, const QVariant&))
+    W_INVOKABLE(from_list_by, (list_model<T>*, const QByteArray&, const QVariant&))
 
     void clear()
     {
@@ -187,12 +186,12 @@ public:
 
                         int i{0};
 
-                        for (auto& item : m->getList()->get_list())
+                        for (auto& item : m->items())
                         {
                             if (item.get_aggregate().primary_key.value == id)
                             {
                                 item.read(obj);
-                                emit m->getList()->dataChangedAt(i);
+                                emit m->dataChangedAt(i);
                                 break;
                             }
 
@@ -224,7 +223,7 @@ public:
                                      ->findChildren<list_model<T, true>*>()};
 
                     for (auto* m : objects)
-                        m->getList()->append(model<T>{json});
+                        m->append(model<T>{json});
 
                     set_loading(false);
                 },
@@ -256,11 +255,11 @@ public:
                     {
                         int i{0};
 
-                        for (auto& item : m->getList()->get_list())
+                        for (auto& item : m->items())
                         {
                             if (item.get_aggregate().primary_key.value == id)
                             {
-                                 m->getList()->removeItem(i);
+                                m->removeItem(i);
                                 break;
                             }
 

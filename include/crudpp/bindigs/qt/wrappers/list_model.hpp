@@ -2,11 +2,13 @@
 
 #include <QAbstractListModel>
 #include <QJsonDocument>
+#include <QJsonArray>
+
 #include <wobjectdefs.h>
 
 #include <crudpp/bindigs/qt/interface/net_manager.hpp>
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
-#include "list.hpp"
+#include "model.hpp"
 
 namespace qt
 {
@@ -14,73 +16,132 @@ template <typename T, bool has_primary_key = false>
 class list_model : public QAbstractListModel
 {
     W_OBJECT(list_model)
+    using Type = model<T>;
 
 public:
     explicit list_model(QObject* parent = nullptr)
         : QAbstractListModel{parent}
+    {}
+
+    void get()
     {
-        connect(m_list,
-                &list<T>::addWith,
-                [this] (const QJsonObject& obj)
-                {
-                    net_manager::instance().postToKey(T::table(),
-                        QJsonDocument{obj}.toJson(),
-                        [this] (const QJsonObject& rep)
-                        { m_list->append(model<T>{rep}); },
-                        "AddWith error");
-                });
+        net_manager::instance().getFromKey(T::table(),
+                                           [this](const QByteArray& bytes)
+                                           { read(bytes); });
 
-        connect(m_list,
-                &list<T>::get,
-                [this] ()
-                {
-                    net_manager::instance().getFromKey(T::table(),
-                                                       [this](const QByteArray& bytes)
-                                                       { m_list->read(bytes); });
-                });
+    }
+    W_INVOKABLE(get)
 
-        beginResetModel();
+    void addWith(const QJsonObject& obj)
+    {
+        net_manager::instance().postToKey(T::table(),
+            QJsonDocument{obj}.toJson(),
+            [this] (const QJsonObject& rep)
+            { append(Type{rep}); },
+            "AddWith error");
+    }
+    W_INVOKABLE(addWith)
 
-        connect(m_list, &list<T>::preItemsAppended,
-                this, [this](int number)
-                {
-                    const int index = m_list->size();
-                    beginInsertRows(QModelIndex(), index, index + number - 1);
-                });
+    void appendItems(int number = 1)
+    {
+        const int index = size();
+        beginInsertRows(QModelIndex(), index, index + number - 1);
 
-        connect(m_list, &list<T>::postItemsAppended,
-                this, [this]()
-                { endInsertRows(); });
+        for (int i = 0; i < number; i++)
+            m_items.emplace_back(Type{});
 
-        connect(m_list, &list<T>::preItemsRemoved,
-                this, [this](int first, int last)
-                { beginRemoveRows(QModelIndex(), first, last); });
+        endInsertRows();
+    }
+    W_INVOKABLE(appendItems)
 
-        connect(m_list, &list<T>::preItemsRemoved,
-                this, [this](int first, int last)
-                { beginRemoveRows(QModelIndex(), first, last); });
+    void appendItem()
+    {
+        const int index = size();
+        beginInsertRows(QModelIndex(), index, index);
 
-        connect(m_list, &list<T>::postItemsRemoved,
-                this, [this]()
-                { endRemoveRows(); });
+        m_items.emplace_back(Type{});
 
-        connect(m_list, &list<T>::dataChangedAt,
-                this, [this](int row)
-                { dataChanged(index(row), index(row)); });
+        endInsertRows();
+    }
+    W_INVOKABLE(appendItem)
 
-        connect(m_list, &list<T>::save,
-                this, [this](int row)
-                { setLoading(row, true); });
+    void append(Type&& item)
+    {
+        const int index = size();
+        beginInsertRows(QModelIndex(), index, index);
 
-        connect(m_list, &list<T>::remove,
-                this, [this](int row)
-                { setLoading(row, true); });
+        m_items.emplace_back(item);
 
-        connect(m_list, &list<T>::loaded,
-                this, [this](int row)
-                { setLoading(row, false); });
+        endInsertRows();
+    }
+    // W_INVOKABLE(append)
 
-        endResetModel();
+    void removeItems(int first, int last)
+    {
+        beginRemoveRows(QModelIndex(), first, last);
+
+        m_items.erase(m_items.begin() + first,
+                      std::next(m_items.begin() + last));
+
+        endRemoveRows();
+    }
+    W_INVOKABLE(removeItems)
+
+    // void removeItems(int number = 1)
+    // {
+    //     const auto count = size();
+    //     removeItems(count - number, count - 1);
+    // }
+    // W_INVOKABLE(removeItems)
+
+    void removeItem(int index)
+    {
+        removeItems(index, index);
+    }
+    W_INVOKABLE(removeItem)
+
+    void clear()
+    {
+        beginRemoveRows(QModelIndex(), 0, size() - 1);
+        m_items.clear();
+        endRemoveRows();
+    }
+    W_INVOKABLE(clear)
+
+    void remove(int row)
+    { setLoading(row, true); }
+    W_INVOKABLE(remove)
+
+    void read(const QJsonArray& array)
+    {
+        clear();
+        beginInsertRows(QModelIndex(), 0, size() - 1);
+
+        if (!array.empty())
+            for (const auto& json : array)
+                m_items.emplace_back(Type{json.toObject()});
+
+        endInsertRows();
+    }
+
+    void read(const QJsonObject& obj)
+    {
+        clear();
+        beginInsertRows(QModelIndex(), 0, 1);
+
+        m_items.emplace_back(Type{obj});
+
+        endInsertRows();
+    }
+
+    void read(const QByteArray& bytes)
+    {
+        const auto doc{QJsonDocument::fromJson(bytes)};
+
+        if (doc.isArray())
+            read(doc.array());
+        else
+            read(doc.object());
     }
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override
@@ -88,7 +149,7 @@ public:
         if (parent.isValid())
             return 0;
 
-        return m_list->size();
+        return size();
     }
 
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override
@@ -96,19 +157,22 @@ public:
         if (!index.isValid())
             return QVariant{};
 
-        return m_list->items().at(index.row()).data(role);
+        return m_items[index.row()].data(role);
     }
 
     bool setData(const QModelIndex& index,
                  const QVariant& value,
                  int role = Qt::EditRole) override
     {
-        m_list->item_at(index.row()).setData(value, role);
+        item_at(index.row()).setData(value, role);
         // emit dataChanged for both the curent role and the "flagged_for_update role"
-        emit dataChanged(index, index,
-                         QVector<int>() << role << model<T>::flagged_for_update_role());
+        emit dataChanged(index,
+                         index,
+                         QVector<int>() << role << Type::flagged_for_update_role());
         return true;
     }
+
+    void dataChangedAt (int row) { dataChanged(index(row), index(row)); }
 
     Qt::ItemFlags flags(const QModelIndex& index) const override
     {
@@ -118,20 +182,24 @@ public:
         return Qt::ItemIsEditable;
     }
 
-    QHash<int, QByteArray> roleNames() const override { return model<T>::roleNames(); }
+    QHash<int, QByteArray> roleNames() const override { return Type::roleNames(); }
 
-    list<T>* getList() const { return m_list; }
+    int size() const { return m_items.size(); }
+
+    QVector<Type> items() const { return m_items; }
+
+    Type& item_at(int index) { return m_items[index]; }
 
 protected:
-    list<T>* m_list{new list<T>};
+    QVector<Type> m_items{};
 
     void setLoading(int row, bool value)
     {
-        int role{model<T>::loading_role()};
-        m_list->item_at(row).setData(value, role);
+        int role{Type::loading_role()};
+        item_at(row).setData(value, role);
         emit dataChanged(index(row),
                          index(row),
-                         QVector<int>() << role << model<T>::flagged_for_update_role());
+                         QVector<int>() << role << Type::flagged_for_update_role());
     }
 };
 
@@ -140,95 +208,91 @@ class list_model<T, true> : public list_model<T, false>
 {
 public:
     list_model() : list_model<T, false>{}
+    {}
+
+    void save(int row)
     {
-        QObject::connect(this->m_list,
-                         &list<T>::save,
-                         [this] (int row)
-                         {
-                             QJsonObject obj{};
-                             auto& item{this->m_list->item_at(row)};
-                             item.write(obj);
+        QJsonObject obj{};
+        auto& item{this->item_at(row)};
+        item.write(obj);
 
-                             // update if the item was already inserted
-                             if (item.inserted())
-                             {
-                                 // skip if nothing needs updating
-                                 // ie. if only the primary key was writen to json
-                                 if (obj.size() == 1)
-                                 {
-                                     emit this->m_list->loaded(row);
-                                     return;
-                                 }
+        // update if the item was already inserted
+        if (item.inserted())
+        {
+            // skip if nothing needs updating
+            // ie. if only the primary key was writen to json
+            if (obj.size() == 1)
+            {
+                emit this->loaded(row);
+                return;
+            }
 
-                                 net_manager::instance().putToKey(make_key(item).c_str(),
-                                     QJsonDocument{obj}.toJson(),
-                                     [&item, row, obj, this](const QJsonObject& rep)
-                                     {
-                                         auto objects{bridge::instance().engine
-                                                          ->rootObjects()[0]
-                                                          ->findChildren<property_holder<T>*>()};
+            net_manager::instance().putToKey(make_key(item).c_str(),
+                QJsonDocument{obj}.toJson(),
+                [&item, row, obj, this](const QJsonObject& rep)
+                {
+                    auto objects{bridge::instance().engine
+                                     ->rootObjects()[0]
+                                     ->findChildren<property_holder<T>*>()};
 
-                                         for (auto* p : objects)
-                                             if (item.get_aggregate().primary_key.value ==
-                                                 p->get_aggregate().primary_key.value)
-                                                 p->read(obj);
+                    for (auto* p : objects)
+                        if (item.get_aggregate().primary_key.value ==
+                            p->get_aggregate().primary_key.value)
+                            p->read(obj);
 
-                                         item.reset_flags();
-                                         emit this->m_list->loaded(row);
-                                     },
-                                     "save error",
-                                     [row, this]()
-                                     { emit this->m_list->loaded(row); });
-                             }
-                             else // insert otherwise
-                             {
-                                 net_manager::instance().postToKey(T::table(),
-                                     QJsonDocument{obj}.toJson(),
-                                     [&item, row, this](const QJsonObject& rep)
-                                     {
-                                         item.read(rep);
-                                         emit this->m_list->loaded(row);
-                                     },
-                                     "save error",
-                                     [row, this]()
-                                     { emit this->m_list->loaded(row); });
-                             }
-                         });
+                    item.reset_flags();
+                    emit this->loaded(row);
+                },
+                "save error",
+                [row, this]()
+                { emit this->loaded(row); });
+        }
+        else // insert otherwise
+        {
+            net_manager::instance().postToKey(T::table(),
+                QJsonDocument{obj}.toJson(),
+                [&item, row, this](const QJsonObject& rep)
+                {
+                    item.read(rep);
+                    emit this->loaded(row);
+                },
+                "save error",
+                [row, this]()
+                { emit this->loaded(row); });
+        }
+    }
 
-        QObject::connect(this->m_list,
-                         &list<T>::remove,
-                         [this] (int row)
-                         {
-                             auto& item{this->m_list->item_at(row)};
+    void remove(int row)
+    {
+        auto& item{this->item_at(row)};
 
-                             // delete on the server if it exists
-                             if (item.inserted())
-                             {
-                                 net_manager::instance().deleteToKey(make_key(item).c_str(),
-                                     [this, &item, row](const QJsonValue& rep)
-                                     {
-                                         auto objects{bridge::instance().engine
-                                                          ->rootObjects()[0]
-                                                          ->findChildren<property_holder<T>*>()};
+        // delete on the server if it exists
+        if (item.inserted())
+        {
+            net_manager::instance().deleteToKey(make_key(item).c_str(),
+                [this, &item, row](const QJsonValue& rep)
+                {
+                    auto objects{bridge::instance().engine
+                                     ->rootObjects()[0]
+                                     ->findChildren<property_holder<T>*>()};
 
-                                         for (auto* p : objects)
-                                             if (item.get_aggregate().primary_key.value ==
-                                                 p->get_aggregate().primary_key.value)
-                                                 p->clear();
+                    for (auto* p : objects)
+                        if (item.get_aggregate().primary_key.value ==
+                            p->get_aggregate().primary_key.value)
+                            p->clear();
 
-                                         this->m_list->removeItem(row);
-                                         emit this->m_list->loaded(row);
-                                     },
-                                     "Remove Error",
-                                     [this, row] ()
-                                     { emit this->m_list->loaded(row); });
+                    this->removeItem(row);
+                    emit this->loaded(row);
+                },
+                "Remove Error",
+                [this, row] ()
+                { emit this->loaded(row); });
 
-                                 return;
-                             }
+            return;
+        }
 
-                             // only remove localy otherwise
-                             this->m_list->removeItem(row);
-                         });
+        // only remove localy otherwise
+        this->removeItem(row);
     }
 
 private:

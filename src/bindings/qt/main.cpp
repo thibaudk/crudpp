@@ -3,7 +3,7 @@
 
 #include <crudpp/bindigs/qt/interface/net_manager.hpp>
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
-#include <crudpp/bindigs/qt/wrappers/controller.hpp>
+#include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
 #include <crudpp/macros.hpp>
 #include <singleton.hpp>
 
@@ -42,7 +42,7 @@ int main(int argc, char* argv[])
     b.context()->setContextProperty(USER_CLASS::table(),
                                     &singleton<property_holder<USER_CLASS>>::instance());
 
-    make_ctls<CLASSES_STRING>();
+    // make_ctls<CLASSES_STRING>();
 
     // qml engine
     const QUrl url(QStringLiteral("qrc:/ui/main.qml"));
