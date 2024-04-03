@@ -112,11 +112,11 @@ public:
         reset_flags();
     }
 
-    void from_list(list_model<T, true>* list, int index)
+    void from_list(list_model<T>* list, int index)
     {
         from_item(list->item_at(index));
     }
-    W_INVOKABLE(from_list, (list_model<T, true>*, int))
+    W_INVOKABLE(from_list, (list_model<T>*, int))
 
     void from_list_by(list_model<T>* list, const QByteArray& roleName, const QVariant& value)
     {
@@ -178,7 +178,7 @@ public:
                 {
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
-                                     ->findChildren<list_model<T, true>*>()};
+                                     ->findChildren<list_model<T>*>()};
 
                     for (auto* m : objects)
                     {
@@ -220,7 +220,7 @@ public:
 
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
-                                     ->findChildren<list_model<T, true>*>()};
+                                     ->findChildren<list_model<T>*>()};
 
                     for (auto* m : objects)
                         m->append(model<T>{json});
@@ -249,7 +249,7 @@ public:
 
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
-                                     ->findChildren<list_model<T, true>*>()};
+                                     ->findChildren<list_model<T>*>()};
 
                     for (auto* m : objects)
                     {

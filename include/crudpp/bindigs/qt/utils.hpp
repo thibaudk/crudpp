@@ -128,21 +128,4 @@ std::string make_uri()
     return s;
 }
 
-template <typename T>
-void make_clt()
-{
-    const auto uri{make_uri<T>()};
-    std::string qml_name{T::table()};
-    qml_name.insert(0, "Single_");
-    qmlRegisterType<property_holder<T>>(uri.c_str(), 1, 0, qml_name.c_str());
-}
-
-template <typename ...Ts>
-std::tuple<controller<Ts, crudpp::r_primary_key<Ts>>...> make_ctls()
-{
-    (make_clt<Ts>(), ...);
-
-    return std::tuple<controller<Ts, crudpp::r_primary_key<Ts>>...>{};
-}
-
 } // namespace qt

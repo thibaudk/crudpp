@@ -12,7 +12,8 @@
 
 namespace qt
 {
-template <typename T, bool has_primary_key = false>
+// TODO: handle lists of objects without primary key
+template <typename T>
 class list_model : public QAbstractListModel
 {
     W_OBJECT(list_model)
@@ -108,14 +109,10 @@ public:
     }
     W_INVOKABLE(clear)
 
-    void remove(int row)
-    { setLoading(row, true); }
-    W_INVOKABLE(remove)
-
     void read(const QJsonArray& array)
     {
         clear();
-        beginInsertRows(QModelIndex(), 0, size() - 1);
+        beginInsertRows(QModelIndex(), 0, array.size() - 1);
 
         if (!array.empty())
             for (const auto& json : array)
@@ -144,71 +141,6 @@ public:
             read(doc.object());
     }
 
-    int rowCount(const QModelIndex& parent = QModelIndex()) const override
-    {
-        if (parent.isValid())
-            return 0;
-
-        return size();
-    }
-
-    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override
-    {
-        if (!index.isValid())
-            return QVariant{};
-
-        return m_items[index.row()].data(role);
-    }
-
-    bool setData(const QModelIndex& index,
-                 const QVariant& value,
-                 int role = Qt::EditRole) override
-    {
-        item_at(index.row()).setData(value, role);
-        // emit dataChanged for both the curent role and the "flagged_for_update role"
-        emit dataChanged(index,
-                         index,
-                         QVector<int>() << role << Type::flagged_for_update_role());
-        return true;
-    }
-
-    void dataChangedAt (int row) { dataChanged(index(row), index(row)); }
-
-    Qt::ItemFlags flags(const QModelIndex& index) const override
-    {
-        if (!index.isValid())
-            return Qt::NoItemFlags;
-
-        return Qt::ItemIsEditable;
-    }
-
-    QHash<int, QByteArray> roleNames() const override { return Type::roleNames(); }
-
-    int size() const { return m_items.size(); }
-
-    QVector<Type> items() const { return m_items; }
-
-    Type& item_at(int index) { return m_items[index]; }
-
-protected:
-    QVector<Type> m_items{};
-
-    void setLoading(int row, bool value)
-    {
-        int role{Type::loading_role()};
-        item_at(row).setData(value, role);
-        emit dataChanged(index(row),
-                         index(row),
-                         QVector<int>() << role << Type::flagged_for_update_role());
-    }
-};
-
-template <typename T>
-class list_model<T, true> : public list_model<T, false>
-{
-public:
-    list_model() : list_model<T, false>{}
-    {}
 
     void save(int row)
     {
@@ -264,6 +196,8 @@ public:
 
     void remove(int row)
     {
+        this->setLoading(row, true);
+
         auto& item{this->item_at(row)};
 
         // delete on the server if it exists
@@ -295,7 +229,64 @@ public:
         this->removeItem(row);
     }
 
+    int rowCount(const QModelIndex& parent = QModelIndex()) const override
+    {
+        if (parent.isValid())
+            return 0;
+
+        return size();
+    }
+
+    QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override
+    {
+        if (!index.isValid())
+            return QVariant{};
+
+        return m_items[index.row()].data(role);
+    }
+
+    bool setData(const QModelIndex& index,
+                 const QVariant& value,
+                 int role = Qt::EditRole) override
+    {
+        item_at(index.row()).setData(value, role);
+        // emit dataChanged for both the curent role and the "flagged_for_update role"
+        emit dataChanged(index,
+                         index,
+                         QVector<int>() << role << Type::flagged_for_update_role());
+        return true;
+    }
+
+    void dataChangedAt (int row) { dataChanged(index(row), index(row)); }
+
+    Qt::ItemFlags flags(const QModelIndex& index) const override
+    {
+        if (!index.isValid())
+            return Qt::NoItemFlags;
+
+        return Qt::ItemIsEditable;
+    }
+
+    QHash<int, QByteArray> roleNames() const override { return Type::roleNames(); }
+
+    int size() const { return m_items.size(); }
+
+    QVector<Type> items() const { return m_items; }
+
+    Type& item_at(int index) { return m_items[index]; }
+
 private:
+    QVector<Type> m_items{};
+
+    void setLoading(int row, bool value)
+    {
+        int role{Type::loading_role()};
+        item_at(row).setData(value, role);
+        emit dataChanged(index(row),
+                         index(row),
+                         QVector<int>() << role << Type::flagged_for_update_role());
+    }
+
     const std::string make_key(model<T>& item) const
     {
         return make_key(std::move(item.get_aggregate()));
@@ -311,8 +302,7 @@ private:
         return key;
     }
 };
-
 } //namespace qt
 
 #include "wobjectimpl.h"
-W_OBJECT_IMPL((qt::list_model<T, has_primary_key>), template <typename T, bool has_primary_key>)
+W_OBJECT_IMPL(qt::list_model<T>, template <typename T>)

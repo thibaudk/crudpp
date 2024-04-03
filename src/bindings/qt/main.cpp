@@ -42,8 +42,6 @@ int main(int argc, char* argv[])
     b.context()->setContextProperty(USER_CLASS::table(),
                                     &singleton<property_holder<USER_CLASS>>::instance());
 
-    // make_ctls<CLASSES_STRING>();
-
     // qml engine
     const QUrl url(QStringLiteral("qrc:/ui/main.qml"));
     QObject::connect(b.engine,

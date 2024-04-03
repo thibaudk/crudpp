@@ -12,7 +12,7 @@ class QQmlContext;
 
 namespace qt
 {
-template <typename T, bool>
+template <typename T>
 class list_model;
 
 class bridge final : public QObject
@@ -89,9 +89,16 @@ private:
     void registerSingleQml()
     {
         const auto uri{make_uri<T>()};
-        const auto qmlName{uri + "ListModel"};
+        const auto listModelName{uri + "ListModel"};
 
-        qmlRegisterType<list_model<T, crudpp::r_primary_key<T>>>(uri.c_str(), 1, 0, qmlName.c_str());
+        // TODO: handle lists of objects without primary key
+        qmlRegisterType<list_model<T>>(uri.c_str(), 1, 0, listModelName.c_str());
+
+        if constexpr(crudpp::r_primary_key<T>)
+        {
+            const auto singleName{"Single" + uri};
+            qmlRegisterType<property_holder<T>>(uri.c_str(), 1, 0, singleName.c_str());
+        }
     }
 };
 
