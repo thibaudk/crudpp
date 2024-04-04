@@ -14,6 +14,13 @@ namespace qt
 template <typename T>
 struct base_wrapper
 {
+    void set(const T& agg)
+    {
+        aggregate = agg;
+        reset_flags();
+        m_inserted = true;
+    }
+
     void read(const QJsonObject& obj)
     {
         boost::pfr::for_each_field(aggregate, json_handler{obj});

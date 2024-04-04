@@ -107,7 +107,7 @@ public:
              }
              );
 
-        this->m_inserted = item.get_inserted();
+        this->m_inserted = item.inserted();
 
         reset_flags();
     }
@@ -158,44 +158,41 @@ public:
     {
         set_loading(true);
 
+        if (!this->flagged_for_update())
+        {
+            set_loading(false);
+            return;
+        }
+
         QJsonObject obj{};
         this->write(obj);
 
         // update if the item was already inserted
         if (this->inserted())
         {
-            // skip if nothing needs updating
-            // ie. if only the primary key was writen to json
-            if (obj.size() == 1)
-            {
-                set_loading(false);
-                return;
-            };
-
             net_manager::instance().putToKey(make_key().c_str(),
                 QJsonDocument{obj}.toJson(),
-                [obj, this] (const QJsonObject& rep)
+                [this] (const QJsonObject& rep)
                 {
+                    const auto id{this->aggregate.primary_key.value};
+
+                    // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
                                      ->findChildren<list_model<T>*>()};
 
                     for (auto* m : objects)
                     {
-                        const auto id{this->aggregate.primary_key.value};
-
-                        int i{0};
-
-                        for (auto& item : m->items())
+                        for (int i{0}; i < m->size(); i++)
                         {
+                            auto& item{m->item_at(i)};
+
                             if (item.get_aggregate().primary_key.value == id)
                             {
-                                item.read(obj);
-                                emit m->dataChangedAt(i);
+                                item.set(this->aggregate);
+                                m->dataChangedAt(i);
                                 break;
                             }
-
-                            i++;
                         }
                     }
 
@@ -218,6 +215,7 @@ public:
                     map.insert(obj.toVariantMap());
                     const auto json{QJsonObject::fromVariantMap(map)};
 
+                    // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
                                      ->findChildren<list_model<T>*>()};
@@ -247,23 +245,22 @@ public:
                 {
                     const auto id{this->get_aggregate().primary_key.value};
 
+                    // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
                                      ->findChildren<list_model<T>*>()};
 
                     for (auto* m : objects)
                     {
-                        int i{0};
-
-                        for (auto& item : m->items())
+                        for (int i{0}; i < m->size(); i++)
                         {
+                            auto& item{m->item_at(i)};
+
                             if (item.get_aggregate().primary_key.value == id)
                             {
                                 m->removeItem(i);
                                 break;
                             }
-
-                            i++;
                         }
                     }
 

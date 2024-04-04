@@ -144,33 +144,33 @@ public:
 
     void save(int row)
     {
-        QJsonObject obj{};
         auto& item{this->item_at(row)};
+
+        if (!item.flagged_for_update())
+            return;
+
+        this->setLoading(row, true);
+
+        QJsonObject obj{};
         item.write(obj);
 
         // update if the item was already inserted
         if (item.inserted())
         {
-            // skip if nothing needs updating
-            // ie. if only the primary key was writen to json
-            if (obj.size() == 1)
-            {
-                emit this->loaded(row);
-                return;
-            }
-
             net_manager::instance().putToKey(make_key(item).c_str(),
                 QJsonDocument{obj}.toJson(),
-                [&item, row, obj, this](const QJsonObject& rep)
+                [&item, row, this](const QJsonObject& rep)
                 {
+                    const auto id{item.get_aggregate().primary_key.value};
+
+                    // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
                                      ->findChildren<property_holder<T>*>()};
 
                     for (auto* p : objects)
-                        if (item.get_aggregate().primary_key.value ==
-                            p->get_aggregate().primary_key.value)
-                            p->read(obj);
+                        if (p->get_aggregate().primary_key.value == id)
+                            p->from_item(item);
 
                     item.reset_flags();
                     emit this->loaded(row);
@@ -206,13 +206,15 @@ public:
             net_manager::instance().deleteToKey(make_key(item).c_str(),
                 [this, &item, row](const QJsonValue& rep)
                 {
+                    const auto id{item.get_aggregate().primary_key.value};
+
+                    // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
                                      ->rootObjects()[0]
                                      ->findChildren<property_holder<T>*>()};
 
                     for (auto* p : objects)
-                        if (item.get_aggregate().primary_key.value ==
-                            p->get_aggregate().primary_key.value)
+                        if (p->get_aggregate().primary_key.value == id)
                             p->clear();
 
                     this->removeItem(row);
@@ -228,6 +230,8 @@ public:
         // only remove localy otherwise
         this->removeItem(row);
     }
+
+    void dataChangedAt (int row) { emit dataChanged(index(row), index(row)); }
 
     int rowCount(const QModelIndex& parent = QModelIndex()) const override
     {
@@ -256,8 +260,6 @@ public:
                          QVector<int>() << role << Type::flagged_for_update_role());
         return true;
     }
-
-    void dataChangedAt (int row) { dataChanged(index(row), index(row)); }
 
     Qt::ItemFlags flags(const QModelIndex& index) const override
     {

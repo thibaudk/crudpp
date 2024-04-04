@@ -87,8 +87,6 @@ struct model final : public base_wrapper<T>
             this->loading = v.toBool();
     }
     // --
-
-    bool get_inserted() const { return this->m_inserted; }
 };
 
 } // namespace qt
