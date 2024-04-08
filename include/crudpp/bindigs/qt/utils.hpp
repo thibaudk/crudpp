@@ -121,11 +121,27 @@ T from_qt(const QVariant& v)
 }
 
 template <typename T>
+    requires crudpp::r_table<T>
 std::string make_uri()
 {
     std::string s{'Q'};
     s += T::table();
     return s;
+}
+
+template <typename T>
+    requires crudpp::r_table<T>
+const std::string make_key(const T&& agg)
+{
+    std::string key{T::table()};
+    key += '/';
+
+    if constexpr(std::same_as<decltype(agg.primary_key.value), std::string>)
+        key += agg.primary_key.value;
+    else
+        key += std::to_string(agg.primary_key.value);
+
+    return key;
 }
 
 } // namespace qt

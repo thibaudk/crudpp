@@ -90,7 +90,7 @@ public:
 
     void get()
     {
-        net_manager::instance().getFromKey(make_key(),
+        net_manager::instance().getFromKey(key(),
                                            [this](const QByteArray& bytes)
                                            { read(bytes); });
     }
@@ -170,7 +170,7 @@ public:
         // update if the item was already inserted
         if (this->inserted())
         {
-            net_manager::instance().putToKey(make_key().c_str(),
+            net_manager::instance().putToKey(key().c_str(),
                 QJsonDocument{obj}.toJson(),
                 [this] (const QJsonObject& rep)
                 {
@@ -229,7 +229,6 @@ public:
                 [this] ()
                 { set_loading(false); });
         }
-
     }
     W_INVOKABLE(save)
 
@@ -240,7 +239,7 @@ public:
         // delete on the server if it exists
         if (this->inserted())
         {
-            net_manager::instance().deleteToKey(make_key().c_str(),
+            net_manager::instance().deleteToKey(key().c_str(),
                 [this](const QJsonValue& rep)
                 {
                     const auto id{this->get_aggregate().primary_key.value};
@@ -301,9 +300,9 @@ private:
         emit flaggedChanged();
     }
 
-    const std::string make_key()
+    const std::string key()
     {
-        return base_wrapper<T>::make_key(std::move(this->get_aggregate()));
+        return make_key(std::move(this->get_aggregate()));
     }
 
     template <size_t I>

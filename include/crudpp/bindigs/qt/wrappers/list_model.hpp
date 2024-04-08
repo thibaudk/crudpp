@@ -88,13 +88,6 @@ public:
     }
     W_INVOKABLE(removeItems)
 
-    // void removeItems(int number = 1)
-    // {
-    //     const auto count = size();
-    //     removeItems(count - number, count - 1);
-    // }
-    // W_INVOKABLE(removeItems)
-
     void removeItem(int index)
     {
         removeItems(index, index);
@@ -157,7 +150,7 @@ public:
         // update if the item was already inserted
         if (item.inserted())
         {
-            net_manager::instance().putToKey(make_key(item).c_str(),
+            net_manager::instance().putToKey(key(item).c_str(),
                 QJsonDocument{obj}.toJson(),
                 [&item, row, this](const QJsonObject& rep)
                 {
@@ -173,11 +166,13 @@ public:
                             p->from_item(item);
 
                     item.reset_flags();
-                    emit this->loaded(row);
+                    this->setLoading(row, false);
+
                 },
                 "save error",
                 [row, this]()
-                { emit this->loaded(row); });
+                { this->setLoading(row, false);
+                });
         }
         else // insert otherwise
         {
@@ -186,13 +181,16 @@ public:
                 [&item, row, this](const QJsonObject& rep)
                 {
                     item.read(rep);
-                    emit this->loaded(row);
+                    this->setLoading(row, false);
+
                 },
                 "save error",
                 [row, this]()
-                { emit this->loaded(row); });
+                { this->setLoading(row, false);
+                });
         }
     }
+    W_INVOKABLE(save)
 
     void remove(int row)
     {
@@ -203,7 +201,7 @@ public:
         // delete on the server if it exists
         if (item.inserted())
         {
-            net_manager::instance().deleteToKey(make_key(item).c_str(),
+            net_manager::instance().deleteToKey(key(item).c_str(),
                 [this, &item, row](const QJsonValue& rep)
                 {
                     const auto id{item.get_aggregate().primary_key.value};
@@ -218,11 +216,13 @@ public:
                             p->clear();
 
                     this->removeItem(row);
-                    emit this->loaded(row);
+                    this->setLoading(row, false);
+
                 },
                 "Remove Error",
                 [this, row] ()
-                { emit this->loaded(row); });
+                { this->setLoading(row, false);
+                });
 
             return;
         }
@@ -230,6 +230,7 @@ public:
         // only remove localy otherwise
         this->removeItem(row);
     }
+    W_INVOKABLE(remove)
 
     void dataChangedAt (int row) { emit dataChanged(index(row), index(row)); }
 
@@ -289,19 +290,9 @@ private:
                          QVector<int>() << role << Type::flagged_for_update_role());
     }
 
-    const std::string make_key(model<T>& item) const
+    const std::string key(model<T>& item) const
     {
         return make_key(std::move(item.get_aggregate()));
-    }
-
-    const std::string make_key(const T&& aggregate) const
-    {
-        std::string key{T::table()};
-
-        key += '/';
-        key += std::to_string(aggregate.primary_key.value);
-
-        return key;
     }
 };
 } //namespace qt
