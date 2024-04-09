@@ -9,7 +9,6 @@ set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 
 function(make_all)
-
     option(PFR_PATH "Path to the independent Boost::pfr repository (boostorg/pfr)")
     if(IS_DIRECTORY ${PFR_PATH})
         include_directories(${PFR_PATH}/include)
@@ -19,8 +18,8 @@ function(make_all)
 
     include_directories(${CRUDPP_SOURCE_DIR}/include)
 
-    set(ONE_VALUE_ARGS INCLUDE USER_CLASS)
-    set(MULTI_VALUE_ARGS CLASSES EXTRA_CLIENT_SOURCES)
+    set(ONE_VALUE_ARGS INCLUDE USER_CLASS CLIENT_RESOURCE_DIR)
+    set(MULTI_VALUE_ARGS CLASSES)
     cmake_parse_arguments(CRUDPP "" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" ${ARGN})
 
     add_compile_definitions(USER_CLASS=${CRUDPP_USER_CLASS})
