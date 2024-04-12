@@ -35,10 +35,7 @@ function(make_all)
             ${CMAKE_BINARY_DIR}/drogon)
     endif()
 
-    find_package(Qt6 COMPONENTS
-        Core
-        Quick
-        REQUIRED)
+    find_package(Qt6 COMPONENTS Quick REQUIRED)
     if(${Qt6_FOUND})
         add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/qt
             ${CMAKE_BINARY_DIR}/qt)

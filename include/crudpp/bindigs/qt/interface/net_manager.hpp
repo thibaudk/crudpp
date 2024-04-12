@@ -24,12 +24,14 @@ public:
         return instance;
     }
 
+#ifndef EMSCRIPTEN
     void init(const QString& url);
+    void set_prefix(const QString& url);
+#endif
+    void init();
 
     net_manager(net_manager const&) = delete;
     void operator = (net_manager const&) = delete;
-
-    void set_prefix(const QString& url);
 
     void authenticate(const QString& identifier, const QString& secret);
 
@@ -81,8 +83,11 @@ public:
 private:
     net_manager() {}
 
-    QNetworkRequest rqst;
+    QNetworkRequest rqst{};
+
+#ifndef EMSCRIPTEN
     QString prefix;
+#endif
 
     void setCallback(QNetworkReply* reply,
                      const std::function<void (const QByteArray &)>&& callback);

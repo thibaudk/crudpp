@@ -41,8 +41,10 @@ public:
     void onException(const QString& prefix,
                      const QString& errorString) const;
 
+#ifndef EMSCRIPTEN
     void setHost(const QString& newHost) const;
     W_INVOKABLE(setHost)
+#endif
 
     void authenticate(const QString& username, const QString& password) const;
     W_INVOKABLE(authenticate)

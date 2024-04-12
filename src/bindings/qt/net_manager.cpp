@@ -1,10 +1,9 @@
-#include <QSslConfiguration>
 #include <QSaveFile>
 #include <QNetworkReply>
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include "wobjectimpl.h"
+#include <wobjectimpl.h>
 
 #include <crudpp/bindigs/qt/interface/net_manager.hpp>
 #include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
@@ -13,20 +12,33 @@ namespace qt
 {
 W_OBJECT_IMPL(net_manager)
 
+#ifndef EMSCRIPTEN
 void net_manager::init(const QString &url)
 {
-    rqst = {};
     set_prefix(url);
 
     auto conf = QSslConfiguration::defaultConfiguration();
     rqst.setSslConfiguration(conf);
-    rqst.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
 
-    setTransferTimeout();
 
     connect(this, &QNetworkAccessManager::sslErrors,
             this, [] (QNetworkReply* reply, const QList<QSslError>& errors)
             { reply->ignoreSslErrors(errors); });
+
+    init();
+}
+
+void net_manager::set_prefix(const QString &url)
+{
+    const auto new_prefix = url + '/';
+    if (prefix != new_prefix) prefix = new_prefix;
+}
+#endif
+
+void net_manager::init()
+{
+    rqst.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    setTransferTimeout();
 
     connect(this, &QNetworkAccessManager::finished,
             this, [this] (QNetworkReply* reply)
@@ -34,12 +46,6 @@ void net_manager::init(const QString &url)
                 if (reply->error() != QNetworkReply::NoError)
                     emit replyError("net_manager reply error", reply->errorString());
             });
-}
-
-void net_manager::set_prefix(const QString &url)
-{
-    const auto new_prefix = url + '/';
-    if (prefix != new_prefix) prefix = new_prefix;
 }
 
 void net_manager::authenticate(const QString &identifier, const QString &secret)
@@ -226,7 +232,11 @@ void net_manager::setCallback(QNetworkReply *reply,
 
 void net_manager::setRequest(const char *key, const char *params)
 {
+#ifndef EMSCRIPTEN
     QUrl url{prefix + key + '?' + params};
+#else
+    QUrl url{QString{'/'} + key + '?' + params};
+#endif
     rqst.setUrl(url);
 }
 

@@ -15,8 +15,12 @@ int main(int argc, char* argv[])
 
     using namespace qt;
 
-    qDebug() << "Device supports OpenSSL: " << QSslSocket::supportsSsl();
+    bridge& b{bridge::instance()};
 
+#ifndef EMSCRIPTEN
+    b.context()->setContextProperty("EMSCRIPTEN", QVariant{false});
+
+    qDebug() << "Device supports OpenSSL: " << QSslSocket::supportsSsl();
     QString host{"http://127.0.0.0:8080"};
 
     for (int i = 0; i < argc; i++)
@@ -28,8 +32,11 @@ int main(int argc, char* argv[])
 
     qDebug() << "Host :" << host;
     net_manager::instance().init(host);
+#else
+    b.context()->setContextProperty("EMSCRIPTEN", QVariant{true});
+    net_manager::instance().init();
+#endif
 
-    bridge& b{bridge::instance()};
     b.init();
     b.registerQml<CLASSES_STRING>();
 

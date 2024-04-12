@@ -1,5 +1,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
+
 #include <wobjectimpl.h>
 
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
@@ -41,10 +42,12 @@ void bridge::onException(const QString &prefix, const QString &errorString) cons
                               Q_ARG(QString, errorString));
 }
 
+#ifndef EMSCRIPTEN
 void bridge::setHost(const QString &newHost) const
 {
     net_manager::instance().set_prefix(newHost);
 }
+#endif
 
 void bridge::authenticate(const QString &username, const QString &password) const
 {

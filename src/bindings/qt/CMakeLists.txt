@@ -55,8 +55,12 @@ target_compile_definitions(${PROJECT_NAME}
     PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    Qt6::Core
-    Qt6::Quick)
+    Qt6::Quick
+    Qt6::qtquickdialogsplugin
+    Qt6::qquicklayoutsplugin
+    Qt6::qtquickcontrols2plugin
+    Qt6::qtquickcontrols2basicstyleplugin
+    Qt6::qtquickcontrols2materialstyleplugin)
 
 qt_import_qml_plugins(${PROJECT_NAME})
 
