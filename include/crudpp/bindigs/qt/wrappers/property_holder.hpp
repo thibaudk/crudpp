@@ -82,7 +82,7 @@ public:
     void read(const QJsonObject& obj)
     {
         base_wrapper<T>::read(obj);
-        crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
+        crudpp::for_each_index<T>
             ([this](const auto i){ property_changed<i()>(); });
 
         emit flaggedChanged();
@@ -99,7 +99,7 @@ public:
     {
         const auto& agg{item.get_aggregate()};
 
-        crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
+        crudpp::for_each_index<T>
             ([this, agg](const auto i)
              {
                  const auto val{QVariant::fromValue(to_qt(boost::pfr::get<i()>(agg).value))};
@@ -140,7 +140,7 @@ public:
 
     void clear()
     {
-        crudpp::for_each_index<boost::pfr::tuple_size_v<T>>
+        crudpp::for_each_index<T>
             ([this] (const auto i)
              {
                  const std::remove_reference_t<decltype(boost::pfr::get<i()>(this->aggregate))> init{};

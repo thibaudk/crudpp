@@ -33,83 +33,45 @@ const constexpr std::string get_primary_key_name()
     return "";
 }
 
-// FIXME
-// very ineficiant !! replace with avendish introspection lib
-// --
-template <typename T>
-const constexpr size_t get_primary_key_index()
-{
-    size_t pk_index{};
-
-    boost::pfr::for_each_field(T{},
-                               [&pk_index](const auto& f, size_t i)
-                               {
-                                   if constexpr(is_primary_key<decltype(f), T>)
-                                       pk_index = i;
-                               });
-    return pk_index;
-}
-
-template <typename F, typename Agg>
-const constexpr size_t get_field_index()
-{
-    size_t index{};
-
-    boost::pfr::for_each_field(Agg{},
-                               [&index](const auto& f, size_t i)
-                               {
-                                   if constexpr(is_field<F, decltype(f)>)
-                                       index = i;
-                               });
-    return index;
-}
-
-template <typename F, typename Agg>
-const constexpr size_t get_field_index(const Agg& agg)
-{
-    size_t index{};
-
-    boost::pfr::for_each_field(agg,
-                               [&index](const auto& f, size_t i)
-                               {
-                                   if constexpr(is_field<F, decltype(f)>)
-                                       index = i;
-                               });
-    return index;
-}
-// --
-
-// FIXME
-// possibly replacable with avendish introspection lib
 // iterate over size_t template arguments
-// copied from https://stackoverflow.com/a/49319521/14999126
-// --
-template <size_t ...Is, typename F>
-void for_each_index(std::index_sequence<Is...>, F&& f)
+// adapted from both https://www.fluentcpp.com/2021/03/05/stdindex_sequence-and-its-improvement-in-c20/
+// and https://stackoverflow.com/a/49319521/14999126
+template <class Aggregate, class F>
+constexpr decltype(auto) for_each_index(F&& f)
 {
-    int dummy[] = {0, (static_cast<void>(f(std::integral_constant<size_t, Is>())), 0)...};
-    static_cast<void>(dummy);
+    return [] <size_t... I>
+        (F&& f, std::index_sequence<I...>)
+    {
+        (f(std::integral_constant<size_t, I>()), ...);
+        return f;
+    }
+    (std::forward<F>(f),
+     std::make_index_sequence<boost::pfr::tuple_size_v<Aggregate>>{});
 }
 
-template <size_t N, typename F>
-void for_each_index(F&& f)
+// short circuit the above fold expression
+// adapted from https://github.com/celtera/avendish/blob/main/include/avnd/common/for_nth.hpp#L62
+template <class Aggregate, class F>
+constexpr decltype(auto) for_nth_index(int k, F&& f)
 {
-    for_each_index(std::make_index_sequence<N>(), std::forward<F>(f));
+    return [k] <size_t... I>
+        (F&& f, std::index_sequence<I...>)
+    {
+        ((void)(I == k && (f(std::integral_constant<size_t, I>()), true)), ...);
+        return f;
+    }
+    (std::forward<F>(f),
+     std::make_index_sequence<boost::pfr::tuple_size_v<Aggregate>>{});
 }
-// --
 
 template <typename T>
 bool valid_key(const auto& f)
 {
     if constexpr(std::integral<decltype(f.value)>)
-    {
         if (f.value > 0) return true;
-    }
 
     if constexpr(std::same_as<decltype(f.value), std::string>)
-    {
         if (!f.value.empty()) return true;
-    }
 
     return false;
 }
