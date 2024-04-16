@@ -34,9 +34,6 @@ struct model final : public base_wrapper<T>
         return rn;
     }
 
-    // FIXME
-    // very ineficiant !! replace with avendish introspection lib
-    // --
     QVariant data(int role) const
     {
         QVariant v{};
@@ -51,12 +48,10 @@ struct model final : public base_wrapper<T>
         }
         else
         {
-            boost::pfr::for_each_field(this->aggregate,
-                                       [&v, role](const auto& f, size_t i)
-                                       {
-                                           if (role - Qt::UserRole == i)
-                                               v = to_qt(f.value);
-                                       });
+            crudpp::for_nth_index<T>(role - Qt::UserRole,
+                                     [&v, role, this] (const auto i)
+                                     { v = to_qt(boost::pfr::get<i()>(this->aggregate).value); }
+                                     );
         }
 
         return v;
@@ -64,29 +59,23 @@ struct model final : public base_wrapper<T>
 
     void setData(const QVariant& v, int role)
     {
-        boost::pfr::for_each_field(this->aggregate,
-                                   [&v, role, this](auto& f, size_t i)
-                                   {
-                                       // prevent from manually setting primary key
-                                       if constexpr(crudpp::is_primary_key<decltype(f), T>)
-                                           return;
-
-                                       if (role - Qt::UserRole == i)
-                                       {
-                                           const auto new_val{from_qt<decltype(f.value)>(v)};
-
-                                           if (f.value != new_val)
-                                           {
-                                               f.value = new_val;
-                                               this->dirtyFlag_[i] = true;
-                                           }
-                                       }
-                                   });
-
         if (role == loading_role())
             this->loading = v.toBool();
+        else
+            crudpp::for_nth_index<T>(role - Qt::UserRole,
+                                     [&v, role, this] (const auto i)
+                                     {
+                                         auto& field{boost::pfr::get<i()>(this->aggregate)};
+
+                                         // prevent from manually setting primary key
+                                         if constexpr(crudpp::is_primary_key<decltype(field), T>)
+                                             return;
+
+                                         const auto new_val{from_qt<decltype(field.value)>(v)};
+
+                                         if (field.value != new_val) field.value = new_val;
+                                     });
     }
-    // --
 };
 
 } // namespace qt

@@ -27,9 +27,8 @@ public:
     void get()
     {
         net_manager::instance().getFromKey(T::table(),
-                                           [this](const QByteArray& bytes)
+                                           [this] (const QByteArray& bytes)
                                            { read(bytes); });
-
     }
     W_INVOKABLE(get)
 
@@ -276,7 +275,11 @@ public:
 
     QVector<Type> items() const { return m_items; }
 
-    Type& item_at(int index) { return m_items[index]; }
+    Type& item_at(int index)
+    {
+        // TODO: implement error handling !!
+        return m_items[index];
+    }
 
 private:
     QVector<Type> m_items{};

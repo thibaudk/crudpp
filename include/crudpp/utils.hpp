@@ -37,14 +37,11 @@ const constexpr std::string get_primary_key_name()
 // adapted from both https://www.fluentcpp.com/2021/03/05/stdindex_sequence-and-its-improvement-in-c20/
 // and https://stackoverflow.com/a/49319521/14999126
 template <class Aggregate, class F>
-constexpr decltype(auto) for_each_index(F&& f)
+constexpr void for_each_index(F&& f)
 {
-    return [] <size_t... I>
+    [] <size_t... I>
         (F&& f, std::index_sequence<I...>)
-    {
-        (f(std::integral_constant<size_t, I>()), ...);
-        return f;
-    }
+    { (f(std::integral_constant<size_t, I>()), ...); }
     (std::forward<F>(f),
      std::make_index_sequence<boost::pfr::tuple_size_v<Aggregate>>{});
 }
@@ -52,14 +49,21 @@ constexpr decltype(auto) for_each_index(F&& f)
 // short circuit the above fold expression
 // adapted from https://github.com/celtera/avendish/blob/main/include/avnd/common/for_nth.hpp#L62
 template <class Aggregate, class F>
-constexpr decltype(auto) for_nth_index(int k, F&& f)
+constexpr void for_nth_index(int index, F&& f)
 {
-    return [k] <size_t... I>
+    [index] <size_t... I>
         (F&& f, std::index_sequence<I...>)
-    {
-        ((void)(I == k && (f(std::integral_constant<size_t, I>()), true)), ...);
-        return f;
-    }
+    { ((void)(I == index && (f(std::integral_constant<size_t, I>()), true)), ...); }
+    (std::forward<F>(f),
+     std::make_index_sequence<boost::pfr::tuple_size_v<Aggregate>>{});
+}
+
+template <class Aggregate, class F>
+constexpr bool for_each_index_until(F&& f)
+{
+    return [] <size_t... I>
+        (F&& f, std::index_sequence<I...>)
+    { return (f(std::integral_constant<size_t, I>()) && ...); }
     (std::forward<F>(f),
      std::make_index_sequence<boost::pfr::tuple_size_v<Aggregate>>{});
 }

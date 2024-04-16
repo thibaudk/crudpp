@@ -7,7 +7,7 @@
 #include <crudpp/utils.hpp>
 #include <crudpp/required.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
-#include <crudpp/bindigs/qt/visitors/json_handler.hpp>
+#include <crudpp/bindigs/qt/json_reader.hpp>
 
 namespace qt
 {
@@ -17,44 +17,51 @@ struct base_wrapper
     void set(const T& agg)
     {
         aggregate = agg;
-        reset_flags();
+        prev_agg = agg;
         m_inserted = true;
     }
 
     void read(const QJsonObject& obj)
     {
-        boost::pfr::for_each_field(aggregate, json_handler{obj});
+        crudpp::for_each_index<T>(
+            [&obj, this] (const auto i)
+            {
+                json_reader vis{.json = obj};
+                auto& field{boost::pfr::get<i()>(aggregate)};
+
+                if (vis.json.contains(field.c_name()))
+                    if (!vis.json[field.c_name()].isNull())
+                        vis(field);
+            });
+
         reset_flags();
         m_inserted = true;
     }
 
     void write(QJsonObject& obj)
     {
-        boost::pfr::for_each_field(aggregate,
-                                   [&obj, this] (const crudpp::r_c_name auto& f, size_t i)
-                                   {
-                                       if constexpr(crudpp::is_primary_key<decltype(f), T>)
-                                       {
-                                           // skip primary key for insert
-                                           // ie. when it's flag is true (default)
-                                           if (dirtyFlag_[i]) return;
-                                       }
-                                       else
-                                       {
-                                           // skip non primary key values that have not been updated
-                                           if (!dirtyFlag_[i]) return;
-                                       }
+        crudpp::for_each_index<T>(
+            [&obj, this] (const auto i)
+            {
+                const auto field{boost::pfr::get<i()>(aggregate)};
 
-                                       obj[f.c_name()] = to_qjson(to_qt(f.value));
-                                   });
+                if constexpr(crudpp::is_primary_key<decltype(field), T>)
+                {
+                    // skip primary key for insert
+                    if (!m_inserted) return;
+                }
+                else
+                {
+                    const auto prev_field{boost::pfr::get<i()>(prev_agg)};
+                    // skip non primary key values that have not been updated
+                    if (field.value == prev_field.value) return;
+                }
+
+                obj[field.c_name()] = to_qjson(to_qt(field.value));
+            });
     }
 
-    // set all flags to false
-    void reset_flags()
-    {
-        for (bool& v : dirtyFlag_)
-            if (v) v = false;
-    }
+    void reset_flags() { prev_agg = aggregate; }
 
     // check if the item was inserted in the database
     // ie. if the default false value is now true
@@ -62,22 +69,25 @@ struct base_wrapper
 
     bool flagged_for_update() const
     {
-        for (bool f : this->dirtyFlag_)
-            if (f) return true;
-
-        return false;
+        return crudpp::for_each_index_until<T>(
+            [this] (const auto i)
+            {
+                return boost::pfr::get<i()>(aggregate).value
+                       != boost::pfr::get<i()>(prev_agg).value;
+            }
+            );
     }
 
     T& get_aggregate() { return aggregate; }
+    const T& get_prev_agg() { return prev_agg; }
 
 protected:
     base_wrapper() = default;
 
-    // all true by default to set all fields upon insert
-    bool dirtyFlag_[boost::pfr::tuple_size<T>::value] = { true };
     bool m_inserted{false};
     bool loading{false};
     T aggregate{};
+    T prev_agg{};
 };
 
 } //crudpp

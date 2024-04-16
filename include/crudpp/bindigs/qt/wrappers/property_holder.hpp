@@ -77,13 +77,29 @@ public:
         : QObject{parent}
     {}
 
-    // FIXME
-    // replace with "set_property_value" visitor
     void read(const QJsonObject& obj)
     {
-        base_wrapper<T>::read(obj);
-        crudpp::for_each_index<T>
-            ([this](const auto i){ property_changed<i()>(); });
+        crudpp::for_each_index<T>(
+            [&obj, this] (const auto i)
+            {
+                json_reader vis{.json = obj};
+                auto& field{boost::pfr::get<i()>(this->aggregate)};
+
+                if (vis.json.contains(field.c_name()))
+                {
+                    if (!vis.json[field.c_name()].isNull())
+                    {
+                        vis(field);
+
+                        if (field.value != boost::pfr::get<i()>(this->prev_agg).value)
+                            property_changed<i()>();
+                    }
+                }
+            }
+            );
+
+        reset_flags();
+        this->m_inserted = true;
 
         emit flaggedChanged();
     }
@@ -100,7 +116,7 @@ public:
         const auto& agg{item.get_aggregate()};
 
         crudpp::for_each_index<T>
-            ([this, agg](const auto i)
+            ([this, agg] (const auto i)
              {
                  const auto val{QVariant::fromValue(to_qt(boost::pfr::get<i()>(agg).value))};
                  set_property_value<i()>(val);
@@ -108,8 +124,7 @@ public:
              );
 
         this->m_inserted = item.inserted();
-
-        reset_flags();
+        this->prev_agg = item.get_prev_agg();
     }
 
     void from_list(list_model<T>* list, int index)
@@ -148,9 +163,8 @@ public:
              }
              );
 
-        this->m_inserted = false;
-
         reset_flags();
+        this->m_inserted = false;
     }
     W_INVOKABLE(clear)
 
@@ -336,7 +350,6 @@ private:
     {
         auto& property{boost::pfr::get<I>(this->aggregate)};
         property.value = from_qt<decltype(property.value)>(variant);
-        this->dirtyFlag_[I] = true;
         property_changed<I>();
         emit flaggedChanged();
     }
