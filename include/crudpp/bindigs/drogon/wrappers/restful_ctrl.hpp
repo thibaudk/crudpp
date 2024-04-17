@@ -86,7 +86,8 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
                 (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r)));
             },
             [callbackPtr, this](const DrogonDbException &e) {
-                const drogon::orm::UnexpectedRows *s=dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
+                const drogon::orm::UnexpectedRows *s=
+                    dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
                 if(s)
                 {
                     auto resp = HttpResponse::newHttpResponse();
@@ -183,8 +184,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
                     Json::Value ret;
                     ret["error"]="No resources are updated";
                     auto resp = HttpResponse::newHttpJsonResponse(ret);
-//                    TODO : reinstate as an error when redundant client requests can be prevented
-//                    resp->setStatusCode(k404NotFound);
+                    resp->setStatusCode(k404NotFound);
                     (*callbackPtr)(resp);
                 }
                 else
@@ -336,10 +336,12 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 mapper.update(r,
                     [callbackPtr, req, r, this](const size_t)
                     { (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r))); },
-                    [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
+                    [callbackPtr, this](const DrogonDbException &e)
+                    { this->internal_error(e, callbackPtr); });
             },
             [callbackPtr, this](const DrogonDbException &e) {
-                const drogon::orm::UnexpectedRows *s=dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
+                const drogon::orm::UnexpectedRows *s=
+                    dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
                 if(s)
                 {
                     Json::Value ret;

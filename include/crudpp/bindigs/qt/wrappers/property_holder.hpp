@@ -125,6 +125,7 @@ public:
 
         this->m_inserted = item.inserted();
         this->prev_agg = item.get_prev_agg();
+        emit flaggedChanged();
     }
 
     void from_list(list_model<T>* list, int index)
