@@ -69,11 +69,11 @@ struct base_wrapper
 
     bool flagged_for_update() const
     {
-        return crudpp::for_each_index_until<T>(
+        return !crudpp::for_each_index_until<T>(
             [this] (const auto i)
             {
                 return boost::pfr::get<i()>(aggregate).value
-                       != boost::pfr::get<i()>(prev_agg).value;
+                       == boost::pfr::get<i()>(prev_agg).value;
             }
             );
     }

@@ -207,16 +207,21 @@ public:
         return sql;
     }
 
-    constexpr std::string sqlForInserting(bool& needSelection) const
+    std::string sqlForInserting(bool& needSelection) const
     {
+        if constexpr (r_primary_key<T>)
+            needSelection = true;
+        else
+            needSelection = false;
+
+        // BUG: parametersCount increments but never evaluates true for > 0
+        // size_t parametersCount = 0;
         std::string sql="insert into " + tableName + " (";
-        size_t parametersCount = 0;
-        needSelection = false;
 
         using namespace boost::pfr;
 
         for_each_field(aggregate,
-                       [this, &sql, &parametersCount](const r_c_name auto& f, size_t i)
+                       [this, &sql/*, &parametersCount*/](const r_c_name auto& f, size_t i)
                        {
                            if constexpr(is_primary_key<decltype(f), T>)
                                return;
@@ -226,13 +231,11 @@ public:
 
                            sql += f.c_name();
                            sql += ',';
-                           ++parametersCount;
+                           // ++parametersCount;
                        });
 
-        if constexpr (r_primary_key<T>)
-            needSelection = true;
-
-        if(parametersCount > 0)
+        // if (parametersCount > 0)
+        if (sql.size() > 21)
         {
             sql[sql.length()-1]=')';
             sql += " values (";
@@ -250,7 +253,8 @@ public:
                                sql.append("?,");
                        });
 
-        if(parametersCount > 0)
+        // if(parametersCount > 0)
+        if(sql.size() > 31)
             sql.resize(sql.length() - 1);
 
         sql.append(1, ')');
