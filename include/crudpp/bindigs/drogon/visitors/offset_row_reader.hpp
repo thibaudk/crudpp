@@ -6,10 +6,6 @@ namespace drgn
 {
 struct offset_row_reader
 {
-    const drogon::orm::Row& row;
-    const ssize_t offset;
-    ssize_t index = offset;
-
     void operator()(auto& f) noexcept
         requires std::is_arithmetic_v<decltype(f.value)>
     {
@@ -45,5 +41,9 @@ struct offset_row_reader
     {
         f.value = from_drgn_time_ms(row.at(index).as<std::string>());
     }
+
+    const drogon::orm::Row& row;
+    const ssize_t offset;
+    ssize_t index = offset;
 };
 } // namespace drgn

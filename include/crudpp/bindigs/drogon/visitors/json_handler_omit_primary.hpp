@@ -8,26 +8,33 @@ namespace drgn
 template<typename T>
 struct json_handler_omit_primary
 {
-    explicit json_handler_omit_primary(bool* flag_ptr, const Json::Value& pJson)
-        : flags{flag_ptr}
+    explicit json_handler_omit_primary(T* agg, T* prev, const Json::Value& pJson)
+        : aggregate{agg}
+        , prev_agg{prev}
         , vis{.json = pJson}
     {}
 
-    void operator()(crudpp::r_c_name auto& f) noexcept
+    void operator()(const auto i) noexcept
     {
+        using namespace boost::pfr;
+
+        auto& f{get<i()>(*aggregate)};
+
         if (vis.json.isMember(f.c_name()))
         {
             if (!vis.json[f.c_name()].isNull())
                 vis(f);
 
             if constexpr(!crudpp::is_primary_key<decltype(f), T>)
-                *flags = true;
+            {
+                auto& prev{get<i()>(*prev_agg)};
+                prev.value = f.value;
+            }
         }
-
-        flags++;
     }
 
-    bool* flags;
+    T* aggregate;
+    T* prev_agg;
     json_reader vis;
 };
 } // namespace drgn

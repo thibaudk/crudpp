@@ -252,16 +252,16 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
             return;
         }
 
+        // TODO: can be done better ?
         T tmp{};
-        auto& unmae{tmp.username};
+        auto& uname{tmp.username};
         auto& pwd{tmp.password};
-        bool dirtyFlag_[2] = { false };
-        json_handler handler{dirtyFlag_, *jsonPtr};
+        const auto prev_uname{uname.value};
+        const auto prev_pwd{pwd.value};
 
-        handler(unmae);
-        handler(pwd);
+        crudpp::for_each_index<T>(json_handler{&tmp, *jsonPtr});
 
-        if(!dirtyFlag_[0] || !dirtyFlag_[1])
+        if(uname.value == prev_uname || pwd.value == prev_pwd)
         {
             Json::Value ret;
             ret["error"] = "missing username and/or password in the request";
@@ -277,7 +277,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 std::move(callback));
         drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
         mapper.findOne(
-            Criteria{unmae.c_name(), CompareOperator::EQ, unmae.value},
+            Criteria{uname.c_name(), CompareOperator::EQ, uname.value},
             [callbackPtr, req, &pwd, &mapper, this](model<T> r)
             {
                 auto conf{HttpAppFramework::instance().getCustomConfig()["encryption"]};
@@ -331,7 +331,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                     return;
                 }
 
-                r.template update<decltype(T::session_id)>(req->session()->sessionId());
+                r.get_aggregate().session_id.value = req->session()->sessionId();
 
                 mapper.update(r,
                     [callbackPtr, req, r, this](const size_t)

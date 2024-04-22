@@ -67,7 +67,7 @@ public:
 
     explicit model(const Json::Value& pJson) noexcept(false)
     {
-        boost::pfr::for_each_field(aggregate, json_handler{dirtyFlag_, pJson});
+        crudpp::for_each_index<T>(json_handler{&aggregate, pJson});
     }
 
     model(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
@@ -78,15 +78,17 @@ public:
             return;
         }
 
-        boost::pfr::for_each_field(aggregate,
-                                   m_vector_handler{dirtyFlag_, pJson, pMasqueradingVector});
+        crudpp::for_each_index<T>(m_vector_handler{&aggregate, pJson, pMasqueradingVector});
     }
 
     model() = default;
 
     void updateByJson(const Json::Value &pJson) noexcept(false)
     {
-        boost::pfr::for_each_field(aggregate, json_handler_omit_primary<T>{dirtyFlag_, pJson});
+        // TODO: verify if the distinction with simple json_handler is waranted
+        crudpp::for_each_index<T>(json_handler_omit_primary{&aggregate,
+                                                            &prev_agg,
+                                                            pJson});
     }
 
     void updateByMasqueradedJson(const Json::Value &pJson,
@@ -98,29 +100,11 @@ public:
             return;
         }
 
-        boost::pfr::for_each_field(aggregate,
-                                   m_vector_handler_omit_primary<T>{dirtyFlag_,
-                                                                    pJson,
-                                                                    pMasqueradingVector});
+        crudpp::for_each_index<T>(m_vector_handler_omit_primary<T>{&aggregate,
+                                                                   &prev_agg,
+                                                                   pJson,
+                                                                   pMasqueradingVector});
     }
-
-    // FIXME
-    // very ineficiant !! replace with avendish introspection lib
-    // --
-    template <typename F, typename Val_t>
-    void update(const Val_t& v)
-    {
-        boost::pfr::for_each_field(aggregate,
-                                   [&v, this](auto& f, size_t i)
-                                   {
-                                       if constexpr(is_field<F, decltype(f)>)
-                                       {
-                                           f.value = v;
-                                           dirtyFlag_[i] = true;
-                                       }
-                                   });
-    }
-    // --
 
 //    TODO : re-impelement checks
 //    static bool validJsonOfField(size_t index,
@@ -218,19 +202,22 @@ public:
 
         using namespace boost::pfr;
 
-        for_each_field(aggregate,
-                       [this, &sql/*, &parametersCount*/] (const r_c_name auto& f, size_t i)
-                       {
-                           if constexpr(is_primary_key<decltype(f), T>)
-                               return;
+        for_each_index<T>([this, &sql/*, &parametersCount*/] (const auto i)
+                          {
+                              auto& f{boost::pfr::get<i()>(aggregate)};
 
-                           if (!dirtyFlag_[i])
-                               return;
+                              if constexpr(is_primary_key<decltype(f), T>)
+                                  return;
 
-                           sql += f.c_name();
-                           sql += ',';
-                           // ++parametersCount;
-                       });
+                              auto& pf{boost::pfr::get<i()>(prev_agg)};
+
+                              if (f.value == pf.value)
+                                  return;
+
+                              sql += f.c_name();
+                              sql += ',';
+                              // ++parametersCount;
+                          });
 
         // if (parametersCount > 0)
         if (sql.size() > 21)
@@ -241,15 +228,18 @@ public:
         else
             sql += ") values (";
 
-        for_each_field(aggregate,
-                       [this, &sql] (const auto& f, size_t i)
-                       {
-                           if constexpr(is_primary_key<decltype(f), T>)
-                               return;
+        crudpp::for_each_index<T>([this, &sql] (const auto i)
+                                  {
+                                      auto& f{boost::pfr::get<i()>(aggregate)};
 
-                           if (dirtyFlag_[i])
-                               sql.append("?,");
-                       });
+                                      if constexpr(is_primary_key<decltype(f), T>)
+                                          return;
+
+                                      auto& pf{boost::pfr::get<i()>(prev_agg)};
+
+                                      if (f.value == pf.value)
+                                          sql.append("?,");
+                                  });
 
         // if (parametersCount > 0)
         if(sql.size() > 31)
@@ -259,8 +249,6 @@ public:
         LOG_TRACE << sql;
         return sql;
     }
-
-    T& get_aggregate() { return aggregate; }
 
     static const std::vector<std::string>& insertColumns() noexcept
     {
@@ -274,6 +262,8 @@ public:
                                    { inCols.push_back(f.c_name()); });
         return inCols;
     }
+
+    T& get_aggregate() { return aggregate; }
 
 private:
     friend Mapper<model<T>>;
@@ -289,38 +279,44 @@ private:
     {
         std::vector<std::string> ret;
 
-        boost::pfr::for_each_field(aggregate,
-                                   [this, &ret](r_c_name auto& f, size_t i)
-                                   {
-                                       if constexpr(is_primary_key<decltype(f), T>)
-                                           return;
+        crudpp::for_each_index<T>([this, &ret] (const auto i)
+                                  {
+                                      auto& f{boost::pfr::get<i()>(aggregate)};
 
-                                       if (dirtyFlag_[i])
-                                           ret.push_back(f.c_name());
-                                   });
+                                      if constexpr(is_primary_key<decltype(f), T>)
+                                          return;
+
+                                      auto& pf{boost::pfr::get<i()>(prev_agg)};
+
+                                      if (f.value == pf.value)
+                                          ret.push_back(f.c_name());
+                                  });
         return ret;
     }
 
     void outputArgs(internal::SqlBinder& binder) const
     {
-        boost::pfr::for_each_field(aggregate,
-                                   [this, &binder](const auto& f, size_t i)
-                                   {
-                                       if constexpr(is_primary_key<decltype(f), T>)
-                                           return;
+        crudpp::for_each_index<T>([this, &binder] (const auto i)
+                                  {
+                                      auto& f{boost::pfr::get<i()>(aggregate)};
 
-                                       if (dirtyFlag_[i])
-                                       {
-                                           if constexpr(is_foreign_key<decltype(f)>)
-                                               if (!crudpp::valid_key<decltype(f)>(f))
-                                               {
-                                                   binder << nullptr;
-                                                   return;
-                                               }
+                                      if constexpr(is_primary_key<decltype(f), T>)
+                                          return;
 
-                                           binder << to_drgn(f.value);
-                                       }
-                                   });
+                                      auto& pf{boost::pfr::get<i()>(prev_agg)};
+
+                                      if (f.value == pf.value)
+                                      {
+                                          if constexpr(is_foreign_key<decltype(f)>)
+                                              if (!crudpp::valid_key<decltype(f)>(f))
+                                              {
+                                                  binder << nullptr;
+                                                  return;
+                                              }
+
+                                          binder << to_drgn(f.value);
+                                      }
+                                  });
     }
 
     void updateArgs(internal::SqlBinder& binder) const { outputArgs(binder); }
@@ -337,7 +333,7 @@ private:
         assert(false);
     }
 
-    bool dirtyFlag_[boost::pfr::tuple_size<T>::value] = { false };
     T aggregate{};
+    T prev_agg{};
 };
 } // namespace drgn
