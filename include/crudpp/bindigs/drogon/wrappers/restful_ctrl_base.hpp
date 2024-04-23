@@ -3,7 +3,7 @@
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
 
-#include <crudpp/required.hpp>
+#include <crudpp/concepts.hpp>
 #include <crudpp/bindigs/drogon/wrappers/model.hpp>
 
 using namespace drogon;

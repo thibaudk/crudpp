@@ -5,7 +5,7 @@
 
 #include <wobjectdefs.h>
 
-#include <crudpp/required.hpp>
+#include <crudpp/concepts.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
 
 class QQmlContext;

@@ -6,7 +6,7 @@
 #include <QDate>
 #include <QJsonValue>
 
-#include <crudpp/required.hpp>
+#include <crudpp/concepts.hpp>
 
 namespace qt
 {
@@ -136,10 +136,10 @@ const std::string make_key(const T&& agg)
     std::string key{T::table()};
     key += '/';
 
-    if constexpr(std::same_as<decltype(agg.primary_key.value), std::string>)
-        key += agg.primary_key.value;
+    if constexpr(std::same_as<typename crudpp::trait<T>::pk_v_type, std::string>)
+        key += (agg.*T::primary_key()).value;
     else
-        key += std::to_string(agg.primary_key.value);
+        key += std::to_string((agg.*T::primary_key()).value);
 
     return key;
 }

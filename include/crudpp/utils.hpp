@@ -4,31 +4,16 @@
 
 #include <boost/pfr/core.hpp>
 
-#include <crudpp/required.hpp>
+#include <crudpp/concepts.hpp>
 
 namespace crudpp
 {
-// adapted from drogon's Mapper.h
-template <typename T, bool hasPrimaryKey = true>
-struct trait
-{
-    using type = decltype(T::primary_key.value);
-};
-
-template <typename T>
-struct trait<T, false>
-{
-    using type = void;
-};
-
 template <typename T>
 const constexpr std::string get_primary_key_name()
 {
     if constexpr(r_primary_key<T>)
-    {
-        if constexpr(r_c_name<decltype(T::primary_key)>)
-            return T::primary_key::c_name();
-    }
+        if constexpr(r_c_name<typename trait<T>::pk_type>)
+            return trait<T>::pk_type::c_name();
 
     return "";
 }

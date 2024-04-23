@@ -12,8 +12,9 @@
 #endif
 #include <json/value.h>
 
-#include <crudpp/required.hpp>
 #include <crudpp/utils.hpp>
+#include <crudpp/concepts.hpp>
+#include <crudpp/type_traits.hpp>
 #include <crudpp/bindigs/drogon/visitors/json_handler.hpp>
 #include <crudpp/bindigs/drogon/visitors/json_handler_omit_primary.hpp>
 #include <crudpp/bindigs/drogon/visitors/m_vector_handler.hpp>
@@ -33,15 +34,13 @@ public:
     static const constexpr std::string tableName = T::table();
     static const constexpr bool hasPrimaryKey = r_primary_key<T>;
     static const constexpr std::string primaryKeyName = get_primary_key_name<T>();
-    using PrimaryKeyType = typename trait<T, r_primary_key<T>>::type;
+    using PrimaryKeyType = typename trait<T, r_primary_key<T>>::pk_v_type;
 
     const typename internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
     {
         if constexpr(r_primary_key<T>)
             if constexpr(requires { r_value<T, PrimaryKeyType>; })
-            {
-                return aggregate.primary_key.value;
-            }
+                return (aggregate.*T::primary_key()).value;
 
         assert(false);
         return 0;
@@ -201,15 +200,16 @@ public:
         std::string sql="insert into " + tableName + " (";
 
         using namespace boost::pfr;
+        using namespace crudpp;
 
         for_each_index<T>([this, &sql/*, &parametersCount*/] (const auto i)
                           {
-                              auto& f{boost::pfr::get<i()>(aggregate)};
+                              auto& f{get<i()>(aggregate)};
 
                               if constexpr(is_primary_key<decltype(f), T>)
                                   return;
 
-                              auto& pf{boost::pfr::get<i()>(prev_agg)};
+                              auto& pf{get<i()>(prev_agg)};
 
                               if (f.value == pf.value)
                                   return;
@@ -220,7 +220,7 @@ public:
                           });
 
         // if (parametersCount > 0)
-        if (sql.size() > 21)
+        if (sql.size() > 21) // initial length
         {
             sql[sql.length()-1]=')';
             sql += " values (";
@@ -228,21 +228,21 @@ public:
         else
             sql += ") values (";
 
-        crudpp::for_each_index<T>([this, &sql] (const auto i)
-                                  {
-                                      auto& f{boost::pfr::get<i()>(aggregate)};
+        for_each_index<T>([this, &sql] (const auto i)
+                          {
+                              auto& f{get<i()>(aggregate)};
 
-                                      if constexpr(is_primary_key<decltype(f), T>)
-                                          return;
+                              if constexpr(is_primary_key<decltype(f), T>)
+                                  return;
 
-                                      auto& pf{boost::pfr::get<i()>(prev_agg)};
+                              auto& pf{get<i()>(prev_agg)};
 
-                                      if (f.value == pf.value)
-                                          sql.append("?,");
-                                  });
+                              if (f.value == pf.value)
+                                  sql.append("?,");
+                          });
 
         // if (parametersCount > 0)
-        if(sql.size() > 31)
+        if(sql.size() > 31) // initial length + ") valuees ("
             sql.resize(sql.length() - 1);
 
         sql.append(1, ')');
@@ -279,14 +279,16 @@ private:
     {
         std::vector<std::string> ret;
 
+        using namespace boost::pfr;
+
         crudpp::for_each_index<T>([this, &ret] (const auto i)
                                   {
-                                      auto& f{boost::pfr::get<i()>(aggregate)};
+                                      auto& f{get<i()>(aggregate)};
 
                                       if constexpr(is_primary_key<decltype(f), T>)
                                           return;
 
-                                      auto& pf{boost::pfr::get<i()>(prev_agg)};
+                                      auto& pf{get<i()>(prev_agg)};
 
                                       if (f.value == pf.value)
                                           ret.push_back(f.c_name());
@@ -296,27 +298,30 @@ private:
 
     void outputArgs(internal::SqlBinder& binder) const
     {
-        crudpp::for_each_index<T>([this, &binder] (const auto i)
-                                  {
-                                      auto& f{boost::pfr::get<i()>(aggregate)};
+        using namespace boost::pfr;
+        using namespace crudpp;
 
-                                      if constexpr(is_primary_key<decltype(f), T>)
-                                          return;
+        for_each_index<T>([this, &binder] (const auto i)
+                          {
+                              auto& f{get<i()>(aggregate)};
 
-                                      auto& pf{boost::pfr::get<i()>(prev_agg)};
+                              if constexpr(is_primary_key<decltype(f), T>)
+                                  return;
 
-                                      if (f.value == pf.value)
+                              auto& pf{get<i()>(prev_agg)};
+
+                              if (f.value == pf.value)
+                              {
+                                  if constexpr(is_foreign_key<decltype(f)>)
+                                      if (!valid_key<decltype(f)>(f))
                                       {
-                                          if constexpr(is_foreign_key<decltype(f)>)
-                                              if (!crudpp::valid_key<decltype(f)>(f))
-                                              {
-                                                  binder << nullptr;
-                                                  return;
-                                              }
-
-                                          binder << to_drgn(f.value);
+                                          binder << nullptr;
+                                          return;
                                       }
-                                  });
+
+                                  binder << to_drgn(f.value);
+                              }
+                          });
     }
 
     void updateArgs(internal::SqlBinder& binder) const { outputArgs(binder); }
@@ -326,7 +331,8 @@ private:
     {
         if constexpr(r_primary_key<T>)
         {
-            aggregate.primary_key.value = id;
+            // TODO: handle composite keys
+            (aggregate.*T::primary_key()).value = id;
             return;
         }
 

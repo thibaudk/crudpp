@@ -1,7 +1,7 @@
 #pragma once
 
 #include "m_vector_reader.hpp"
-#include <crudpp/required.hpp>
+#include <crudpp/concepts.hpp>
 
 namespace drgn
 {

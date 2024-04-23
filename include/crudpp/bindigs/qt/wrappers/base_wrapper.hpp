@@ -5,7 +5,7 @@
 #include <QJsonObject>
 
 #include <crudpp/utils.hpp>
-#include <crudpp/required.hpp>
+#include <crudpp/concepts.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
 #include <crudpp/bindigs/qt/json_reader.hpp>
 

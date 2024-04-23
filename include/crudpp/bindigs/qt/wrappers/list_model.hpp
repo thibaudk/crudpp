@@ -153,7 +153,7 @@ public:
                 QJsonDocument{obj}.toJson(),
                 [&item, row, this](const QJsonObject& rep)
                 {
-                    const auto id{item.get_aggregate().primary_key.value};
+                    const auto id{(item.get_aggregate().*T::primary_key()).value};
 
                     // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
@@ -161,7 +161,7 @@ public:
                                      ->findChildren<property_holder<T>*>()};
 
                     for (auto* p : objects)
-                        if (p->get_aggregate().primary_key.value == id)
+                        if ((p->get_aggregate().*T::primary_key()).value == id)
                             p->from_item(item);
 
                     item.reset_flags();
@@ -203,7 +203,7 @@ public:
             net_manager::instance().deleteToKey(key(item).c_str(),
                 [this, &item, row](const QJsonValue& rep)
                 {
-                    const auto id{item.get_aggregate().primary_key.value};
+                    const auto id{(item.get_aggregate().*T::primary_key()).value};
 
                     // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
@@ -211,7 +211,7 @@ public:
                                      ->findChildren<property_holder<T>*>()};
 
                     for (auto* p : objects)
-                        if (p->get_aggregate().primary_key.value == id)
+                        if ((p->get_aggregate().*T::primary_key()).value == id)
                             p->clear();
 
                     this->removeItem(row);

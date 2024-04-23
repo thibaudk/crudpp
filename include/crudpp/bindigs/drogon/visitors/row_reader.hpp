@@ -5,7 +5,7 @@
 #include <drogon/orm/Field.h>
 #include <drogon/orm/Row.h>
 
-#include <crudpp/required.hpp>
+#include <crudpp/concepts.hpp>
 #include <crudpp/bindigs/drogon/utils.hpp>
 
 namespace drgn

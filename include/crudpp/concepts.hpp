@@ -4,6 +4,8 @@
 #include <string>
 #include <utility>
 
+#include "type_traits.hpp"
+
 namespace crudpp
 {
 template <typename T, typename ...Exc_T>
@@ -46,7 +48,7 @@ concept r_c_name_and_value = requires(T t)
 template <typename T>
 concept r_primary_key = requires()
 {
-    std::is_class<decltype(T::primary_key)>();
+    std::is_member_object_pointer<decltype(T::primary_key())>();
 };
 
 template <typename T>
@@ -71,7 +73,7 @@ template <typename T, typename F>
 concept is_field = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<F>>;
 
 template <typename T, typename Agg>
-concept is_primary_key = is_field<T, decltype(Agg::primary_key)>;
+concept is_primary_key = is_field<T, typename trait<Agg>::pk_type>;
 
 template <typename T>
 concept is_foreign_key = requires(T t)

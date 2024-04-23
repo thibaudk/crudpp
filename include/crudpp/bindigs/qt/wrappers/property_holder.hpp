@@ -11,7 +11,7 @@
 #include <wobjectcpp.h>
 #include <wobjectimpl.h>
 
-#include <crudpp/required.hpp>
+#include <crudpp/concepts.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
 #include "base_wrapper.hpp"
@@ -189,7 +189,7 @@ public:
                 QJsonDocument{obj}.toJson(),
                 [this] (const QJsonObject& rep)
                 {
-                    const auto id{this->aggregate.primary_key.value};
+                    const auto id{(this->aggregate.*T::primary_key()).value};
 
                     // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
@@ -202,7 +202,7 @@ public:
                         {
                             auto& item{m->item_at(i)};
 
-                            if (item.get_aggregate().primary_key.value == id)
+                            if ((item.get_aggregate().*T::primary_key()).value == id)
                             {
                                 item.set(this->aggregate);
                                 m->dataChangedAt(i);
@@ -257,7 +257,7 @@ public:
             net_manager::instance().deleteToKey(key().c_str(),
                 [this](const QJsonValue& rep)
                 {
-                    const auto id{this->get_aggregate().primary_key.value};
+                    const auto id{(this->get_aggregate().*T::primary_key()).value};
 
                     // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
@@ -270,7 +270,7 @@ public:
                         {
                             auto& item{m->item_at(i)};
 
-                            if (item.get_aggregate().primary_key.value == id)
+                            if ((item.get_aggregate().*T::primary_key()).value == id)
                             {
                                 m->removeItem(i);
                                 break;
