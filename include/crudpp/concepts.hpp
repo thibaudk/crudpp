@@ -3,16 +3,49 @@
 #include <concepts>
 #include <string>
 #include <utility>
-
-#include "type_traits.hpp"
+#include <tuple>
 
 namespace crudpp
 {
+template <typename T, bool>
+struct trait;
+
 template <typename T, typename ...Exc_T>
 concept same_as = (std::same_as<T, Exc_T> || ...);
 
 template <typename T, typename ...Exc_T>
 concept different_than = !same_as<T, Exc_T...>;
+
+
+// adapted from https://stackoverflow.com/a/68444475
+// --
+template<class T, std::size_t N>
+concept has_tuple_element = requires(T t)
+{
+    typename std::tuple_element_t<N, std::remove_const_t<T>>;
+    { get<N>(t) } -> std::convertible_to<const std::tuple_element_t<N, T>&>;
+};
+
+template<class T>
+concept tuple_like = requires()
+{ typename std::tuple_size<T>::type; } &&
+[] <std::size_t... N> (std::index_sequence<N...>)
+{
+    return (has_tuple_element<T, N> && ...);
+} (std::make_index_sequence<std::tuple_size_v<T>>());
+// --
+
+template<class T>
+concept mop_tuple_like = requires()
+{ typename std::tuple_size<T>::type; } &&
+[] <std::size_t... N> (T&& t, std::index_sequence<N...>)
+{
+    using namespace std;
+    return ((is_member_object_pointer_v<
+                 remove_cvref_t<decltype(get<N>(t))>
+                 > &&
+             has_tuple_element<T, N>) && ...);
+} (T{}, std::make_index_sequence<std::tuple_size_v<T>>());
 
 template <typename T>
 concept r_table = requires()
@@ -46,49 +79,36 @@ concept r_c_name_and_value = requires(T t)
 };
 
 template <typename T>
+concept r_single_primary_key = std::is_member_object_pointer_v<decltype(T::primary_key())>;
+
+template <typename T>
 concept r_primary_key = requires()
 {
-    std::is_member_object_pointer<decltype(T::primary_key())>();
-};
+    { T::primary_key() } -> mop_tuple_like;
+} || r_single_primary_key<T>;
+
 
 template <typename T>
-concept r_session_id = requires()
-{
-    std::is_class<decltype(T::session_id)>();
-};
+concept r_session_id = std::is_class<decltype(T::session_id)>();
 
 template <typename T>
-concept r_username = requires()
-{
-    std::is_class<decltype(T::username)>();
-};
+concept r_username = std::is_class_v<decltype(T::username)>;
 
 template <typename T>
-concept r_password = requires()
-{
-    std::is_class<decltype(T::password)>();
-};
-
-template <typename T, typename F>
-concept is_field = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<F>>;
+concept r_password = std::is_class_v<decltype(T::password)>;
 
 template <typename T, typename Agg>
-concept is_primary_key = is_field<T, typename trait<Agg>::pk_type>;
+concept is_primary_key = std::same_as<
+    std::remove_cvref_t<T>,
+    std::remove_cvref_t<typename trait<Agg, true>::pk_type>
+    >;
 
 template <typename T>
-concept is_foreign_key = requires(T t)
-{
-    std::is_member_object_pointer_v<decltype(t.foreign_key())>;
-};
+concept is_foreign_key = std::is_member_object_pointer_v<decltype(T::foreign_key())>;
 
 template <typename T>
 concept authenticates = r_primary_key<T> &&
                         r_username<T> &&
                         r_password<T>;
 
-//template <typename T, typename ...Args>
-//concept r_permission = requires(Args... args)
-//{
-//    { T::permission(args) } -> std::same_as<std::to_undelying(utils::permissions)>;
-//};
 } // namespace crudpp

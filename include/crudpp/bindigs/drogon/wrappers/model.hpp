@@ -39,8 +39,7 @@ public:
     const typename internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
     {
         if constexpr(r_primary_key<T>)
-            if constexpr(requires { r_value<T, PrimaryKeyType>; })
-                return (aggregate.*T::primary_key()).value;
+            return (aggregate.*T::primary_key()).value;
 
         assert(false);
         return 0;

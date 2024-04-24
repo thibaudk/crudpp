@@ -7,6 +7,7 @@
 #include <QJsonValue>
 
 #include <crudpp/concepts.hpp>
+#include <crudpp/type_traits.hpp>
 
 namespace qt
 {

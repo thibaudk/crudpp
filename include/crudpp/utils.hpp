@@ -5,6 +5,7 @@
 #include <boost/pfr/core.hpp>
 
 #include <crudpp/concepts.hpp>
+#include <crudpp/type_traits.hpp>
 
 namespace crudpp
 {
