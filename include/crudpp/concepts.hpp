@@ -16,7 +16,6 @@ concept same_as = (std::same_as<T, Exc_T> || ...);
 template <typename T, typename ...Exc_T>
 concept different_than = !same_as<T, Exc_T...>;
 
-
 // adapted from https://stackoverflow.com/a/68444475
 // --
 template<class T, std::size_t N>
@@ -82,11 +81,13 @@ template <typename T>
 concept r_single_primary_key = std::is_member_object_pointer_v<decltype(T::primary_key())>;
 
 template <typename T>
-concept r_primary_key = requires()
+concept r_composite_primary_key = requires()
 {
     { T::primary_key() } -> mop_tuple_like;
-} || r_single_primary_key<T>;
+};
 
+template <typename T>
+concept r_primary_key = r_composite_primary_key<T> || r_single_primary_key<T>;
 
 template <typename T>
 concept r_session_id = std::is_class<decltype(T::session_id)>();

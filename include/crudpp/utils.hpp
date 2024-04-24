@@ -9,14 +9,34 @@
 
 namespace crudpp
 {
-template <typename T>
+// template <typename T>
+// const constexpr std::string get_primary_key_name()
+// {
+//     if constexpr(r_single_primary_key<T>)
+//     {
+//         if constexpr(r_c_name<typename trait<T>::pk_type>)
+//             return trait<T>::pk_type::c_name();
+//     }
+//     else if constexpr(r_composite_primary_key<T>) {}
+
+//     return "";
+// }
+
+template <r_single_primary_key T>
 const constexpr std::string get_primary_key_name()
 {
-    if constexpr(r_primary_key<T>)
-        if constexpr(r_c_name<typename trait<T>::pk_type>)
-            return trait<T>::pk_type::c_name();
+    if constexpr(r_c_name<typename trait<T>::pk_type>)
+        return trait<T>::pk_type::c_name();
 
     return "";
+}
+
+template <r_single_primary_key T,
+         typename ...Ts,
+         std::tuple<Ts ...> = T::primary_key()>
+const constexpr std::vector<std::string> get_primary_key_name()
+{
+    return {(trait<Ts>::pk_type::c_name(), ...)};
 }
 
 // iterate over size_t template arguments

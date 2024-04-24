@@ -127,16 +127,17 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
         }
         try
         {
+            // TODO: reinstate checks
             // workaroud validateMasqueradedJsonForUpdate
-            if (!model<T>::validateJsonForUpdate(*jsonPtr, err))
-            {
-                Json::Value ret;
-                ret["error"] = err;
-                auto resp= HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k400BadRequest);
-                callback(resp);
-                return;
-            }
+            // if (!model<T>::validateJsonForUpdate(*jsonPtr, err))
+            // {
+            //     Json::Value ret;
+            //     ret["error"] = err;
+            //     auto resp= HttpResponse::newHttpJsonResponse(ret);
+            //     resp->setStatusCode(k400BadRequest);
+            //     callback(resp);
+            //     return;
+            // }
 
             if (this->isMasquerading())
                 object.updateByMasqueradedJson(*jsonPtr, this->masqueradingVector());

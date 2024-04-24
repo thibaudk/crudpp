@@ -33,10 +33,10 @@ class model
 public:
     static const constexpr std::string tableName = T::table();
     static const constexpr bool hasPrimaryKey = r_primary_key<T>;
-    static const constexpr std::string primaryKeyName = get_primary_key_name<T>();
-    using PrimaryKeyType = typename trait<T, r_primary_key<T>>::pk_v_type;
+    static const constexpr trait_t<T>::pk_n_type primaryKeyName = get_primary_key_name<T>();
+    using PrimaryKeyType = typename trait_t<T>::pk_v_type;
 
-    const typename internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
+    const internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
     {
         if constexpr(r_primary_key<T>)
             return (aggregate.*T::primary_key()).value;
@@ -117,34 +117,33 @@ public:
 //    static bool validateMasqueradedJsonForUpdate(const Json::Value & pJson,
 //                                                 const std::vector<std::string> &pMasqueradingVector,
 //                                                 std::string &err){ return true; }
+    // static bool validateJsonForUpdate(const Json::Value &pJson, std::string &err)
+    // {
+    //     if constexpr (r_primary_key<T>)
+    //     {
+    //         if (!pJson.isMember(primaryKeyName))
+    //         {
+    //             err = "The value of primary key must be set in the json object for update";
+    //             return false;
+    //         }
 
-    static bool validateJsonForUpdate(const Json::Value &pJson, std::string &err)
-    {
-        if constexpr (r_primary_key<T>)
-        {
-            if (!pJson.isMember(primaryKeyName))
-            {
-                err = "The value of primary key must be set in the json object for update";
-                return false;
-            }
+    //         // TODO : check primary key type
 
-            // TODO : check primary key type
+    //         if (pJson.size() < 2)
+    //         {
+    //             err = "No values to update";
+    //             return false;
+    //         }
+    //     }
+    //     else
+    //         if (pJson.empty())
+    //         {
+    //             err = "No values to update";
+    //             return false;
+    //         }
 
-            if (pJson.size() < 2)
-            {
-                err = "No values to update";
-                return false;
-            }
-        }
-        else
-            if (pJson.empty())
-            {
-                err = "No values to update";
-                return false;
-            }
-
-        return true;
-    }
+    //     return true;
+    // }
 
     static size_t getColumnNumber() noexcept { return boost::pfr::tuple_size<T>::value; }
 
