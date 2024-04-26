@@ -53,6 +53,40 @@ concept r_table = requires()
 };
 
 template <typename T>
+concept r_single_primary_key = std::is_member_object_pointer_v<decltype(T::primary_key())>;
+
+template <typename T>
+concept r_composite_primary_key = requires()
+{
+    { T::primary_key() } -> mop_tuple_like;
+};
+
+template <typename T>
+concept r_primary_key = r_composite_primary_key<T> || r_single_primary_key<T>;
+
+template <typename T, typename Agg>
+concept is_single_primary_key = std::same_as<
+    std::remove_cvref_t<T>,
+    std::remove_cvref_t<typename trait<Agg, true>::pk_type>
+    >;
+
+template <typename T, typename Agg>
+concept is_composite_primary_key = requires()
+{ typename std::tuple_size<T>::type; } &&
+[] <typename ...Ts, std::size_t... N> (std::tuple<Ts...>&&, std::index_sequence<N...>)
+{
+    using namespace std;
+    return ((same_as<remove_cvref_t<T>, remove_cvref_t<Ts>>) || ...);
+} (T::primary_key(),
+  std::make_index_sequence<std::tuple_size_v<decltype(T::primary_key())>>());
+
+template <typename T, typename Agg>
+concept is_primary_key = is_single_primary_key<T, Agg> || is_composite_primary_key<T, Agg>;
+
+template <typename T>
+concept is_foreign_key = std::is_member_object_pointer_v<decltype(T::foreign_key())>;
+
+template <typename T>
 concept r_c_name = requires()
 {
     { T::c_name() } -> std::same_as<const char*>;
@@ -78,18 +112,6 @@ concept r_c_name_and_value = requires(T t)
 };
 
 template <typename T>
-concept r_single_primary_key = std::is_member_object_pointer_v<decltype(T::primary_key())>;
-
-template <typename T>
-concept r_composite_primary_key = requires()
-{
-    { T::primary_key() } -> mop_tuple_like;
-};
-
-template <typename T>
-concept r_primary_key = r_composite_primary_key<T> || r_single_primary_key<T>;
-
-template <typename T>
 concept r_session_id = std::is_class<decltype(T::session_id)>();
 
 template <typename T>
@@ -97,15 +119,6 @@ concept r_username = std::is_class_v<decltype(T::username)>;
 
 template <typename T>
 concept r_password = std::is_class_v<decltype(T::password)>;
-
-template <typename T, typename Agg>
-concept is_primary_key = std::same_as<
-    std::remove_cvref_t<T>,
-    std::remove_cvref_t<typename trait<Agg, true>::pk_type>
-    >;
-
-template <typename T>
-concept is_foreign_key = std::is_member_object_pointer_v<decltype(T::foreign_key())>;
 
 template <typename T>
 concept authenticates = r_primary_key<T> &&

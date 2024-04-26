@@ -23,23 +23,23 @@
 #include <crudpp/bindigs/drogon/visitors/offset_row_handler.hpp>
 #include <crudpp/bindigs/drogon/utils.hpp>
 
-namespace drgn
-{
 using namespace drogon::orm;
 
+namespace drgn
+{
 template <crudpp::r_table T>
 class model
 {
 public:
     static const constexpr std::string tableName = T::table();
     static const constexpr bool hasPrimaryKey = r_primary_key<T>;
-    static const constexpr trait_t<T>::pk_n_type primaryKeyName = get_primary_key_name<T>();
-    using PrimaryKeyType = typename trait_t<T>::pk_v_type;
+    static const t_trait<T>::pk_n_type primaryKeyName;
+    using PrimaryKeyType = typename t_trait<T>::pk_v_type;
 
     const internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
     {
         if constexpr(r_primary_key<T>)
-            return (aggregate.*T::primary_key()).value;
+            return t_trait<T>::pk_value(aggregate);
 
         assert(false);
         return 0;
@@ -178,13 +178,15 @@ public:
 
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        static const std::string sql="select * from " + tableName + " where " + primaryKeyName + " = ?";
+        static const std::string sql="select * from " + tableName + " where " +
+                                       sql_pk_criteria(primaryKeyName);
         return sql;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        static const std::string sql="delete from " + tableName + " where " + primaryKeyName + " = ?";
+        static const std::string sql="delete from " + tableName + " where " +
+                                       sql_pk_criteria(primaryKeyName);
         return sql;
     }
 
@@ -204,7 +206,7 @@ public:
                           {
                               auto& f{get<i()>(aggregate)};
 
-                              if constexpr(is_primary_key<decltype(f), T>)
+                              if constexpr(is_single_primary_key<decltype(f), T>)
                                   return;
 
                               auto& pf{get<i()>(prev_agg)};
@@ -230,7 +232,7 @@ public:
                           {
                               auto& f{get<i()>(aggregate)};
 
-                              if constexpr(is_primary_key<decltype(f), T>)
+                              if constexpr(is_single_primary_key<decltype(f), T>)
                                   return;
 
                               auto& pf{get<i()>(prev_agg)};
@@ -248,17 +250,16 @@ public:
         return sql;
     }
 
-    static const std::vector<std::string>& insertColumns() noexcept
+    static const constexpr std::vector<std::string> insertColumns()
     {
-        static std::vector<std::string> inCols;
+        using namespace std;
+        using namespace boost;
 
-        if (!inCols.empty())
-            return inCols;
-
-        boost::pfr::for_each_field(T{},
-                                   [] (const r_c_name auto& f)
-                                   { inCols.push_back(f.c_name()); });
-        return inCols;
+        return [] <size_t... I> (T&& t, index_sequence<I...>)
+               -> vector<string>
+        { return {pfr::get<I>(t).c_name() ...}; }
+               (T{},
+                make_index_sequence<pfr::tuple_size_v<T>>{});
     }
 
     T& get_aggregate() { return aggregate; }
@@ -340,4 +341,7 @@ private:
     T aggregate{};
     T prev_agg{};
 };
+
+template <crudpp::r_table T>
+const t_trait<T>::pk_n_type model<T>::primaryKeyName = t_trait<T>::pk_name();
 } // namespace drgn

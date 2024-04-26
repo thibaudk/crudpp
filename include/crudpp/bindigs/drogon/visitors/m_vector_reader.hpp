@@ -5,10 +5,10 @@
 #include <crudpp/concepts.hpp>
 #include <crudpp/bindigs/drogon/utils.hpp>
 
-namespace drgn
-{
 using namespace crudpp;
 
+namespace drgn
+{
 struct m_vector_reader
 {
     void operator()(r_c_name auto& f) noexcept

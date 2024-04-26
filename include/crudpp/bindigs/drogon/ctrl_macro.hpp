@@ -12,7 +12,7 @@ using namespace drogon;
 using namespace crudpp;
 
 #define CTRL(T)                                                                                   \
-struct T##_ctrl : public drogon::HttpController<T##_ctrl>                                         \
+struct T##_ctrl : public HttpController<T##_ctrl>                                                 \
                 , public restful_ctrl<T, r_primary_key<T>, authenticates<T>>                      \
 {                                                                                                 \
     METHOD_LIST_BEGIN                                                                             \
