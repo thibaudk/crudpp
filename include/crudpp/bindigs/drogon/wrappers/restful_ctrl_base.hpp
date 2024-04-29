@@ -55,9 +55,7 @@ public:
             }
             catch(...)
             {
-                auto resp = HttpResponse::newHttpResponse();
-                resp->setStatusCode(k400BadRequest);
-                callback(resp);
+                error(callback, k400BadRequest);
                 return;
             }
         }
@@ -70,9 +68,7 @@ public:
             }
             catch(...)
             {
-                auto resp = HttpResponse::newHttpResponse();
-                resp->setStatusCode(k400BadRequest);
-                callback(resp);
+                error(callback, k400BadRequest);
                 return;
             }
         }
@@ -99,11 +95,7 @@ public:
             catch(const std::exception &e)
             {
                 LOG_ERROR << e.what();
-                Json::Value ret;
-                ret["error"] = e.what();
-                auto resp = HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k400BadRequest);
-                (*callbackPtr)(resp);
+                error(callback, e.what(), k400BadRequest);
                 return;
             }
         }
@@ -132,11 +124,7 @@ public:
 
             if (!this->doCustomValidations(*jsonPtr, err))
             {
-                Json::Value ret;
-                ret["error"] = err;
-                auto resp= HttpResponse::newHttpJsonResponse(ret);
-                resp->setStatusCode(k400BadRequest);
-                callback(resp);
+                error(callback, err, k400BadRequest);
                 return;
             }
         }
@@ -163,13 +151,21 @@ public:
         catch(const Json::Exception &e)
         {
             LOG_ERROR << e.what();
-            Json::Value ret;
-            ret["error"]="Field type error";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
+            error(callback, "Field type error", k400BadRequest);
             return;
         }
+    }
+
+    virtual void update_by(const HttpRequestPtr &req,
+                  std::function<void(const HttpResponsePtr &)> &&callback)
+    {
+        error(callback, k404NotFound);
+    }
+
+    virtual void delete_by(const HttpRequestPtr &req,
+                  std::function<void(const HttpResponsePtr &)> &&callback)
+    {
+        error(callback, k404NotFound);
     }
 
     /// Ensure that subclasses inherited from this class are instantiated.
@@ -184,15 +180,97 @@ public:
     }
 
 protected:
-    orm::DbClientPtr getDbClient() 
+    const std::string dbClientName_{"default"};
+
+    orm::DbClientPtr getDbClient()
     {
         return drogon::app().getDbClient(dbClientName_);
     }
 
-    const std::string dbClientName_{"default"};
+    bool read_json(const std::function<void(const HttpResponsePtr &)>& callback,
+                   std::shared_ptr<Json::Value> jsonPtr,
+                   model<T>& object)
+    {
+        std::string err;
+        if(!this->doCustomValidations(*jsonPtr, err))
+        {
+            error(callback, err, k400BadRequest);
+            return false;
+        }
+        try
+        {
+            // TODO: reinstate checks
+            // workaroud validateMasqueradedJsonForUpdate
+            // if (!model<T>::validateJsonForUpdate(*jsonPtr, err))
+            // {
+            //     error(callback, err, k400BadRequest);
+            //     return false;
+            // }
 
-    void internal_error(const DrogonDbException &e,
-                        callback_ptr callbackPtr) const
+            if (this->isMasquerading())
+                object.updateByMasqueradedJson(*jsonPtr, this->masqueradingVector());
+            else
+                object.updateByJson(*jsonPtr);
+        }
+        catch (const Json::Exception &e)
+        {
+            LOG_ERROR << e.what();
+            error(callback, "Field type error", k400BadRequest);
+            return false;
+        }
+
+        return true;
+    }
+
+    void db_update(const model<T>& object, callback_ptr callbackPtr)
+    {
+        auto dbClientPtr = this->getDbClient();
+
+        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
+
+        mapper.update(
+            object,
+            [callbackPtr, this](const size_t count)
+            {
+                if(count == 1)
+                {
+                    auto resp = HttpResponse::newHttpResponse();
+                    resp->setStatusCode(k202Accepted);
+                    (*callbackPtr)(resp);
+                }
+                else if(count == 0)
+                    error(callbackPtr, "No resources are updated", k404NotFound);
+                else
+                {
+                    LOG_FATAL << "More than one resource is updated: " << count;
+                    internal_error(callbackPtr);
+                }
+            },
+            [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
+    }
+
+    void db_delete(const typename model<T>::PrimaryKeyType& id, callback_ptr callbackPtr)
+    {
+        auto dbClientPtr = this->getDbClient();
+
+        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
+        mapper.deleteByPrimaryKey(
+            id,
+            [callbackPtr, this](const size_t count) {
+                if(count == 1)
+                    error(callbackPtr, k204NoContent);
+                else if(count == 0)
+                    error(callbackPtr, "No resources deleted", k404NotFound);
+                else
+                {
+                    LOG_FATAL << "Delete more than one records: " << count;
+                    internal_error(callbackPtr);
+                }
+            },
+            [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
+    }
+
+    void internal_error(const DrogonDbException &e, callback_ptr callbackPtr) const
     {
         LOG_ERROR << e.base().what();
         Json::Value ret;
@@ -211,22 +289,62 @@ protected:
         (*callbackPtr)(resp);
     }
 
-    void error(callback_ptr callbackPtr,
-               const HttpStatusCode&& status) const
+    void error(callback_ptr callbackPtr, HttpStatusCode status) const
     {
         auto resp = HttpResponse::newHttpResponse();
         resp->setStatusCode(status);
         (*callbackPtr)(resp);
     }
 
+    void error(const std::function<void(const HttpResponsePtr &)>& callback,
+               HttpStatusCode status) const
+    {
+        auto resp = HttpResponse::newHttpResponse();
+        resp->setStatusCode(status);
+        callback(resp);
+    }
+
     void error(callback_ptr callbackPtr,
-               const HttpStatusCode&& status,
-               const char* error_str) const
+               const std::string& error_str,
+               HttpStatusCode status = k500InternalServerError) const
     {
         Json::Value ret;
         ret["error"] = error_str;
         auto resp = HttpResponse::newHttpJsonResponse(ret);
-        resp->setStatusCode(k500InternalServerError);
+        resp->setStatusCode(status);
         (*callbackPtr)(resp);
+    }
+
+    void error(callback_ptr callbackPtr,
+               const char* error_str,
+               HttpStatusCode status = k500InternalServerError) const
+    {
+        Json::Value ret;
+        ret["error"] = error_str;
+        auto resp = HttpResponse::newHttpJsonResponse(ret);
+        resp->setStatusCode(status);
+        (*callbackPtr)(resp);
+    }
+
+    void error(const std::function<void(const HttpResponsePtr &)>& callback,
+               const char* error_str,
+               HttpStatusCode status = k500InternalServerError) const
+    {
+        Json::Value ret;
+        ret["error"] = error_str;
+        auto resp = HttpResponse::newHttpJsonResponse(ret);
+        resp->setStatusCode(status);
+        callback(resp);
+    }
+
+    void error(const std::function<void(const HttpResponsePtr &)>& callback,
+               const std::string& error_str,
+               HttpStatusCode status = k500InternalServerError) const
+    {
+        Json::Value ret;
+        ret["error"] = error_str;
+        auto resp = HttpResponse::newHttpJsonResponse(ret);
+        resp->setStatusCode(status);
+        callback(resp);
     }
 };

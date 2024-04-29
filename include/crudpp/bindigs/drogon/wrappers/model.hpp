@@ -37,13 +37,7 @@ public:
     using PrimaryKeyType = typename t_trait<T>::pk_v_type;
 
     const internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
-    {
-        if constexpr(r_primary_key<T>)
-            return t_trait<T>::pk_value(aggregate);
-
-        assert(false);
-        return 0;
-    }
+    { return t_trait<T>::pk_value(aggregate); }
 
     explicit model(const Row& r, const ssize_t indexOffset = 0) noexcept
     {
@@ -328,14 +322,11 @@ private:
     ///For mysql or sqlite3
     void updateId(const uint64_t id)
     {
-        if constexpr(r_primary_key<T>)
-        {
-            // TODO: handle composite keys
+        if constexpr(r_single_primary_key<T>)
             (aggregate.*T::primary_key()).value = id;
-            return;
-        }
 
-        assert(false);
+        return; // VERIFY: composite keys never auto increment ?
+        // assert(false);
     }
 
     T aggregate{};

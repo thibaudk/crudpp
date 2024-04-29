@@ -2,358 +2,99 @@
 
 #include <crudpp/bindigs/drogon/wrappers/restful_ctrl_base.hpp>
 
-// no primary key and no authentication
-template <typename T, bool has_primary_key = false, bool authenticating = false>
+// no single primary key and no authentication
+template <typename T, bool has_single_primary_key = false, bool authenticating = false>
 struct restful_ctrl : public restful_ctrl_base<T>
 {
     virtual void auth(const HttpRequestPtr &req,
                       std::function<void(const HttpResponsePtr &)> &&callback)
     {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        auto resp = HttpResponse::newHttpResponse();
-        resp->setStatusCode(k404NotFound);
-        (*callbackPtr)(resp);
+        this->error(callback, k404NotFound);
     }
 
-    void getOne(const HttpRequestPtr &req,
+    void get_one(const HttpRequestPtr &req,
                 std::function<void(const HttpResponsePtr &)> &&callback)
     {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        auto resp = HttpResponse::newHttpResponse();
-        resp->setStatusCode(k404NotFound);
-        (*callbackPtr)(resp);
+        this->error(callback, k404NotFound);
     }
 
-    void updateOne(const HttpRequestPtr &req,
+    void update_one(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback)
     {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        auto resp = HttpResponse::newHttpResponse();
-        resp->setStatusCode(k404NotFound);
-        (*callbackPtr)(resp);
+        this->error(callback, k404NotFound);
     }
 
-    void deleteOne(const HttpRequestPtr &req,
+    void update_by(const HttpRequestPtr &req,
+                   std::function<void(const HttpResponsePtr &)> &&callback) override
+    {
+        if constexpr (crudpp::r_composite_primary_key<T>)
+        {
+            auto jsonPtr=req->jsonObject();
+            if(!jsonPtr)
+            {
+                this->error(callback, "No json object is found in the request", k400BadRequest);
+                return;
+            }
+
+            model<T> object;
+            this->read_json(callback, jsonPtr, object);
+
+            auto callbackPtr =
+                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                    std::move(callback));
+
+            this->db_update(object, callbackPtr);
+        }
+        else
+            this->error(callback, k404NotFound);
+    }
+
+    void delete_one(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback)
     {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        auto resp = HttpResponse::newHttpResponse();
-        resp->setStatusCode(k404NotFound);
-        (*callbackPtr)(resp);
-    }
-};
-
-// primary key and no authentication
-template <typename T>
-struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
-{
-    virtual void auth(const HttpRequestPtr &req,
-                      std::function<void(const HttpResponsePtr &)> &&callback)
-    {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        auto resp = HttpResponse::newHttpResponse();
-        resp->setStatusCode(k404NotFound);
-        (*callbackPtr)(resp);
+        this->error(callback, k404NotFound);
     }
 
-    void getOne(const HttpRequestPtr &req,
-                std::function<void(const HttpResponsePtr &)> &&callback,
-                typename model<T>::PrimaryKeyType &&id)
+    void delete_by(const HttpRequestPtr &req,
+                   std::function<void(const HttpResponsePtr &)> &&callback) override
     {
-        auto dbClientPtr = this->getDbClient();
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
-        mapper.findByPrimaryKey(
-            id,
-            [req, callbackPtr, this](model<T> r) {
-                (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r)));
-            },
-            [callbackPtr, this](const DrogonDbException &e) {
-                const drogon::orm::UnexpectedRows *s=
-                    dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
-                if(s)
-                {
-                    auto resp = HttpResponse::newHttpResponse();
-                    resp->setStatusCode(k404NotFound);
-                    (*callbackPtr)(resp);
-                    return;
-                }
+        using namespace crudpp;
 
-                this->internal_error(e, callbackPtr);
-            });
-    }
+        if constexpr (r_composite_primary_key<T>)
+        {
+            using namespace std;
 
-    void updateOne(const HttpRequestPtr &req,
-                   std::function<void(const HttpResponsePtr &)> &&callback,
-                   typename model<T>::PrimaryKeyType &&id)
-    {
-        auto jsonPtr=req->jsonObject();
-        if(!jsonPtr)
-        {
-            Json::Value ret;
-            ret["error"]="No json object is found in the request";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-        model<T> object;
-        std::string err;
-        if(!this->doCustomValidations(*jsonPtr, err))
-        {
-            Json::Value ret;
-            ret["error"] = err;
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-        try
-        {
-            // TODO: reinstate checks
-            // workaroud validateMasqueradedJsonForUpdate
-            // if (!model<T>::validateJsonForUpdate(*jsonPtr, err))
-            // {
-            //     Json::Value ret;
-            //     ret["error"] = err;
-            //     auto resp= HttpResponse::newHttpJsonResponse(ret);
-            //     resp->setStatusCode(k400BadRequest);
-            //     callback(resp);
-            //     return;
-            // }
+            std::remove_const_t<typename t_trait<T>::pk_v_type> id{};
 
-            if (this->isMasquerading())
-                object.updateByMasqueradedJson(*jsonPtr, this->masqueradingVector());
-            else
-                object.updateByJson(*jsonPtr);
-        }
-        catch (const Json::Exception &e)
-        {
-            LOG_ERROR << e.what();
-            Json::Value ret;
-            ret["error"]="Field type error";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-        if(object.getPrimaryKey() != id)
-        {
-            Json::Value ret;
-            ret["error"]="Bad primary key";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-
-        auto dbClientPtr = this->getDbClient();
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
-
-        mapper.update(
-            object,
-            [callbackPtr, this](const size_t count)
+            bool parsed = [req, &id] <size_t... I> (index_sequence<I...>)
             {
-                if(count == 1)
-                {
-                    auto resp = HttpResponse::newHttpResponse();
-                    resp->setStatusCode(k202Accepted);
-                    (*callbackPtr)(resp);
-                }
-                else if(count == 0)
-                {
-                    Json::Value ret;
-                    ret["error"]="No resources are updated";
-                    auto resp = HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k404NotFound);
-                    (*callbackPtr)(resp);
-                }
-                else
-                {
-                    LOG_FATAL << "More than one resource is updated: " << count;
-                    this->internal_error(callbackPtr);
-                }
-            },
-            [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
-    }
+                // get composite key from request parameters
+                auto& parameters = req->parameters();
+                auto id_names{t_trait<T>::pk_name()};
 
-    void deleteOne(const HttpRequestPtr &req,
-                   std::function<void(const HttpResponsePtr &)> &&callback,
-                   typename model<T>::PrimaryKeyType &&id)
-    {
-        auto dbClientPtr = this->getDbClient();
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
-        mapper.deleteByPrimaryKey(
-            id,
-            [callbackPtr, this](const size_t count) {
-                if(count == 1)
-                {
-                    auto resp = HttpResponse::newHttpResponse();
-                    resp->setStatusCode(k204NoContent);
-                    (*callbackPtr)(resp);
-                }
-                else if(count == 0)
-                {
-                    Json::Value ret;
-                    ret["error"] = "No resources deleted";
-                    auto resp = HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k404NotFound);
-                    (*callbackPtr)(resp);
-                }
-                else
-                {
-                    LOG_FATAL << "Delete more than one records: " << count;
-                    this->internal_error(callbackPtr);
-                }
-            },
-            [callbackPtr, this](const DrogonDbException &e) { this->internal_error(e, callbackPtr); });
-    }
-};
+                return (asign_from_params<I>(get<I>(id), parameters, id_names) && ...);
+            }
+            (make_index_sequence<tuple_size_v<typename t_trait<T>::pk_v_type>>{});
 
-#include <crudpp/bindigs/drogon/visitors/json_handler.hpp>
-
-// authenticating
-template <typename T>
-struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
-{
-    void auth(const HttpRequestPtr &req,
-              std::function<void(const HttpResponsePtr &)> &&callback) override
-    {
-        auto jsonPtr=req->jsonObject();
-        if(!jsonPtr)
-        {
-            Json::Value ret;
-            ret["error"]="No json object is found in the request";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-
-        // TODO: can be done better ?
-        T tmp{};
-        auto& uname{tmp.username};
-        auto& pwd{tmp.password};
-        const auto prev_uname{uname.value};
-        const auto prev_pwd{pwd.value};
-
-        crudpp::for_each_index<T>(json_handler{&tmp, *jsonPtr});
-
-        if(uname.value == prev_uname || pwd.value == prev_pwd)
-        {
-            Json::Value ret;
-            ret["error"] = "missing username and/or password in the request";
-            auto resp= HttpResponse::newHttpJsonResponse(ret);
-            resp->setStatusCode(k400BadRequest);
-            callback(resp);
-            return;
-        }
-
-        auto dbClientPtr = this->getDbClient();
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
-        mapper.findOne(
-            Criteria{uname.c_name(), CompareOperator::EQ, uname.value},
-            [callbackPtr, req, &pwd, &mapper, this](model<T> r)
+            if (!parsed)
             {
-                auto conf{HttpAppFramework::instance().getCustomConfig()["encryption"]};
+                this->error(callback, k400BadRequest);
+                return;
+            }
 
-                using namespace utils;
-                auto (*hash)(const std::string&) = getSha256;
+            if (decltype(id){} == id)
+            {
+                this->error(callback, "composite key not set in parameters", k400BadRequest);
+                return;
+            }
 
-                if (conf.isMember("hash") && conf["hash"].isString())
-                {
-                    std::string h_str{conf["hash"].asString()};
+            auto callbackPtr =
+                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                    std::move(callback));
 
-                    if (h_str != "sha256")
-                    {
-                        if (h_str == "md5")
-                            hash = getMd5;
-                        else if (h_str == "sha1")
-                            hash = getSha1;
-                        else if (h_str == "sha3")
-                            hash = getSha3;
-                        else if (h_str == "blake2")
-                            hash = getBlake2b;
-                    }
-                }
-
-                std::string salt{};
-
-                if (conf.isMember("salt") && conf["salt"].isString())
-                    salt = conf["salt"].asString();
-
-                int iterations{1}, i{0};
-
-                if (conf.isMember("iterations") && conf["iterations"].isInt())
-                    iterations = conf["iterations"].asInt();
-
-                if (!salt.empty())
-                {
-                    pwd.value = hash(pwd.value + salt);
-                    i++;
-                }
-
-                for (; i < iterations; i++)
-                    pwd.value = hash(pwd.value);
-
-                if (pwd.value != r.get_aggregate().password.value)
-                {
-                    Json::Value ret;
-                    ret["error"] = "incorrect credentials";
-                    auto resp= HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k401Unauthorized);
-                    (*callbackPtr)(resp);
-                    return;
-                }
-
-                r.get_aggregate().session_id.value = req->session()->sessionId();
-
-                mapper.update(r,
-                    [callbackPtr, req, r, this](const size_t)
-                    { (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r))); },
-                    [callbackPtr, this](const DrogonDbException &e)
-                    { this->internal_error(e, callbackPtr); });
-            },
-            [callbackPtr, this](const DrogonDbException &e) {
-                const drogon::orm::UnexpectedRows *s=
-                    dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
-                if(s)
-                {
-                    Json::Value ret;
-                    ret["error"] = "incorrect credentials";
-                    auto resp= HttpResponse::newHttpJsonResponse(ret);
-                    resp->setStatusCode(k401Unauthorized);
-                    (*callbackPtr)(resp);
-                    return;
-                }
-
-                this->internal_error(e, callbackPtr);
-            });
+            this->db_delete(id, callbackPtr);
+        }
+        else
+            this->error(callback, k404NotFound);
     }
 };

@@ -4,6 +4,9 @@
 
 #include <json/value.h>
 #include <trantor/utils/Date.h>
+#include <drogon/utils/Utilities.h>
+
+#include <crudpp/concepts.hpp>
 
 namespace drgn
 {
@@ -94,5 +97,21 @@ const constexpr std::string sql_pk_criteria(const std::vector<std::string>& v)
         s+= " and " + v[i] + " = ?";
 
     return s;
+}
+
+template <std::size_t I>
+bool asign_from_params(auto&& f,
+                       const drogon::SafeStringMap<std::string>& parameters,
+                       const std::vector<std::string>& names)
+{
+    auto iter = parameters.find(names[I]);
+    if(iter == parameters.end()) return false;
+
+    try
+    {
+        f = std::stoll(iter->second);
+        return true;
+    }
+    catch(...) { return false; };
 }
 } // namespace drgn
