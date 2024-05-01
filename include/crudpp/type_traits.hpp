@@ -13,7 +13,7 @@ template <typename T, bool single_primary_key = true>
 struct base_trait
 {
     using pk_type = decltype(get_mp_type(T::primary_key()));
-    using pk_n_type = decltype(pk_type::c_name());
+    using pk_n_type = std::string;
     using pk_v_type = decltype(pk_type::value);
 
     static constexpr auto pk_name()
@@ -81,7 +81,7 @@ template <typename T>
 struct trait<T, false>
 {
     using pk_type = void;
-    using pk_n_type = const char*;
+    using pk_n_type = std::string;
     using pk_v_type = void;
 
     static const constexpr auto pk_name() { return ""; };

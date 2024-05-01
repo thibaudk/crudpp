@@ -25,7 +25,7 @@ struct json_handler_omit_primary
             if (!vis.json[f.c_name()].isNull())
                 vis(f);
 
-            if constexpr(!crudpp::is_primary_key<decltype(f), T>)
+            if constexpr(crudpp::is_primary_key<decltype(f), T>)
             {
                 auto& prev{get<i()>(*prev_agg)};
                 prev.value = f.value;

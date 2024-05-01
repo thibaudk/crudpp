@@ -54,6 +54,7 @@ public:
             }
 
             for_each_field(aggregate, offset_row_handler{r, indexOffset});
+            prev_agg = aggregate;
         }
     }
 
@@ -285,7 +286,7 @@ private:
 
                                       auto& pf{get<i()>(prev_agg)};
 
-                                      if (f.value == pf.value)
+                                      if (f.value != pf.value)
                                           ret.push_back(f.c_name());
                                   });
         return ret;
@@ -306,16 +307,16 @@ private:
                               auto& pf{get<i()>(prev_agg)};
 
                               if (f.value == pf.value)
-                              {
-                                  if constexpr(is_foreign_key<decltype(f)>)
-                                      if (!valid_key<decltype(f)>(f))
-                                      {
-                                          binder << nullptr;
-                                          return;
-                                      }
+                                  return;
 
-                                  binder << to_drgn(f.value);
-                              }
+                              if constexpr(is_foreign_key<decltype(f)>)
+                                  if (!valid_key<decltype(f)>(f))
+                                  {
+                                      binder << nullptr;
+                                      return;
+                                  }
+
+                              binder << to_drgn(f.value);
                           });
     }
 

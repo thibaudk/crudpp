@@ -9,7 +9,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
     virtual void auth(const HttpRequestPtr &req,
                       std::function<void(const HttpResponsePtr &)> &&callback)
     {
-        error(callback, k404NotFound);
+        this->error(callback, k404NotFound);
     }
 
     void get_one(const HttpRequestPtr &req,
@@ -31,7 +31,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
                     dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
                 if(s)
                 {
-                    error(callbackPtr, k404NotFound);
+                    this->error(callbackPtr, k404NotFound);
                     return;
                 }
 
@@ -46,16 +46,17 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
         auto jsonPtr=req->jsonObject();
         if(!jsonPtr)
         {
-            error(callback, "No json object is found in the request", k400BadRequest);
+            this->error(callback, "No json object is found in the request", k400BadRequest);
             return;
         }
 
         model<T> object;
-        if (!read_json(jsonPtr, object)) return;
+        if (!this->read_json(callback, jsonPtr, object))
+            return;
 
         if(object.getPrimaryKey() != id)
         {
-            error(callback, "Bad primary key", k400BadRequest);
+            this->error(callback, "Bad primary key", k400BadRequest);
             return;
         }
 
@@ -63,7 +64,7 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
             std::make_shared<std::function<void(const HttpResponsePtr &)>>(
                 std::move(callback));
 
-        db_update(object, callbackPtr);
+        this->db_update(object, callbackPtr);
     }
 
     void delete_one(const HttpRequestPtr &req,
@@ -74,6 +75,6 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
             std::make_shared<std::function<void(const HttpResponsePtr &)>>(
                 std::move(callback));
 
-        db_delete(id, callbackPtr);
+        this->db_delete(id, callbackPtr);
     }
 };

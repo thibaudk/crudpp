@@ -12,7 +12,9 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
         auto jsonPtr=req->jsonObject();
         if(!jsonPtr)
         {
-            error(callback, "No json object is found in the request", k400BadRequest);
+            this->error(callback,
+                        "No json object is found in the request",
+                        k400BadRequest);
             return;
         }
 
@@ -27,7 +29,9 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
 
         if(uname.value == prev_uname || pwd.value == prev_pwd)
         {
-            error(callback, "missing username and/or password in the request", k400BadRequest);
+            this->error(callback,
+                        "missing username and/or password in the request",
+                        k400BadRequest);
             return;
         }
 
@@ -83,7 +87,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
 
                 if (pwd.value != r.get_aggregate().password.value)
                 {
-                    error(callbackPtr, "incorrect credentials", k401Unauthorized)
+                    this->error(callbackPtr, "incorrect credentials", k401Unauthorized);
                     return;
                 }
 
@@ -100,7 +104,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                     dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
                 if(s)
                 {
-                    error(callbackPtr, "incorrect credentials", k401Unauthorized);
+                    this->error(callbackPtr, "incorrect credentials", k401Unauthorized);
                     return;
                 }
 
