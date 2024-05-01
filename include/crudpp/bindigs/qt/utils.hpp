@@ -17,8 +17,7 @@ class controller;
 template <typename T>
 class property_holder;
 
-template <typename T>
-    requires std::integral<T>
+template <std::integral T>
 T to_qt(T v)
 { return v; }
 
@@ -27,20 +26,16 @@ template <typename T>
 int to_qt(T v)
 { return (int)v; }
 
-template <typename T>
-    requires std::floating_point<T>
+template <std::floating_point T>
 T to_qt(const T& v)
 { return v; }
 
-template <typename T>
-    requires std::same_as<T, std::string>
+template <std::same_as<std::string> T>
 QString to_qt(const T& v)
 { return QString::fromStdString(v); }
 
 // FIXME : workaround conversion from year_month_day to QDate
-
-template <typename T>
-    requires std::convertible_to<T, std::chrono::sys_days>
+template <std::convertible_to<std::chrono::sys_days> T>
 QDate to_qt(const T& v)
 {
     const std::chrono::year_month_day d{v};
@@ -52,12 +47,10 @@ QDate to_qt(const T& v)
 QDateTime to_qt(const std::chrono::sys_seconds& v);
 QDateTime to_qt(const std::chrono::sys_time<std::chrono::milliseconds>& v);
 
-template <typename T>
-    requires std::signed_integral<T>
+template <std::signed_integral T>
 QJsonValue to_qjson(T v) { return v; }
 
-template <typename T>
-    requires std::same_as<T, bool>
+template <std::same_as<bool> T>
 QJsonValue to_qjson(T v) { return v; }
 
 template <typename T>
@@ -71,8 +64,7 @@ QJsonValue to_qjson(const T&& v) { return v; }
 QJsonValue to_qjson(const QDate&& v);
 QJsonValue to_qjson(const QDateTime&& v);
 
-template <typename T>
-    requires std::integral<T>
+template <std::integral T>
 T from_qt(const QVariant& v)
 { return v.toInt(); }
 
@@ -86,13 +78,11 @@ template <typename T>
 T from_qt(const QVariant& v)
 { return v.toFloat(); }
 
-template <typename T>
-    requires std::same_as<T, double>
+template <std::same_as<double> T>
 T from_qt(const QVariant& v)
 { return v.toDouble(); }
 
-template <typename T>
-    requires std::same_as<T, std::string>
+template <std::same_as<std::string> T>
 T from_qt(const QVariant& v)
 { return v.toString().toStdString(); }
 
@@ -100,29 +90,19 @@ std::chrono::sys_days from_qdate(const QDate&& v);
 std::chrono::sys_seconds from_qdate_time(const QDateTime&& v);
 std::chrono::sys_time<std::chrono::milliseconds> from_qdate_time_ms(const QDateTime&& v);
 
-template <typename T>
-    requires std::convertible_to<T, std::chrono::sys_days>
+template <std::convertible_to<std::chrono::sys_days> T>
 T from_qt(const QVariant& v)
-{
-    return from_qdate(v.toDate());
-}
+{ return from_qdate(v.toDate()); }
 
-template <typename T>
-    requires std::same_as<T, std::chrono::sys_seconds>
+template <std::same_as<std::chrono::sys_seconds> T>
 T from_qt(const QVariant& v)
-{
-    return from_qdate_time(v.toDateTime());
-}
+{ return from_qdate_time(v.toDateTime()); }
 
-template <typename T>
-    requires std::same_as<T, std::chrono::sys_time<std::chrono::milliseconds>>
+template <std::same_as<std::chrono::sys_time<std::chrono::milliseconds>> T>
 T from_qt(const QVariant& v)
-{
-    return from_qdate_time_ms(v.toDateTime());
-}
+{ return from_qdate_time_ms(v.toDateTime()); }
 
-template <typename T>
-    requires crudpp::r_table<T>
+template <crudpp::r_table T>
 std::string make_uri()
 {
     std::string s{'Q'};
@@ -130,17 +110,27 @@ std::string make_uri()
     return s;
 }
 
-template <typename T>
-    requires crudpp::r_table<T>
+template <crudpp::r_table T>
 const std::string make_key(const T&& agg)
 {
+    using namespace crudpp;
     std::string key{T::table()};
-    key += '/';
 
-    if constexpr(std::same_as<typename crudpp::trait<T>::pk_v_type, std::string>)
-        key += (agg.*T::primary_key()).value;
-    else
-        key += std::to_string((agg.*T::primary_key()).value);
+    if constexpr (r_single_primary_key<T>)
+    {
+        key += '/';
+
+        if constexpr (std::same_as<typename trait<T>::pk_v_type, std::string>)
+            key += (agg.*T::primary_key()).value;
+        else
+            key += std::to_string((agg.*T::primary_key()).value);
+    }
+    else if constexpr (r_composite_primary_key<T>)
+    {
+        key += '&';
+
+
+    }
 
     return key;
 }

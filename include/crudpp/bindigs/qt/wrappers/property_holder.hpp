@@ -82,8 +82,10 @@ public:
         crudpp::for_each_index<T>(
             [&obj, this] (const auto i)
             {
+                using namespace boost;
+
                 json_reader vis{.json = obj};
-                auto& field{boost::pfr::get<i()>(this->aggregate)};
+                auto& field{pfr::get<i()>(this->aggregate)};
 
                 if (vis.json.contains(field.c_name()))
                 {
@@ -91,7 +93,7 @@ public:
                     {
                         vis(field);
 
-                        if (field.value != boost::pfr::get<i()>(this->prev_agg).value)
+                        if (field.value != pfr::get<i()>(this->prev_agg).value)
                             property_changed<i()>();
                     }
                 }
@@ -189,7 +191,9 @@ public:
                 QJsonDocument{obj}.toJson(),
                 [this] (const QJsonObject& rep)
                 {
-                    const auto id{(this->aggregate.*T::primary_key()).value};
+                    using namespace crudpp;
+
+                    const auto id{t_trait<T>::pk_value(this->aggregate)};
 
                     // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
@@ -202,7 +206,7 @@ public:
                         {
                             auto& item{m->item_at(i)};
 
-                            if ((item.get_aggregate().*T::primary_key()).value == id)
+                            if (t_trait<T>::pk_value(item.get_aggregate()) == id)
                             {
                                 item.set(this->aggregate);
                                 m->dataChangedAt(i);
@@ -257,7 +261,9 @@ public:
             net_manager::instance().deleteToKey(key().c_str(),
                 [this](const QJsonValue& rep)
                 {
-                    const auto id{(this->get_aggregate().*T::primary_key()).value};
+                    using namespace crudpp;
+
+                    const auto id{t_trait<T>::pk_value(this->aggregate)};
 
                     // FIXME: replace with static vector of pointers to all instances ?
                     auto objects{bridge::instance().engine
@@ -270,7 +276,7 @@ public:
                         {
                             auto& item{m->item_at(i)};
 
-                            if ((item.get_aggregate().*T::primary_key()).value == id)
+                            if (t_trait<T>::pk_value(item.get_aggregate()) == id)
                             {
                                 m->removeItem(i);
                                 break;

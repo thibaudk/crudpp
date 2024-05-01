@@ -62,19 +62,23 @@ struct model final : public base_wrapper<T>
         if (role == loading_role())
             this->loading = v.toBool();
         else
-            crudpp::for_nth_index<T>(role - Qt::UserRole,
-                                     [&v, role, this] (const auto i)
-                                     {
-                                         auto& field{boost::pfr::get<i()>(this->aggregate)};
+        {
+            using namespace crudpp;
 
-                                         // prevent from manually setting primary key
-                                         if constexpr(crudpp::is_primary_key<decltype(field), T>)
-                                             return;
+            for_nth_index<T>(role - Qt::UserRole,
+                             [&v, role, this] (const auto i)
+                             {
+                                 auto& field{boost::pfr::get<i()>(this->aggregate)};
 
-                                         const auto new_val{from_qt<decltype(field.value)>(v)};
+                                 // prevent from manually setting auto incremented primary key
+                                 if constexpr(is_single_primary_key<decltype(field), T>)
+                                     return;
 
-                                         if (field.value != new_val) field.value = new_val;
-                                     });
+                                 const auto new_val{from_qt<decltype(field.value)>(v)};
+
+                                 if (field.value != new_val) field.value = new_val;
+                             });
+        }
     }
 };
 

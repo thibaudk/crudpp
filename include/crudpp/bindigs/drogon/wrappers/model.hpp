@@ -32,12 +32,12 @@ class model
 {
 public:
     static const constexpr std::string tableName = T::table();
-    static const constexpr bool hasPrimaryKey = r_primary_key<T>;
-    static const t_trait<T>::pk_n_type primaryKeyName;
-    using PrimaryKeyType = typename t_trait<T>::pk_v_type;
+    static const constexpr bool hasPrimaryKey = crudpp::r_primary_key<T>;
+    static const crudpp::t_trait<T>::pk_n_type primaryKeyName;
+    using PrimaryKeyType = typename crudpp::t_trait<T>::pk_v_type;
 
-    const internal::Traits<model<T>, r_primary_key<T>>::type getPrimaryKey() const
-    { return t_trait<T>::pk_value(aggregate); }
+    const internal::Traits<model<T>, crudpp::r_primary_key<T>>::type getPrimaryKey() const
+    { return crudpp::t_trait<T>::pk_value(aggregate); }
 
     explicit model(const Row& r, const ssize_t indexOffset = 0) noexcept
     {
@@ -146,7 +146,7 @@ public:
         Json::Value ret;
 
         boost::pfr::for_each_field(aggregate,
-                                   [&ret](const r_c_name auto& f)
+                                   [&ret](const crudpp::r_c_n_v auto& f)
                                    { ret[f.c_name()] = to_drgn(f.value); });
         return ret;
     }
@@ -158,7 +158,8 @@ public:
         if(pMasqueradingVector.size() == getColumnNumber())
         {
             boost::pfr::for_each_field(aggregate,
-                                       [&ret, &pMasqueradingVector](const r_c_name auto& f, size_t i)
+                                       [&ret, &pMasqueradingVector]
+                                       (const crudpp::r_c_n_v auto& f, size_t i)
                                        {
                                            if (!pMasqueradingVector[i].empty())
                                                    ret[pMasqueradingVector[i]] = to_drgn(f.value);
@@ -186,6 +187,8 @@ public:
 
     std::string sqlForInserting(bool& needSelection) const
     {
+        using namespace crudpp;
+
         if constexpr (r_primary_key<T>) needSelection = true;
 
         // BUG: parametersCount increments but never evaluates true for > 0
@@ -194,7 +197,6 @@ public:
         std::string sql="insert into " + tableName + " (";
 
         using namespace boost::pfr;
-        using namespace crudpp;
 
         for_each_index<T>([this, &sql/*, &parametersCount*/] (const auto i)
                           {
@@ -278,7 +280,7 @@ private:
                                   {
                                       auto& f{get<i()>(aggregate)};
 
-                                      if constexpr(is_primary_key<decltype(f), T>)
+                                      if constexpr(crudpp::is_primary_key<decltype(f), T>)
                                           return;
 
                                       auto& pf{get<i()>(prev_agg)};
@@ -322,7 +324,7 @@ private:
     ///For mysql or sqlite3
     void updateId(const uint64_t id)
     {
-        if constexpr(r_single_primary_key<T>)
+        if constexpr(crudpp::r_single_primary_key<T>)
             (aggregate.*T::primary_key()).value = id;
 
         return; // VERIFY: composite keys never auto increment ?
@@ -334,5 +336,5 @@ private:
 };
 
 template <crudpp::r_table T>
-const t_trait<T>::pk_n_type model<T>::primaryKeyName = t_trait<T>::pk_name();
+const crudpp::t_trait<T>::pk_n_type model<T>::primaryKeyName = crudpp::t_trait<T>::pk_name();
 } // namespace drgn

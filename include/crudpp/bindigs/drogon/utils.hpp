@@ -55,24 +55,21 @@ std::chrono::sys_time<std::chrono::milliseconds> from_drgn_time_ms(const std::st
     return std::chrono::time_point_cast<std::chrono::milliseconds>(tp);
 }
 
-template <typename T>
+template <std::integral T>
 T to_drgn(T v)
-    requires std::integral<T>
 { return v; }
 
 template <typename T>
-int to_drgn(T v)
     requires std::is_enum_v<T>
+int to_drgn(T v)
 { return (int)v; }
 
-template <typename T>
+template <std::floating_point T>
 T to_drgn(const T& v)
-    requires std::floating_point<T>
 { return v; }
 
-template <typename T>
+template <std::same_as<std::string> T>
 std::string to_drgn(const T& v)
-    requires std::same_as<T, std::string>
 { return v; }
 
 std::string to_drgn(const std::chrono::sys_days& d)

@@ -40,19 +40,23 @@ struct base_wrapper
 
     void write(QJsonObject& obj)
     {
-        crudpp::for_each_index<T>(
+        using namespace crudpp;
+
+        for_each_index<T>(
             [&obj, this] (const auto i)
             {
-                const auto field{boost::pfr::get<i()>(aggregate)};
+                using namespace boost::pfr;
 
-                if constexpr(crudpp::is_primary_key<decltype(field), T>)
+                const auto field{get<i()>(aggregate)};
+
+                if constexpr(is_single_primary_key<decltype(field), T>)
                 {
-                    // skip primary key for insert
+                    // skip auto incremented primary key for insert
                     if (!m_inserted) return;
                 }
                 else
                 {
-                    const auto prev_field{boost::pfr::get<i()>(prev_agg)};
+                    const auto prev_field{get<i()>(prev_agg)};
                     // skip non primary key values that have not been updated
                     if (field.value == prev_field.value) return;
                 }
@@ -72,8 +76,10 @@ struct base_wrapper
         return !crudpp::for_each_index_until<T>(
             [this] (const auto i)
             {
-                return boost::pfr::get<i()>(aggregate).value
-                       == boost::pfr::get<i()>(prev_agg).value;
+                using namespace boost::pfr;
+
+                return get<i()>(aggregate).value
+                       == get<i()>(prev_agg).value;
             }
             );
     }

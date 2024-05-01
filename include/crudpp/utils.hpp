@@ -56,10 +56,13 @@ bool valid_key(const auto& f)
     using namespace std;
 
     if constexpr(integral<decltype(f.value)>)
+    {
         if (f.value > 0) return true;
-
-    if constexpr(same_as<decltype(f.value), string>)
+    }
+    else if constexpr(same_as<decltype(f.value), string>)
+    {
         if (!f.value.empty()) return true;
+    }
 
     return false;
 }

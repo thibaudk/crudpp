@@ -3,6 +3,7 @@
 #include <concepts>
 #include <string>
 #include <utility>
+#include <chrono>
 #include <tuple>
 
 namespace crudpp
@@ -13,8 +14,18 @@ struct trait;
 template <typename T, typename ...Exc_T>
 concept same_as = (std::same_as<T, Exc_T> || ...);
 
+template <typename T>
+concept suported = std::is_arithmetic_v<std::remove_reference_t<T>> ||
+                   std::is_enum_v<std::remove_reference_t<T>> ||
+                   same_as<std::remove_reference_t<T>,
+                           std::string,
+                           std::chrono::sys_days,
+                           std::chrono::sys_seconds,
+                           std::chrono::sys_seconds,
+                           std::chrono::sys_time<std::chrono::milliseconds>>;
+
 template <typename T, typename ...Exc_T>
-concept different_than = !same_as<T, Exc_T...>;
+concept different = !same_as<T, Exc_T...>;
 
 // adapted from https://stackoverflow.com/a/68444475
 // --
@@ -49,7 +60,7 @@ concept mop_tuple_like = requires()
 template <typename T>
 concept r_table = requires()
 {
-    { T::table() } -> std::same_as<const char*>;
+    { T::table() } -> std::convertible_to<const char*>;
 };
 
 template <typename T>
@@ -98,18 +109,14 @@ concept r_name = requires()
     { T::name() } -> std::same_as<const char*>;
 };
 
-template <typename T, typename Value_T>
+template <typename T>
 concept r_value = requires(T t)
 {
-    { t.value } -> std::same_as<Value_T>;
+    { t.value } -> suported;
 };
 
-template <typename T, typename Value_T>
-concept r_c_name_and_value = requires(T t)
-{
-    r_c_name<T>;
-    r_value<T, Value_T>(t);
-};
+template <typename T>
+concept r_c_n_v = r_c_name<T> && r_value<T>;
 
 template <typename T>
 concept r_session_id = std::is_class<decltype(T::session_id)>();

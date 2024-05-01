@@ -16,12 +16,12 @@ struct T##_ctrl : public HttpController<T##_ctrl>                               
                 , public restful_ctrl<T, r_single_primary_key<T>, authenticates<T>>                      \
 {                                                                                                 \
     METHOD_LIST_BEGIN                                                                             \
-    ADD_METHOD_TO(T##_ctrl::create, std::string{"/"} + T::table(), Post, Options);                \
+    ADD_METHOD_TO(T##_ctrl::create, std::string{"/"} + T::table(), Post);                         \
     ADD_METHOD_TO(T##_ctrl::update_by, std::string{"/"} + T::table(), Put, Options);              \
     ADD_METHOD_TO(T##_ctrl::delete_by, std::string{"/"} + T::table(), Delete, Options);           \
     ADD_METHOD_TO(T##_ctrl::get, std::string{"/"} + T::table(), Get, Options);                    \
-    ADD_METHOD_TO(T##_ctrl::get_one, std::string{"/"} + T::table() + "/{}", Get, Options);        \
-    ADD_METHOD_TO(T##_ctrl::delete_one, std::string{"/"} + T::table() + "/{}", Delete, Options);  \
+    ADD_METHOD_TO(T##_ctrl::get_one, std::string{"/"} + T::table() + "/{}", Get);                 \
+    ADD_METHOD_TO(T##_ctrl::delete_one, std::string{"/"} + T::table() + "/{}", Delete);           \
     ADD_METHOD_TO(T##_ctrl::auth, std::string{"/"} + T::table() + "/auth", Post, Options);        \
     METHOD_LIST_END                                                                               \
 };
