@@ -50,6 +50,10 @@ public:
                     const std::function<void (const QByteArray &)>&& callback,
                     const char* params = "");
 
+    void searchAtKey(const char* key,
+                     const std::function<void (const QByteArray &)>&& callback,
+                     const char* params);
+
     void putToKey(const char* key,
                   const QByteArray&& data,
                   const std::function<void (const QJsonObject &)>&& callback,
@@ -84,6 +88,7 @@ private:
     net_manager() {}
 
     QNetworkRequest rqst{};
+    QNetworkReply* search_rep;
 
 #ifndef EMSCRIPTEN
     QString prefix;

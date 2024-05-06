@@ -32,6 +32,26 @@ public:
     }
     W_INVOKABLE(get)
 
+    void search(const QString& input)
+    {
+        // QString in{input};
+        std::string p{input.toStdString()};
+        p.insert(0, "*=");
+
+        // for (const auto& parts : params.split(';', Qt::SkipEmptyParts))
+        // {
+        //     for (const auto& key_val : parts.split(':', Qt::SkipEmptyParts))
+        //         // if ()
+        //         // {}
+        // }
+
+        net_manager::instance().searchAtKey(T::table(),
+            [this] (const QByteArray& bytes)
+            { read(bytes); },
+            p.c_str());
+    }
+    W_INVOKABLE(search)
+
     void addWith(const QJsonObject& obj)
     {
         net_manager::instance().postToKey(T::table(),
