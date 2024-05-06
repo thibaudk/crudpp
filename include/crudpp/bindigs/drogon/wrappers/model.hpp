@@ -16,9 +16,6 @@
 #include <crudpp/concepts.hpp>
 #include <crudpp/type_traits.hpp>
 #include <crudpp/bindigs/drogon/visitors/json_handler.hpp>
-#include <crudpp/bindigs/drogon/visitors/json_handler_omit_primary.hpp>
-#include <crudpp/bindigs/drogon/visitors/m_vector_handler.hpp>
-#include <crudpp/bindigs/drogon/visitors/m_vector_handler_omit_primary.hpp>
 #include <crudpp/bindigs/drogon/visitors/row_handler.hpp>
 #include <crudpp/bindigs/drogon/visitors/offset_row_handler.hpp>
 #include <crudpp/bindigs/drogon/utils.hpp>
@@ -63,55 +60,21 @@ public:
         crudpp::for_each_index<T>(json_handler{&aggregate, pJson});
     }
 
-    model(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
-    {
-        if(pMasqueradingVector.size() != getColumnNumber())
-        {
-            LOG_ERROR << "Bad masquerading vector";
-            return;
-        }
-
-        crudpp::for_each_index<T>(m_vector_handler{&aggregate, pJson, pMasqueradingVector});
-    }
-
     model() = default;
 
     void updateByJson(const Json::Value &pJson) noexcept(false)
     {
-        // TODO: verify if the distinction with simple json_handler is waranted
-        crudpp::for_each_index<T>(json_handler_omit_primary{&aggregate,
-                                                            &prev_agg,
-                                                            pJson});
+        crudpp::for_each_index<T>(json_handler{&aggregate, pJson});
     }
 
-    void updateByMasqueradedJson(const Json::Value &pJson,
-                                 const std::vector<std::string> &pMasqueradingVector) noexcept(false)
-    {
-        if(pMasqueradingVector.size() != getColumnNumber())
-        {
-            LOG_ERROR << "Bad masquerading vector";
-            return;
-        }
+    //    TODO : re-impelement checks
+    //    static bool validJsonOfField(size_t index,
+    //                                 const std::string &fieldName,
+    //                                 const Json::Value &pJson,
+    //                                 std::string &err,
+    //                                 bool isForCreation){ return true; }
+    //    static bool validateJsonForCreation(const Json::Value &pJson, std::string &err){ return true; }
 
-        crudpp::for_each_index<T>(m_vector_handler_omit_primary<T>{&aggregate,
-                                                                   &prev_agg,
-                                                                   pJson,
-                                                                   pMasqueradingVector});
-    }
-
-//    TODO : re-impelement checks
-//    static bool validJsonOfField(size_t index,
-//                                 const std::string &fieldName,
-//                                 const Json::Value &pJson,
-//                                 std::string &err,
-//                                 bool isForCreation){ return true; }
-//    static bool validateJsonForCreation(const Json::Value &pJson, std::string &err){ return true; }
-//    static bool validateMasqueradedJsonForCreation(const Json::Value &,
-//                                                   const std::vector<std::string> &pMasqueradingVector,
-//                                                   std::string &err){ return true; }
-//    static bool validateMasqueradedJsonForUpdate(const Json::Value & pJson,
-//                                                 const std::vector<std::string> &pMasqueradingVector,
-//                                                 std::string &err){ return true; }
     // static bool validateJsonForUpdate(const Json::Value &pJson, std::string &err)
     // {
     //     if constexpr (r_primary_key<T>)
@@ -153,24 +116,7 @@ public:
     }
 
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const
-    {
-        Json::Value ret;
-
-        if(pMasqueradingVector.size() == getColumnNumber())
-        {
-            boost::pfr::for_each_field(aggregate,
-                                       [&ret, &pMasqueradingVector]
-                                       (const crudpp::r_c_n_v auto& f, size_t i)
-                                       {
-                                           if (!pMasqueradingVector[i].empty())
-                                                   ret[pMasqueradingVector[i]] = to_drgn(f.value);
-                                       });
-            return ret;
-        }
-
-        LOG_ERROR << "Masquerade failed";
-        return toJson();
-    }
+    { return toJson(); }
 
     static const std::string &sqlForFindingByPrimaryKey()
     {

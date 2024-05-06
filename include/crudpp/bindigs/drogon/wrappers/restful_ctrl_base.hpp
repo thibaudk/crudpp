@@ -131,10 +131,7 @@ public:
 
         try
         {
-            model<T> object =
-                (this->isMasquerading()?
-                     model<T>(*jsonPtr, this->masqueradingVector()) :
-                     model<T>(*jsonPtr));
+            model<T> object = model<T>(*jsonPtr);
             auto dbClientPtr = this->getDbClient();
             auto callbackPtr =
                 std::make_shared<std::function<void(const HttpResponsePtr &)>>(
@@ -170,14 +167,7 @@ public:
 
     /// Ensure that subclasses inherited from this class are instantiated.
     restful_ctrl_base() : RestfulController{ model<T>::insertColumns() }
-    {
-    /**
-    * The items in the vector are aliases of column names in the table.
-    * if one item is set to an empty string, the related column is not sent
-    * to clients.
-    */
-        enableMasquerading(model<T>::insertColumns());
-    }
+    { disableMasquerading(); }
 
 protected:
     const std::string dbClientName_{"default"};
@@ -199,18 +189,7 @@ protected:
         }
         try
         {
-            // TODO: reinstate checks
-            // workaroud validateMasqueradedJsonForUpdate
-            // if (!model<T>::validateJsonForUpdate(*jsonPtr, err))
-            // {
-            //     error(callback, err, k400BadRequest);
-            //     return false;
-            // }
-
-            if (this->isMasquerading())
-                object.updateByMasqueradedJson(*jsonPtr, this->masqueradingVector());
-            else
-                object.updateByJson(*jsonPtr);
+            object.updateByJson(*jsonPtr);
         }
         catch (const Json::Exception &e)
         {
