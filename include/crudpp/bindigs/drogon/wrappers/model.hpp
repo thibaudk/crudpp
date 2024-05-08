@@ -120,12 +120,16 @@ public:
 
     static const std::string &sqlForFindingByPrimaryKey()
     {
-        return "select * from " + tableName + " where " + sql_pk_criteria(primaryKeyName);
+        static const std::string str = "select * from " + tableName + " where " +
+                                       sql_pk_criteria(primaryKeyName);
+        return str;
     }
 
     static const std::string &sqlForDeletingByPrimaryKey()
     {
-        return "delete from " + tableName + " where " + sql_pk_criteria(primaryKeyName);
+        static const std::string str = "delete from " + tableName + " where " +
+                                       sql_pk_criteria(primaryKeyName);
+        return str;
     }
 
     std::string sqlForInserting(bool& needSelection) const

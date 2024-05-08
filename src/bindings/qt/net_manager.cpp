@@ -43,7 +43,11 @@ void net_manager::init()
     connect(this, &QNetworkAccessManager::finished,
             this, [this] (QNetworkReply* reply)
             {
-                if (reply->error() != QNetworkReply::NoError)
+                if (reply == search_rep)
+                    search_rep = nullptr;
+
+                if (reply->error() != QNetworkReply::NoError &&
+                    reply->error() != QNetworkReply::OperationCanceledError)
                     emit replyError("net_manager reply error", reply->errorString());
             });
 }
@@ -109,12 +113,27 @@ void net_manager::downloadFile(const char *key,
 
 void net_manager::getFromKey(const char *key,
                              const std::function<void (const QByteArray &)> &&callback,
-                             const char *params)
+                             const char* params)
 {
-    setRequest(key);
+    setRequest(key, params);
     auto* reply = get(rqst);
     setCallback(reply,
                 std::forward<const std::function<void (const QByteArray &)>&&>(callback));
+}
+
+void net_manager::searchAtKey(const char* key,
+                              const std::function<void (const QByteArray &)> &&callback,
+                              const char *params)
+{
+    if (search_rep)
+        if (!search_rep->isFinished())
+            search_rep->abort();
+
+    setRequest(key, params);
+    search_rep = get(rqst);
+    setCallback(search_rep,
+                std::forward<const std::function<void (const QByteArray &)>&&>(callback));
+
 }
 
 void net_manager::putToKey(const char *key,
@@ -178,7 +197,7 @@ void net_manager::deleteToKey(const char *key,
                 std::forward<const std::function<void ()>&&>(errorCallback));
 }
 
-void net_manager::setCallback(QNetworkReply *reply,
+void net_manager::setCallback(QNetworkReply* reply,
                               const std::function<void (const QByteArray &)> &&callback)
 {
     connect(reply, &QNetworkReply::finished,
@@ -230,13 +249,23 @@ void net_manager::setCallback(QNetworkReply *reply,
             });
 }
 
-void net_manager::setRequest(const char *key, const char *params)
+void net_manager::setRequest(const char* key, const char* params)
 {
 #ifndef EMSCRIPTEN
-    QUrl url{prefix + key + '?' + params};
+    QString rq_str{prefix + key};
 #else
-    QUrl url{QString{'/'} + key + '?' + params};
+    QString rq_str{'/'};
+    rq_str += key;
 #endif
+    // don't appen paramters if params is empty
+    // adapted from https://stackoverflow.com/a/7970669/14999126
+    if (!(params && !params[0]))
+    {
+        rq_str += '?';
+        rq_str += QUrl::toPercentEncoding(params, "*=");
+    }
+
+    QUrl url{rq_str};
     rqst.setUrl(url);
 }
 
