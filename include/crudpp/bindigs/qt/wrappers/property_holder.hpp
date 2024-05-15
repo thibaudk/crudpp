@@ -67,7 +67,11 @@ class property_holder : public base_wrapper<T>
     void flaggedChanged()
     W_SIGNAL(flaggedChanged)
 
+    void insertedChanged()
+    W_SIGNAL(insertedChanged)
+
     W_PROPERTY(bool, flagged_for_update READ flagged_for_update NOTIFY flaggedChanged)
+    W_PROPERTY(bool, inserted READ inserted NOTIFY insertedChanged)
 
     template <size_t I>
     using property_at = std::remove_reference_t<decltype(boost::pfr::get<I>(std::declval<T>()))>;
@@ -173,11 +177,11 @@ public:
 
     void save()
     {
-        set_loading(true);
+        setLoading(true);
 
         if (!this->flagged_for_update())
         {
-            set_loading(false);
+            setLoading(false);
             return;
         }
 
@@ -216,11 +220,11 @@ public:
                     }
 
                     reset_flags();
-                    set_loading(false);
+                    setLoading(false);
                 },
                 "save error",
                 [this] ()
-                { set_loading(false); });
+                { setLoading(false); });
         }
         else // insert otherwise
         {
@@ -242,18 +246,18 @@ public:
                     for (auto* m : objects)
                         m->append(model<T>{json});
 
-                    set_loading(false);
+                    setLoading(false);
                 },
                 "save error",
                 [this] ()
-                { set_loading(false); });
+                { setLoading(false); });
         }
     }
     W_INVOKABLE(save)
 
     void remove()
     {
-        set_loading(true);
+        setLoading(true);
 
         // delete on the server if it exists
         if (this->inserted())
@@ -285,18 +289,18 @@ public:
                     }
 
                     clear();
-                    set_loading(false);
+                    setLoading(false);
                 },
                 "Remove Error",
                 [this] ()
-                { set_loading(false); });
+                { setLoading(false); });
 
             return;
         }
 
         // only remove localy otherwise
         clear();
-        set_loading(false);
+        setLoading(false);
     }
     W_INVOKABLE(remove)
 
@@ -304,10 +308,10 @@ public:
     W_SIGNAL(loadingChanged)
 
 private:
-    bool get_loading() const { return base_wrapper<T>::loading; }
-    W_PROPERTY(bool, loading READ get_loading NOTIFY loadingChanged)
+    bool getLoading() const { return base_wrapper<T>::loading; }
+    W_PROPERTY(bool, loading READ getLoading NOTIFY loadingChanged)
 
-    void set_loading(bool l)
+    void setLoading(bool l)
     {
         if (l == base_wrapper<T>::loading) return;
 

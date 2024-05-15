@@ -13,13 +13,12 @@ namespace qt
 W_OBJECT_IMPL(net_manager)
 
 #ifndef EMSCRIPTEN
-void net_manager::init(const QString &url)
+void net_manager::init(const QString& url)
 {
     set_prefix(url);
 
     auto conf = QSslConfiguration::defaultConfiguration();
     rqst.setSslConfiguration(conf);
-
 
     connect(this, &QNetworkAccessManager::sslErrors,
             this, [] (QNetworkReply* reply, const QList<QSslError>& errors)
@@ -28,7 +27,7 @@ void net_manager::init(const QString &url)
     init();
 }
 
-void net_manager::set_prefix(const QString &url)
+void net_manager::set_prefix(const QString& url)
 {
     const auto new_prefix = url + '/';
     if (prefix != new_prefix) prefix = new_prefix;
@@ -38,21 +37,20 @@ void net_manager::set_prefix(const QString &url)
 void net_manager::init()
 {
     rqst.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    setAutoDeleteReplies(true);
     setTransferTimeout();
 
     connect(this, &QNetworkAccessManager::finished,
             this, [this] (QNetworkReply* reply)
             {
-                if (reply == search_rep)
-                    search_rep = nullptr;
-
                 if (reply->error() != QNetworkReply::NoError &&
                     reply->error() != QNetworkReply::OperationCanceledError)
                     emit replyError("net_manager reply error", reply->errorString());
             });
+
 }
 
-void net_manager::authenticate(const QString &identifier, const QString &secret)
+void net_manager::authenticate(const QString& identifier, const QString& secret)
 {
     USER_CLASS usr{};
 
@@ -72,13 +70,13 @@ void net_manager::authenticate(const QString &identifier, const QString &secret)
             emit loggedIn(true);
         },
         "Authentication",
-        [this]() { emit loggedIn(false); });
+        [this] () { emit loggedIn(false); });
 }
 
-void net_manager::downloadFile(const char *key,
-                               const QString &path,
-                               const std::function<void (bool, const QString &)> &&callback,
-                               const std::function<void (qint64, qint64)> &&onProgress)
+void net_manager::downloadFile(const char* key,
+                               const QString& path,
+                               const std::function<void (bool, const QString &)>&& callback,
+                               const std::function<void (qint64, qint64)>&& onProgress)
 
 {
     setRequest(key);
@@ -111,8 +109,8 @@ void net_manager::downloadFile(const char *key,
             onProgress);
 }
 
-void net_manager::getFromKey(const char *key,
-                             const std::function<void (const QByteArray &)> &&callback,
+void net_manager::getFromKey(const char* key,
+                             const std::function<void (const QByteArray &)>&& callback,
                              const char* params)
 {
     setRequest(key, params);
@@ -122,25 +120,25 @@ void net_manager::getFromKey(const char *key,
 }
 
 void net_manager::searchAtKey(const char* key,
-                              const std::function<void (const QByteArray &)> &&callback,
-                              const char *params)
+                              const std::function<void (const QByteArray &)>&& callback,
+                              const char* params,
+                              const QString&& errorPrefix,
+                              const std::function<void ()>&& errorCallback)
 {
-    if (search_rep)
-        if (!search_rep->isFinished())
-            search_rep->abort();
-
     setRequest(key, params);
-    search_rep = get(rqst);
-    setCallback(search_rep,
-                std::forward<const std::function<void (const QByteArray &)>&&>(callback));
-
+    abort_previous_url();
+    auto* reply = get(rqst);
+    setCallback(reply,
+                std::forward<const std::function<void (const QByteArray &)>&&>(callback),
+                std::forward<const QString&&>(errorPrefix),
+                std::forward<const std::function<void ()>&&>(errorCallback));
 }
 
-void net_manager::putToKey(const char *key,
-                           const QByteArray &&data,
-                           const std::function<void (const QJsonObject &)> &&callback,
-                           const QString &&errorPrefix, const std::function<void ()> &&errorCallback,
-                           const std::function<void (qint64, qint64)> &&onProgress)
+void net_manager::putToKey(const char* key,
+                           const QByteArray&& data,
+                           const std::function<void (const QJsonObject &)>&& callback,
+                           const QString&& errorPrefix,
+                           const std::function<void ()>&& errorCallback)
 {
     setRequest(key);
     auto* reply = put(rqst, data);
@@ -148,17 +146,13 @@ void net_manager::putToKey(const char *key,
                 std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
                 std::forward<const QString&&>(errorPrefix),
                 std::forward<const std::function<void ()>&&>(errorCallback));
-
-    connect(reply,
-            &QNetworkReply::uploadProgress,
-            onProgress);
 }
 
-void net_manager::postToKey(const char *key,
-                            const QByteArray &&data,
-                            const std::function<void (const QJsonObject &)> &&callback,
-                            const QString &&errorPrefix, const std::function<void ()> &&errorCallback,
-                            const std::function<void (qint64, qint64)> &&onProgress)
+void net_manager::postToKey(const char* key,
+                            const QByteArray&& data,
+                            const std::function<void (const QJsonObject &)>&& callback,
+                            const QString&& errorPrefix,
+                            const std::function<void ()>&& errorCallback)
 {
     setRequest(key);
     auto* reply = post(rqst, data);
@@ -166,28 +160,12 @@ void net_manager::postToKey(const char *key,
                 std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
                 std::forward<const QString&&>(errorPrefix),
                 std::forward<const std::function<void ()>&&>(errorCallback));
-
-    connect(reply,
-            &QNetworkReply::uploadProgress,
-            onProgress);
 }
 
-void net_manager::deleteToKey(const char *key,
-                              const QByteArray &&data,
-                              const std::function<void (const QJsonObject &)> &&callback,
-                              const QString &&errorPrefix)
-{
-    setRequest(key);
-    auto* reply = sendCustomRequest(rqst, "DELETE", data);
-    setCallback(reply,
-                std::forward<const std::function<void (const QJsonObject &)>&&>(callback),
-                std::forward<const QString&&>(errorPrefix));
-}
-
-void net_manager::deleteToKey(const char *key,
-                              const std::function<void (const QJsonObject &)> &&callback,
-                              const QString &&errorPrefix,
-                              const std::function<void ()> &&errorCallback)
+void net_manager::deleteToKey(const char* key,
+                              const std::function<void (const QJsonObject &)>&& callback,
+                              const QString&& errorPrefix,
+                              const std::function<void ()>&& errorCallback)
 {
     setRequest(key);
     auto* reply = deleteResource(rqst);
@@ -198,13 +176,15 @@ void net_manager::deleteToKey(const char *key,
 }
 
 void net_manager::setCallback(QNetworkReply* reply,
-                              const std::function<void (const QByteArray &)> &&callback)
+                              const std::function<void (const QByteArray &)>&& callback)
 {
     connect(reply, &QNetworkReply::finished,
             [reply, callback, this]()
             {
                 if (reply->error() == QNetworkReply::NoError)
                     callback(reply->readAll());
+                else if (reply->error() == QNetworkReply::OperationCanceledError)
+                    return;
                 else
                 {
                     const auto json{QJsonDocument::fromJson(reply->readAll()).object()};
@@ -215,15 +195,33 @@ void net_manager::setCallback(QNetworkReply* reply,
 
                     emit replyError(reply->errorString(), error_str);
                 }
+            });
+}
 
-                reply->deleteLater();
+void net_manager::setCallback(QNetworkReply* reply,
+                              const std::function<void (const QByteArray &)>&& callback,
+                              const QString&& errorPrefix,
+                              const std::function<void ()>&& errorCallback)
+{
+    connect(reply, &QNetworkReply::finished,
+            [reply, callback, errorPrefix, errorCallback, this]()
+            {
+                if (reply->error() == QNetworkReply::NoError)
+                    callback(reply->readAll());
+                else if (reply->error() == QNetworkReply::OperationCanceledError)
+                    errorCallback();
+                else
+                {
+                    emit replyError(errorPrefix, reply->errorString());
+                    errorCallback();
+                }
             });
 }
 
 void net_manager::setCallback(QNetworkReply *reply,
-                              const std::function<void (const QJsonObject &)> &&callback,
-                              const QString &&errorPrefix,
-                              const std::function<void ()> &&errorCallback)
+                              const std::function<void (const QJsonObject &)>&& callback,
+                              const QString&& errorPrefix,
+                              const std::function<void ()>&& errorCallback)
 {
     connect(reply, &QNetworkReply::finished,
             this,
@@ -232,6 +230,8 @@ void net_manager::setCallback(QNetworkReply *reply,
                 const auto json{QJsonDocument::fromJson(reply->readAll()).object()};
                 if (reply->error() == QNetworkReply::NoError)
                     callback(json);
+                else if (reply->error() == QNetworkReply::OperationCanceledError)
+                    errorCallback();
                 else
                 {
                     QString error_str{};
@@ -244,8 +244,6 @@ void net_manager::setCallback(QNetworkReply *reply,
                     emit replyError(errorPrefix, error_str);
                     errorCallback();
                 }
-
-                reply->deleteLater();
             });
 }
 
@@ -267,6 +265,18 @@ void net_manager::setRequest(const char* key, const char* params)
 
     QUrl url{rq_str};
     rqst.setUrl(url);
+}
+
+void net_manager::abort_previous_url() const
+{
+    auto reps{QNetworkAccessManager::findChildren<QNetworkReply*>()};
+
+    for (const auto& rep : reps)
+    {
+        if (!rep->isFinished() &&
+            rep->url().path() == rqst.url().path())
+            rep->abort();
+    }
 }
 
 } // qt

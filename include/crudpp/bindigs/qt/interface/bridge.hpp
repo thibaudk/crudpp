@@ -72,9 +72,9 @@ public:
     W_SIGNAL(downloadProgressChanged)
 
     W_PROPERTY(float, downloadProgress
-                                  READ getDownloadProgress
-                                      WRITE setDownloadProgress
-                                          NOTIFY downloadProgressChanged)
+                      READ getDownloadProgress
+                      WRITE setDownloadProgress
+                      NOTIFY downloadProgressChanged)
 
     QQmlApplicationEngine* engine{new QQmlApplicationEngine{}};
 

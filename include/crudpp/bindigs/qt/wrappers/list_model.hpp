@@ -34,6 +34,8 @@ public:
 
     void search(const QString& input)
     {
+        setLoading(true);
+
         // QString in{input};
         std::string p{input.toStdString()};
         p.insert(0, "*=");
@@ -45,10 +47,17 @@ public:
         //         // {}
         // }
 
-        net_manager::instance().searchAtKey(T::table(),
+        std::string table{T::table()};
+
+        net_manager::instance().searchAtKey(table.c_str(),
             [this] (const QByteArray& bytes)
-            { read(bytes); },
-            p.c_str());
+            {
+                read(bytes);
+                setLoading(false);
+            },
+            p.c_str(),
+            QString::fromStdString(table + "search error"),
+            [this] () { setLoading(false); });
     }
     W_INVOKABLE(search)
 
@@ -115,44 +124,64 @@ public:
 
     void clear()
     {
-        beginRemoveRows(QModelIndex(), 0, size() - 1);
+        beginRemoveRows(QModelIndex(), 0, std::max(0, size() - 1));
         m_items.clear();
         endRemoveRows();
     }
     W_INVOKABLE(clear)
 
-    void read(const QJsonArray& array)
+    void read(const QJsonArray& array, bool append = false)
     {
-        clear();
-        beginInsertRows(QModelIndex(), 0, array.size() - 1);
+        if (array.empty())
+        {
+            if (!append) clear();
+            return;
+        }
 
-        if (!array.empty())
-            for (const auto& json : array)
-                m_items.emplace_back(Type{json.toObject()});
+        if (append)
+        {
+            int s{size()};
+            beginInsertRows(QModelIndex(), s, s + array.size() - 1);
+        }
+        else
+        {
+            clear();
+            beginInsertRows(QModelIndex(), 0, array.size() - 1);
+        }
+
+        for (const auto& json : array)
+            m_items.emplace_back(Type{json.toObject()});
 
         endInsertRows();
     }
 
-    void read(const QJsonObject& obj)
+    void read(const QJsonObject& obj, bool append = false)
     {
-        clear();
-        beginInsertRows(QModelIndex(), 0, 1);
+        if (append)
+        {
+            int s{size()};
+            beginInsertRows(QModelIndex(), s, s);
+        }
+        else
+        {
+            clear();
+            beginInsertRows(QModelIndex(), 0, 0);
+        }
 
         m_items.emplace_back(Type{obj});
 
         endInsertRows();
     }
 
-    void read(const QByteArray& bytes)
+    void read(const QByteArray& bytes, bool append = false)
     {
         const auto doc{QJsonDocument::fromJson(bytes)};
 
         if (doc.isArray())
-            read(doc.array());
+            read(doc.array(), append);
         else
-            read(doc.object());
+            read(doc.object(), append);
     }
-
 
     void save(int row)
     {
@@ -161,7 +190,7 @@ public:
         if (!item.flagged_for_update())
             return;
 
-        this->setLoading(row, true);
+        setLoading(row, true);
 
         QJsonObject obj{};
         item.write(obj);
@@ -185,12 +214,11 @@ public:
                             p->from_item(item);
 
                     item.reset_flags();
-                    this->setLoading(row, false);
-
+                    setLoading(row, false);
                 },
                 "save error",
                 [row, this]()
-                { this->setLoading(row, false);
+                { setLoading(row, false);
                 });
         }
         else // insert otherwise
@@ -200,12 +228,12 @@ public:
                 [&item, row, this](const QJsonObject& rep)
                 {
                     item.read(rep);
-                    this->setLoading(row, false);
+                    setLoading(row, false);
 
                 },
                 "save error",
                 [row, this]()
-                { this->setLoading(row, false);
+                { setLoading(row, false);
                 });
         }
     }
@@ -213,7 +241,7 @@ public:
 
     void remove(int row)
     {
-        this->setLoading(row, true);
+        setLoading(row, true);
 
         auto& item{this->item_at(row)};
 
@@ -235,12 +263,12 @@ public:
                             p->clear();
 
                     this->removeItem(row);
-                    this->setLoading(row, false);
+                    setLoading(row, false);
 
                 },
                 "Remove Error",
                 [this, row] ()
-                { this->setLoading(row, false);
+                { setLoading(row, false);
                 });
 
             return;
@@ -301,8 +329,23 @@ public:
         return m_items[index];
     }
 
+    void loadingChanged() const
+    W_SIGNAL(loadingChanged)
+
 private:
-    QVector<Type> m_items{};
+    bool getLoading() { return loading; }
+    W_PROPERTY(bool, loading READ getLoading NOTIFY loadingChanged)
+
+    bool loading{false};
+
+    void setLoading(bool value)
+    {
+        if (value == loading)
+            return;
+
+        loading = value;
+        emit loadingChanged();
+    }
 
     void setLoading(int row, bool value)
     {
@@ -317,6 +360,8 @@ private:
     {
         return make_key(std::move(item.get_aggregate()));
     }
+
+    QVector<Type> m_items{};
 };
 } //namespace qt
 

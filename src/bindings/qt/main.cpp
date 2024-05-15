@@ -18,10 +18,10 @@ int main(int argc, char* argv[])
     bridge& b{bridge::instance()};
 
 #ifndef EMSCRIPTEN
-    b.context()->setContextProperty("EMSCRIPTEN", QVariant{false});
+    // b.context()->setContextProperty("EMSCRIPTEN", QVariant{false});
 
     qDebug() << "Device supports OpenSSL: " << QSslSocket::supportsSsl();
-    QString host{"http://127.0.0.0:8080"};
+    QString host{"http://localhost:8080"};
 
     for (int i = 0; i < argc; i++)
         if (QString::compare(argv[i], "--host") == 0)
