@@ -11,8 +11,6 @@
 
 namespace qt
 {
-class smtp;
-
 class net_manager final : public QNetworkAccessManager
 {
     W_OBJECT(net_manager)

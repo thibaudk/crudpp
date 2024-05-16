@@ -20,9 +20,25 @@ class list_model : public QAbstractListModel
     using Type = model<T>;
 
 public:
+    // VERIFY : should replace by std::deque to avoid realocation problemes ?
+    static std::vector<list_model<T>*> instances;
+
     explicit list_model(QObject* parent = nullptr)
         : QAbstractListModel{parent}
-    {}
+    {
+        instances.emplace_back(this);
+    }
+
+    ~ list_model()
+    {
+        instances.erase(std::remove(instances.begin(),
+                                    instances.end(),
+                                    this),
+                        instances.end());
+    }
+
+    list_model(const list_model &) = delete;
+    void operator = (const list_model &) = delete;
 
     void get()
     {
@@ -202,16 +218,28 @@ public:
                 QJsonDocument{obj}.toJson(),
                 [&item, row, this](const QJsonObject& rep)
                 {
-                    const auto id{(item.get_aggregate().*T::primary_key()).value};
+                    using namespace crudpp;
 
-                    // FIXME: replace with static vector of pointers to all instances ?
-                    auto objects{bridge::instance().engine
-                                     ->rootObjects()[0]
-                                     ->findChildren<property_holder<T>*>()};
+                    const auto id{t_trait<T>::pk_value(item.get_aggregate())};
 
-                    for (auto* p : objects)
-                        if ((p->get_aggregate().*T::primary_key()).value == id)
+                    for (auto* p : property_holder<T>::instances)
+                        if (t_trait<T>::pk_value(p->get_aggregate()) == id)
                             p->from_item(item);
+
+                    for (auto* m : instances)
+                    {
+                        for (int i{0}; i < m->size(); i++)
+                        {
+                            auto& other_item{m->item_at(i)};
+
+                            if (t_trait<T>::pk_value(other_item.get_aggregate()) == id)
+                            {
+                                other_item.set(item.get_aggregate());
+                                m->dataChangedAt(i);
+                                break;
+                            }
+                        }
+                    }
 
                     item.reset_flags();
                     setLoading(row, false);
@@ -229,7 +257,6 @@ public:
                 {
                     item.read(rep);
                     setLoading(row, false);
-
                 },
                 "save error",
                 [row, this]()
@@ -251,20 +278,30 @@ public:
             net_manager::instance().deleteToKey(key(item).c_str(),
                 [this, &item, row](const QJsonValue& rep)
                 {
-                    const auto id{(item.get_aggregate().*T::primary_key()).value};
+                    using namespace crudpp;
 
-                    // FIXME: replace with static vector of pointers to all instances ?
-                    auto objects{bridge::instance().engine
-                                     ->rootObjects()[0]
-                                     ->findChildren<property_holder<T>*>()};
+                    const auto id{t_trait<T>::pk_value(item.get_aggregate())};
 
-                    for (auto* p : objects)
-                        if ((p->get_aggregate().*T::primary_key()).value == id)
+                    for (auto* p : property_holder<T>::instances)
+                        if (t_trait<T>::pk_value(p->get_aggregate()) == id)
                             p->clear();
+
+                    for (auto* m : instances)
+                    {
+                        for (int i{0}; i < m->size(); i++)
+                        {
+                            auto& other_item{m->item_at(i)};
+
+                            if (t_trait<T>::pk_value(other_item.get_aggregate()) == id)
+                            {
+                                m->removeItem(i);
+                                break;
+                            }
+                        }
+                    }
 
                     this->removeItem(row);
                     setLoading(row, false);
-
                 },
                 "Remove Error",
                 [this, row] ()
@@ -364,6 +401,9 @@ private:
     QVector<Type> m_items{};
 };
 } //namespace qt
+
+template <typename T>
+std::vector<qt::list_model<T>*> qt::list_model<T>::instances{};
 
 #include "wobjectimpl.h"
 W_OBJECT_IMPL(qt::list_model<T>, template <typename T>)

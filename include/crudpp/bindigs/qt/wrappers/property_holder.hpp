@@ -9,7 +9,6 @@
 #include <QVariant>
 
 #include <wobjectcpp.h>
-#include <wobjectimpl.h>
 
 #include <crudpp/concepts.hpp>
 #include <crudpp/bindigs/qt/utils.hpp>
@@ -64,22 +63,29 @@ class property_holder : public base_wrapper<T>
 {
     W_OBJECT(property_holder)
 
-    void flaggedChanged()
-    W_SIGNAL(flaggedChanged)
-
-    void insertedChanged()
-    W_SIGNAL(insertedChanged)
-
-    W_PROPERTY(bool, flagged_for_update READ flagged_for_update NOTIFY flaggedChanged)
-    W_PROPERTY(bool, inserted READ inserted NOTIFY insertedChanged)
-
     template <size_t I>
     using property_at = std::remove_reference_t<decltype(boost::pfr::get<I>(std::declval<T>()))>;
 
 public:
-    property_holder(QObject* parent = nullptr)
+    // VERIFY : should replace by std::deque to avoid realocation problemes ?
+    static std::vector<property_holder<T>*> instances;
+
+    explicit property_holder(QObject* parent = nullptr)
         : QObject{parent}
-    {}
+    {
+        instances.emplace_back(this);
+    }
+
+    ~ property_holder()
+    {
+        instances.erase(std::remove(instances.begin(),
+                                    instances.end(),
+                                    this),
+                        instances.end());
+    }
+
+    property_holder(const property_holder &) = delete;
+    void operator = (const property_holder &) = delete;
 
     void read(const QJsonObject& obj)
     {
@@ -199,12 +205,11 @@ public:
 
                     const auto id{t_trait<T>::pk_value(this->aggregate)};
 
-                    // FIXME: replace with static vector of pointers to all instances ?
-                    auto objects{bridge::instance().engine
-                                     ->rootObjects()[0]
-                                     ->findChildren<list_model<T>*>()};
+                    for (auto* p : instances)
+                        if (t_trait<T>::pk_value(p->get_aggregate()) == id)
+                            p->from_oter(this);
 
-                    for (auto* m : objects)
+                    for (auto* m : list_model<T>::instances)
                     {
                         for (int i{0}; i < m->size(); i++)
                         {
@@ -230,21 +235,17 @@ public:
         {
             net_manager::instance().postToKey(T::table(),
                 QJsonDocument{obj}.toJson(),
-                [this, obj] (const QJsonObject& rep)
+                [this/*, obj*/] (const QJsonObject& rep)
                 {
                     read(rep);
 
-                    auto map{rep.toVariantMap()};
-                    map.insert(obj.toVariantMap());
-                    const auto json{QJsonObject::fromVariantMap(map)};
+                    // VERIFY: is this necessary ?
+                    // auto map{rep.toVariantMap()};
+                    // map.insert(obj.toVariantMap());
+                    // const auto json{QJsonObject::fromVariantMap(map)};
 
-                    // FIXME: replace with static vector of pointers to all instances ?
-                    auto objects{bridge::instance().engine
-                                     ->rootObjects()[0]
-                                     ->findChildren<list_model<T>*>()};
-
-                    for (auto* m : objects)
-                        m->append(model<T>{json});
+                    // for (auto* m : list_model<T>::instances)
+                    //     m->append(model<T>{json});
 
                     setLoading(false);
                 },
@@ -269,12 +270,11 @@ public:
 
                     const auto id{t_trait<T>::pk_value(this->aggregate)};
 
-                    // FIXME: replace with static vector of pointers to all instances ?
-                    auto objects{bridge::instance().engine
-                                     ->rootObjects()[0]
-                                     ->findChildren<list_model<T>*>()};
+                    for (auto* p : instances)
+                        if (t_trait<T>::pk_value(p->get_aggregate()) == id)
+                            p->clear();
 
-                    for (auto* m : objects)
+                    for (auto* m : list_model<T>::instances)
                     {
                         for (int i{0}; i < m->size(); i++)
                         {
@@ -297,7 +297,6 @@ public:
 
             return;
         }
-
         // only remove localy otherwise
         clear();
         setLoading(false);
@@ -308,6 +307,15 @@ public:
     W_SIGNAL(loadingChanged)
 
 private:
+    void flaggedChanged()
+    W_SIGNAL(flaggedChanged)
+
+    void insertedChanged()
+    W_SIGNAL(insertedChanged)
+
+    W_PROPERTY(bool, flagged_for_update READ flagged_for_update NOTIFY flaggedChanged)
+    W_PROPERTY(bool, inserted READ inserted NOTIFY insertedChanged)
+
     bool getLoading() const { return base_wrapper<T>::loading; }
     W_PROPERTY(bool, loading READ getLoading NOTIFY loadingChanged)
 
@@ -317,6 +325,23 @@ private:
 
         base_wrapper<T>::loading = l;
         emit loadingChanged();
+    }
+
+    void from_oter(property_holder<T>* item)
+    {
+        const auto& agg{item->get_aggregate()};
+
+        crudpp::for_each_index<T>
+            ([this, agg] (const auto i)
+             {
+                 const auto val{QVariant::fromValue(to_qt(boost::pfr::get<i()>(agg).value))};
+                 set_property_value<i()>(val);
+             }
+             );
+
+        this->m_inserted = item->inserted();
+        this->prev_agg = item->get_prev_agg();
+        emit flaggedChanged();
     }
 
     void reset_flags()
@@ -379,4 +404,8 @@ private:
 };
 } // namespace qt
 
+template <typename T>
+std::vector<qt::property_holder<T>*> qt::property_holder<T>::instances{};
+
+#include <wobjectimpl.h>
 W_OBJECT_IMPL_INLINE(qt::property_holder<T>, template <typename T>)
