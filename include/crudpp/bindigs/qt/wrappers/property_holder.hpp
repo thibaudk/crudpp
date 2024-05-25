@@ -87,6 +87,12 @@ public:
     property_holder(const property_holder &) = delete;
     void operator = (const property_holder &) = delete;
 
+    void read(const QByteArray& bytes)
+    {
+        const auto doc{QJsonDocument::fromJson(bytes)};
+        read(doc.object());
+    }
+
     void read(const QJsonObject& obj)
     {
         crudpp::for_each_index<T>(
@@ -118,10 +124,18 @@ public:
 
     void get()
     {
-        net_manager::instance().getFromKey(key(),
-                                           [this](const QByteArray& bytes)
-                                           { read(bytes); });
+        setLoading(true);
+
+        net_manager::instance().getFromKey(key().c_str(),
+            [this](const QByteArray& bytes)
+            {
+                read(bytes);
+                setLoading(false);
+            },
+            QString::fromStdString(std::string{T::table()} + "get error"),
+            [this] () { setLoading(false); });
     }
+    W_INVOKABLE(get)
 
     void from_item(model<T>& item)
     {

@@ -40,9 +40,7 @@ public:
     {
         using namespace boost::pfr;
 
-        if (indexOffset < 0)
-            for_each_field(aggregate, row_handler{r});
-        else
+        if (indexOffset > 0)
         {
             if (getColumnNumber() + indexOffset > r.size())
             {
@@ -53,6 +51,8 @@ public:
             for_each_field(aggregate, offset_row_handler{r, indexOffset});
             prev_agg = aggregate;
         }
+        else
+            for_each_field(aggregate, row_handler{r});
     }
 
     explicit model(const Json::Value& pJson) noexcept(false)

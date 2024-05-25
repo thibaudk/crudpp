@@ -42,9 +42,18 @@ public:
 
     void get()
     {
-        net_manager::instance().getFromKey(T::table(),
-                                           [this] (const QByteArray& bytes)
-                                           { read(bytes); });
+        setLoading(true);
+
+        std::string table{T::table()};
+
+        net_manager::instance().getFromKey(table.c_str(),
+            [this] (const QByteArray& bytes)
+            {
+                read(bytes);
+                setLoading(false);
+            },
+            QString::fromStdString(table + "get error"),
+            [this] () { setLoading(false); });
     }
     W_INVOKABLE(get)
 
@@ -65,15 +74,15 @@ public:
 
         std::string table{T::table()};
 
-        net_manager::instance().searchAtKey(table.c_str(),
+        net_manager::instance().getFromKey(table.c_str(),
             [this] (const QByteArray& bytes)
             {
                 read(bytes);
                 setLoading(false);
             },
-            p.c_str(),
             QString::fromStdString(table + "search error"),
-            [this] () { setLoading(false); });
+            [this] () { setLoading(false); },
+            p.c_str());
     }
     W_INVOKABLE(search)
 

@@ -111,19 +111,9 @@ void net_manager::downloadFile(const char* key,
 
 void net_manager::getFromKey(const char* key,
                              const std::function<void (const QByteArray &)>&& callback,
+                             const QString&& errorPrefix,
+                             const std::function<void ()>&& errorCallback,
                              const char* params)
-{
-    setRequest(key, params);
-    auto* reply = get(rqst);
-    setCallback(reply,
-                std::forward<const std::function<void (const QByteArray &)>&&>(callback));
-}
-
-void net_manager::searchAtKey(const char* key,
-                              const std::function<void (const QByteArray &)>&& callback,
-                              const char* params,
-                              const QString&& errorPrefix,
-                              const std::function<void ()>&& errorCallback)
 {
     setRequest(key, params);
     abort_previous_url();

@@ -49,13 +49,9 @@ public:
 
     void getFromKey(const char* key,
                     const std::function<void (const QByteArray &)>&& callback,
+                    const QString&& errorPrefix = "",
+                    const std::function<void ()>&& errorCallback = [](){},
                     const char* params = "");
-
-    void searchAtKey(const char* key,
-                     const std::function<void (const QByteArray &)>&& callback,
-                     const char* params,
-                     const QString&& errorPrefix = "",
-                     const std::function<void ()>&& errorCallback = [](){});
 
     void putToKey(const char* key,
                   const QByteArray&& data,
