@@ -23,16 +23,7 @@ bool sort_filter::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParen
             QModelIndex source_index = sourceModel()->index(sourceRow, column, sourceParent);
             if (filterRole() <= Qt::DisplayRole)
             {
-                for (const auto& [key, val] : roleNames().asKeyValueRange())
-                {
-                    auto d = sourceModel()->data(source_index, key);
-                    if (d.typeId() == QMetaType::QString)
-                    {
-                        if (d.toString().contains(filterRegularExpression()))
-                            return true;
-                    }
-                }
-                return false;
+                return filter_accepts_strings(source_index);
             }
             else
             {
@@ -49,16 +40,7 @@ bool sort_filter::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParen
     QModelIndex source_index = sourceModel()->index(sourceRow, filterKeyColumn(), sourceParent);
     if (filterRole() <= Qt::DisplayRole)
     {
-        for (const auto& [key, val] : roleNames().asKeyValueRange())
-        {
-            auto d = sourceModel()->data(source_index, key);
-            if (d.typeId() == QMetaType::QString)
-            {
-                if (d.toString().contains(filterRegularExpression()))
-                    return true;
-            }
-        }
-        return false;
+        return filter_accepts_strings(source_index);
     }
     else
     {
@@ -72,5 +54,19 @@ bool sort_filter::lessThan(const QModelIndex& source_left, const QModelIndex& so
     QVariant l = source_left.model()->data(source_left, sortRole());
     QVariant r = source_right.model()->data(source_right, sortRole());
     return QVariant::compare(l, r) == QPartialOrdering::Less;
+}
+
+bool sort_filter::filter_accepts_strings(const QModelIndex& index) const
+{
+    for (const auto& [key, val] : roleNames().asKeyValueRange())
+    {
+        auto d = sourceModel()->data(index, key);
+        if (d.typeId() == QMetaType::QString)
+        {
+            if (d.toString().contains(filterRegularExpression()))
+                return true;
+        }
+    }
+    return false;
 }
 } // namespace qt

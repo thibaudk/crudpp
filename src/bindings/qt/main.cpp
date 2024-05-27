@@ -4,6 +4,7 @@
 #include <crudpp/bindigs/qt/interface/net_manager.hpp>
 #include <crudpp/bindigs/qt/interface/bridge.hpp>
 #include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
+#include <crudpp/bindigs/qt/wrappers/sort_filter.hpp>
 #include <crudpp/macros.hpp>
 #include <singleton.hpp>
 
@@ -18,8 +19,6 @@ int main(int argc, char* argv[])
     bridge& b{bridge::instance()};
 
 #ifndef EMSCRIPTEN
-    // b.context()->setContextProperty("EMSCRIPTEN", QVariant{false});
-
     qDebug() << "Device supports OpenSSL: " << QSslSocket::supportsSsl();
     QString host{"http://localhost:8080"};
 
@@ -48,6 +47,8 @@ int main(int argc, char* argv[])
 
     b.context()->setContextProperty(USER_CLASS::table(),
                                     &singleton<property_holder<USER_CLASS>>::instance());
+
+    qmlRegisterType<sort_filter>("QSortFilter", 1, 0, "QSortFilter");
 
     // qml engine
     const QUrl url(QStringLiteral("qrc:/ui/main.qml"));

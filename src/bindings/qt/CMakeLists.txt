@@ -34,6 +34,7 @@ set(PROJECT_SOURCES
     utils.cpp
     net_manager.cpp
     bridge.cpp
+    sort_filter.cpp
     main.cpp)
 
 if(EXISTS ${QRC_FILE})

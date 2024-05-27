@@ -21,12 +21,12 @@ struct model final : public base_wrapper<T>
     {
         static QHash<int, QByteArray> rn{};
 
-        if (!rn.empty())
-            return rn;
+        if (!rn.empty()) return rn;
 
         boost::pfr::for_each_field(T{},
                                    [](const crudpp::r_c_name auto& f, size_t i)
-                                   { rn[i + Qt::UserRole] = f.c_name(); });
+                                   { rn[i + Qt::UserRole] = f.c_name(); }
+                                   );
 
         rn[flagged_for_update_role()] = "flagged_for_update";
         rn[loading_role()] = "loading";
@@ -39,21 +39,14 @@ struct model final : public base_wrapper<T>
         QVariant v{};
 
         if (role == flagged_for_update_role())
-        {
             v = this->flagged_for_update();
-        }
         else if (role == loading_role())
-        {
             v = this->loading;
-        }
         else
-        {
             crudpp::for_nth_index<T>(role - Qt::UserRole,
                                      [&v, role, this] (const auto i)
                                      { v = to_qt(boost::pfr::get<i()>(this->aggregate).value); }
                                      );
-        }
-
         return v;
     }
 
@@ -70,7 +63,7 @@ struct model final : public base_wrapper<T>
                              {
                                  auto& field{boost::pfr::get<i()>(this->aggregate)};
 
-                                 // prevent from manually setting auto incremented primary key
+                                 // prevent from manually setting single primary key
                                  if constexpr(is_single_primary_key<decltype(field), T>)
                                      return;
 
