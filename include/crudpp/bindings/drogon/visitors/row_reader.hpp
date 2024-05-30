@@ -6,7 +6,7 @@
 #include <drogon/orm/Row.h>
 
 #include <crudpp/concepts.hpp>
-#include <crudpp/bindigs/drogon/utils.hpp>
+#include <crudpp/bindings/drogon/utils.hpp>
 
 namespace drgn
 {

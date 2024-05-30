@@ -5,8 +5,8 @@
 
 #include <wobjectimpl.h>
 
-#include <crudpp/bindigs/qt/interface/net_manager.hpp>
-#include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
+#include <crudpp/bindings/qt/interface/net_manager.hpp>
+#include <crudpp/bindings/qt/wrappers/property_holder.hpp>
 
 namespace qt
 {

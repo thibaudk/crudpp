@@ -1,4 +1,4 @@
-#include <crudpp/bindigs/qt/wrappers/sort_filter.hpp>
+#include <crudpp/bindings/qt/wrappers/sort_filter.hpp>
 
 namespace qt
 {

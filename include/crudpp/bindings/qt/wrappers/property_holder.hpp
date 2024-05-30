@@ -11,8 +11,8 @@
 #include <wobjectcpp.h>
 
 #include <crudpp/concepts.hpp>
-#include <crudpp/bindigs/qt/utils.hpp>
-#include <crudpp/bindigs/qt/interface/bridge.hpp>
+#include <crudpp/bindings/qt/utils.hpp>
+#include <crudpp/bindings/qt/interface/bridge.hpp>
 #include "base_wrapper.hpp"
 #include "model.hpp"
 #include "list_model.hpp"

@@ -6,8 +6,8 @@
 
 #include <crudpp/utils.hpp>
 #include <crudpp/concepts.hpp>
-#include <crudpp/bindigs/qt/utils.hpp>
-#include <crudpp/bindigs/qt/json_reader.hpp>
+#include <crudpp/bindings/qt/utils.hpp>
+#include <crudpp/bindings/qt/json_reader.hpp>
 
 namespace qt
 {

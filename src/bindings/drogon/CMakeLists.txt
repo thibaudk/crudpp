@@ -28,13 +28,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 # drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
 #                     ${CMAKE_CURRENT_BINARY_DIR} TRUE CHANGE_ME)
 
-target_include_directories(${PROJECT_NAME}
-                           PRIVATE
-                           ${CMAKE_CURRENT_SOURCE_DIR})
+# target_include_directories(${PROJECT_NAME}
+#                            PRIVATE
+#                            ${CMAKE_CURRENT_SOURCE_DIR})
 
-#target_sources(${PROJECT_NAME}
+# set(DRGN_HEADERS ${CRUDPP_SOURCE_DIR}/include/crudpp/bindings/drogon)
+
+# target_sources(${PROJECT_NAME}
 #               PRIVATE
-#               ${SERVER_SOURCES})
+#               ${DRGN_HEADERS}/utils.hpp)
 
 # ##############################################################################
 # uncomment the following line for dynamically loading views

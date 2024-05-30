@@ -3,7 +3,7 @@
 #include <QJsonObject>
 
 #include <crudpp/concepts.hpp>
-#include <crudpp/bindigs/qt/utils.hpp>
+#include <crudpp/bindings/qt/utils.hpp>
 
 namespace qt
 {

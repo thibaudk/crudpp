@@ -6,8 +6,8 @@
 
 #include <wobjectdefs.h>
 
-#include <crudpp/bindigs/qt/interface/net_manager.hpp>
-#include <crudpp/bindigs/qt/interface/bridge.hpp>
+#include <crudpp/bindings/qt/interface/net_manager.hpp>
+#include <crudpp/bindings/qt/interface/bridge.hpp>
 #include "model.hpp"
 
 namespace qt

@@ -4,7 +4,7 @@
 #include <drogon/orm/RestfulController.h>
 
 #include <crudpp/concepts.hpp>
-#include <crudpp/bindigs/drogon/wrappers/model.hpp>
+#include <crudpp/bindings/drogon/wrappers/model.hpp>
 
 using namespace drogon;
 using namespace drgn;

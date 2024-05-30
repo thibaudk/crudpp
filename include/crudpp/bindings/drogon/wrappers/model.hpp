@@ -15,10 +15,10 @@
 #include <crudpp/utils.hpp>
 #include <crudpp/concepts.hpp>
 #include <crudpp/type_traits.hpp>
-#include <crudpp/bindigs/drogon/visitors/json_handler.hpp>
-#include <crudpp/bindigs/drogon/visitors/row_handler.hpp>
-#include <crudpp/bindigs/drogon/visitors/offset_row_handler.hpp>
-#include <crudpp/bindigs/drogon/utils.hpp>
+#include <crudpp/bindings/drogon/visitors/json_handler.hpp>
+#include <crudpp/bindings/drogon/visitors/row_handler.hpp>
+#include <crudpp/bindings/drogon/visitors/offset_row_handler.hpp>
+#include <crudpp/bindings/drogon/utils.hpp>
 
 using namespace drogon::orm;
 

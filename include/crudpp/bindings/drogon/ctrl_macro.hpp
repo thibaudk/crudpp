@@ -4,9 +4,9 @@
 
 #include <drogon/HttpController.h>
 
-#include <crudpp/bindigs/drogon/wrappers/restful_ctrl.hpp>
-#include <crudpp/bindigs/drogon/wrappers/restful_ctrl_auth.hpp>
-#include <crudpp/bindigs/drogon/wrappers/restful_ctrl_w_spk.hpp>
+#include <crudpp/bindings/drogon/wrappers/restful_ctrl.hpp>
+#include <crudpp/bindings/drogon/wrappers/restful_ctrl_auth.hpp>
+#include <crudpp/bindings/drogon/wrappers/restful_ctrl_w_spk.hpp>
 #include <crudpp/utils.hpp>
 #include <crudpp/concepts.hpp>
 

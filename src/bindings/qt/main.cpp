@@ -1,10 +1,10 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 
-#include <crudpp/bindigs/qt/interface/net_manager.hpp>
-#include <crudpp/bindigs/qt/interface/bridge.hpp>
-#include <crudpp/bindigs/qt/wrappers/property_holder.hpp>
-#include <crudpp/bindigs/qt/wrappers/sort_filter.hpp>
+#include <crudpp/bindings/qt/interface/net_manager.hpp>
+#include <crudpp/bindings/qt/interface/bridge.hpp>
+#include <crudpp/bindings/qt/wrappers/property_holder.hpp>
+#include <crudpp/bindings/qt/wrappers/sort_filter.hpp>
 #include <crudpp/macros.hpp>
 #include <singleton.hpp>
 

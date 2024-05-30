@@ -1,6 +1,6 @@
 #pragma once
 
-#include <crudpp/bindigs/drogon/visitors/json_handler.hpp>
+#include <crudpp/bindings/drogon/visitors/json_handler.hpp>
 
 // single primary_key and authenticating
 template <typename T>
