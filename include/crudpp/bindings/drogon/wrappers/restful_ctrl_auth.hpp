@@ -22,12 +22,13 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
         T tmp{};
         auto& uname{tmp.username};
         auto& pwd{tmp.password};
-        const auto prev_uname{uname.value};
-        const auto prev_pwd{pwd.value};
+        bool dirtyFlag_[2] = { false };
+        json_handler handler{dirtyFlag_, *jsonPtr};
 
-        crudpp::for_each_index<T>(json_handler{&tmp, *jsonPtr});
+        handler(uname);
+        handler(pwd);
 
-        if(uname.value == prev_uname || pwd.value == prev_pwd)
+        if(!dirtyFlag_[0] || !dirtyFlag_[1])
         {
             this->error(callback,
                         "missing username and/or password in the request",
@@ -92,6 +93,7 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 }
 
                 r.get_aggregate().session_id.value = req->session()->sessionId();
+                r.reset_flags();
 
                 mapper.update(r,
                     [callbackPtr, req, r, this](const size_t)
