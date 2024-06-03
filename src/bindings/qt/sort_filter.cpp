@@ -1,3 +1,5 @@
+#include <wobjectimpl.h>
+
 #include <crudpp/bindings/qt/wrappers/sort_filter.hpp>
 
 namespace qt
@@ -10,8 +12,43 @@ sort_filter::sort_filter(QObject *parent)
     sort(0);
 }
 
+void sort_filter::filter_by_string(const QString& str)
+{
+    role_vals.clear();
+    setFilterFixedString(str);
+}
+
+void sort_filter::filter_by_variants(const QVariantList& vars)
+{
+    // the list has to be even
+    // grouping pairs of roles and values
+    if (vars.count() % 2)
+        return;
+
+    role_vals = vars;
+    invalidateFilter();
+}
+
 bool sort_filter::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
 {
+    if (!role_vals.empty())
+    {
+        auto it{role_vals.begin()};
+        while (it != role_vals.end())
+        {
+            QModelIndex index = sourceModel()->index(sourceRow, 0, sourceParent);
+            auto key{it->toByteArray()};
+            auto d = sourceModel()->data(index, roleNames().key(key));
+            it++;
+            auto val{*it};
+            if (d != val)
+                return false;
+            it++;
+        }
+
+        return true;
+    }
+
     if (filterRegularExpression().pattern().isEmpty())
         return true;
 
@@ -70,3 +107,5 @@ bool sort_filter::filter_accepts_strings(const QModelIndex& index) const
     return false;
 }
 } // namespace qt
+
+W_OBJECT_IMPL(qt::sort_filter)
