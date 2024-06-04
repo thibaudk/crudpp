@@ -7,7 +7,6 @@
 #include <QJsonValue>
 
 #include <crudpp/concepts.hpp>
-#include <crudpp/type_traits.hpp>
 
 namespace qt
 {
@@ -108,31 +107,6 @@ std::string make_uri()
     std::string s{'Q'};
     s += T::table();
     return s;
-}
-
-template <crudpp::r_table T>
-const std::string make_key(const T&& agg)
-{
-    using namespace crudpp;
-    std::string key{T::table()};
-
-    if constexpr (r_single_primary_key<T>)
-    {
-        key += '/';
-
-        if constexpr (std::same_as<typename trait<T>::pk_v_type, std::string>)
-            key += (agg.*T::primary_key()).value;
-        else
-            key += std::to_string((agg.*T::primary_key()).value);
-    }
-    else if constexpr (r_composite_primary_key<T>)
-    {
-        key += '&';
-
-
-    }
-
-    return key;
 }
 
 } // namespace qt

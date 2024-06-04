@@ -14,6 +14,8 @@ public:
     W_INVOKABLE(filter_by_string, (const QString&))
     void filter_by_variants(const QVariantList& vars);
     W_INVOKABLE(filter_by_variants, (const QVariantList&))
+    int parent_row(int filtered_row) const;
+    W_INVOKABLE(parent_row, (int))
 
 protected:
     bool filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const override;

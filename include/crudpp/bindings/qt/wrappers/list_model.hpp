@@ -404,11 +404,12 @@ private:
 
     const std::string key(model<T>& item) const
     {
-        return make_key(std::move(item.get_aggregate()));
+        return crudpp::make_key(std::move(item.get_aggregate()));
     }
 
     QVector<Type> m_items{};
 };
+
 } //namespace qt
 
 template <typename T>

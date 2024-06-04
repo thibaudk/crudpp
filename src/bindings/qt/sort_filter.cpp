@@ -29,6 +29,12 @@ void sort_filter::filter_by_variants(const QVariantList& vars)
     invalidateFilter();
 }
 
+int sort_filter::parent_row(int filtered_row) const
+{
+    QModelIndex fi{index(filtered_row, 0)};
+    return mapToSource(fi).row();
+}
+
 bool sort_filter::filterAcceptsRow(int sourceRow, const QModelIndex& sourceParent) const
 {
     if (!role_vals.empty())

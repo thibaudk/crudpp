@@ -67,4 +67,50 @@ bool valid_key(const auto& f)
     return false;
 }
 
+template <crudpp::different<std::string> T>
+std::string as_string(T v)
+{ return std::to_string(v); }
+
+template <std::same_as<std::string> T>
+std::string as_string(const T& v)
+{ return v; }
+
+template <std::same_as<std::string> T>
+std::string as_string(const T&& v)
+{ return std::move(v); }
+
+template <crudpp::r_table T>
+const std::string make_key(const T&& agg)
+{
+    using namespace crudpp;
+    using namespace std;
+    string key{T::table()};
+
+    if constexpr (r_single_primary_key<T>)
+    {
+        key += '/';
+        key += as_string(trait<T>::pk_value(agg));
+    }
+    else if constexpr (r_composite_primary_key<T>)
+    {
+        key += '?';
+
+        const auto names{trait<T>::pk_name()};
+        int i{0};
+
+        std::apply([&key, &i, names] (const auto& ...val)
+                   {
+                       ((key += names[i++] + '=' + as_string(val) + '&'),
+                        ...);
+                   },
+                   trait<T>::pk_value(agg)
+                   );
+
+        if (key[key.length() - 1] == '&')
+            key.resize(key.length() - 1);
+    }
+
+    return key;
+}
+
 } // namespace crudpp

@@ -366,7 +366,7 @@ private:
 
     const std::string key()
     {
-        return make_key(std::move(this->get_aggregate()));
+        return crudpp::make_key(std::move(this->get_aggregate()));
     }
 
     template <size_t I>
