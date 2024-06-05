@@ -95,7 +95,7 @@ const std::string make_key(const T&& agg)
     {
         key += '?';
 
-        const auto names{trait<T>::pk_name()};
+        const auto names{trait<T, const std::string>::pk_name()};
         int i{0};
 
         std::apply([&key, &i, names] (const auto& ...val)

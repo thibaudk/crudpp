@@ -64,17 +64,17 @@ struct restful_ctrl : public restful_ctrl_base<T>
         {
             using namespace std;
 
-            std::remove_const_t<typename t_trait<T>::pk_v_type> id{};
+            std::remove_const_t<typename model<T>::PrimaryKeyType> id{};
 
             bool parsed = [req, &id] <size_t... I> (index_sequence<I...>)
             {
                 // get composite key from request parameters
                 auto& parameters = req->parameters();
-                auto id_names{t_trait<T>::pk_name()};
+                const auto id_names{model<T>::primaryKeyName};
 
                 return (asign_from_params<I>(get<I>(id), parameters, id_names) && ...);
             }
-            (make_index_sequence<tuple_size_v<typename t_trait<T>::pk_v_type>>{});
+            (make_index_sequence<pk_size<T>()>{});
 
             if (!parsed)
             {

@@ -8,9 +8,6 @@
 
 namespace crudpp
 {
-template <typename T, bool>
-struct trait;
-
 template <typename T, typename ...Exc_T>
 concept same_as = (std::same_as<T, Exc_T> || ...);
 
@@ -75,11 +72,16 @@ concept r_composite_primary_key = requires()
 template <typename T>
 concept r_primary_key = r_composite_primary_key<T> || r_single_primary_key<T>;
 
+template <typename T,
+         typename Name_t,
+         typename Container_t,
+         bool>
+struct trait;
+
 template <typename T, typename Agg>
 concept is_single_primary_key = std::same_as<
     std::remove_cvref_t<T>,
-    std::remove_cvref_t<typename trait<Agg, true>::pk_type>
-    >;
+    std::remove_cvref_t<typename trait<Agg, const char*, void, true>::pk_type>>;
 
 template <typename T, typename Agg>
 concept is_composite_primary_key = requires()

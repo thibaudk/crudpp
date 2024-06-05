@@ -27,14 +27,16 @@ namespace drgn
 template <crudpp::r_table T>
 class model
 {
+    using t_trait = crudpp::t_trait<T, std::string, std::vector<std::string>>;
+
 public:
     static const constexpr std::string tableName = T::table();
     static const constexpr bool hasPrimaryKey = crudpp::r_primary_key<T>;
-    static const crudpp::t_trait<T>::pk_n_type primaryKeyName;
-    using PrimaryKeyType = typename crudpp::t_trait<T>::pk_v_type;
+    static const t_trait::pk_n_type primaryKeyName;
+    using PrimaryKeyType = typename t_trait::pk_v_type;
 
     const internal::Traits<model<T>, crudpp::r_primary_key<T>>::type getPrimaryKey() const
-    { return crudpp::t_trait<T>::pk_value(aggregate); }
+    { return t_trait::pk_value(aggregate); }
 
     explicit model(const Row& r, const ssize_t indexOffset = 0) noexcept
     {
@@ -279,5 +281,5 @@ private:
 };
 
 template <crudpp::r_table T>
-const crudpp::t_trait<T>::pk_n_type model<T>::primaryKeyName = crudpp::t_trait<T>::pk_name();
+const model<T>::t_trait::pk_n_type model<T>::primaryKeyName = model<T>::t_trait::pk_name();
 } // namespace drgn
