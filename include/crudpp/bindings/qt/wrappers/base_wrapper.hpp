@@ -29,8 +29,10 @@ struct base_wrapper
                 json_reader vis{.json = obj};
                 auto& field{boost::pfr::get<i()>(aggregate)};
 
-                if (vis.json.contains(field.c_name()))
-                    if (!vis.json[field.c_name()].isNull())
+                const auto name{std::remove_reference_t<decltype(field)>::c_name()};
+
+                if (vis.json.contains(name))
+                    if (!vis.json[name].isNull())
                         vis(field);
             });
 
@@ -46,10 +48,11 @@ struct base_wrapper
             [&obj, this] (const auto i)
             {
                 using namespace boost::pfr;
-
                 const auto field{get<i()>(aggregate)};
+                using f_type = decltype(field);
 
-                if constexpr(is_single_primary_key<decltype(field), T>)
+
+                if constexpr(is_single_primary_key<f_type, T>)
                 {
                     // skip auto incremented primary key for insert
                     if (!m_inserted) return;
@@ -61,7 +64,7 @@ struct base_wrapper
                     if (field.value == prev_field.value) return;
                 }
 
-                obj[field.c_name()] = to_qjson(to_qt(field.value));
+                obj[std::remove_reference_t<f_type>::c_name()] = to_qjson(to_qt(field.value));
             });
     }
 

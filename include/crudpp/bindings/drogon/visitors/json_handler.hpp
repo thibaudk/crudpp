@@ -13,10 +13,12 @@ struct json_handler
 
     void operator()(crudpp::r_c_name auto& f) noexcept
     {
-        if (vis.json.isMember(f.c_name()))
+        const auto name{std::remove_reference_t<decltype(f)>::c_name()};
+
+        if (vis.json.isMember(name))
         {
             *flags = true;
-            if (!vis.json[f.c_name()].isNull())
+            if (!vis.json[name].isNull())
                 vis(f);
         }
 

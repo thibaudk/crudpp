@@ -42,7 +42,9 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
                 std::move(callback));
         drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
         mapper.findOne(
-            Criteria{uname.c_name(), CompareOperator::EQ, uname.value},
+            Criteria{std::remove_reference_t<decltype(uname)>::c_name(),
+                     CompareOperator::EQ,
+                     uname.value},
             [callbackPtr, req, &pwd, &mapper, this](model<T> r)
             {
                 auto conf{HttpAppFramework::instance().getCustomConfig()["encryption"]};

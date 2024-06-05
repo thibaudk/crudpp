@@ -99,13 +99,13 @@ public:
             [&obj, this] (const auto i)
             {
                 using namespace boost;
-
                 json_reader vis{.json = obj};
                 auto& field{pfr::get<i()>(this->aggregate)};
+                const auto name = std::remove_reference_t<decltype(field)>::c_name();
 
-                if (vis.json.contains(field.c_name()))
+                if (vis.json.contains(name))
                 {
-                    if (!vis.json[field.c_name()].isNull())
+                    if (!vis.json[name].isNull())
                     {
                         vis(field);
 

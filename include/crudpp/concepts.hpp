@@ -24,6 +24,10 @@ concept suported = std::is_arithmetic_v<std::remove_reference_t<T>> ||
 template <typename T, typename ...Exc_T>
 concept different = !same_as<T, Exc_T...>;
 
+template <template <std::size_t> typename T>
+concept r_size_template = requires
+{ typename T<0>; };
+
 // adapted from https://stackoverflow.com/a/68444475
 // --
 template<class T, std::size_t N>

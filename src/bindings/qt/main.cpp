@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
                                                                        "QappUser",
                                                                        "");
 
-    b.context()->setContextProperty(USER_CLASS::table(),
+    b.context()->setContextProperty("appUser",
                                     &singleton<property_holder<USER_CLASS>>::instance());
 
     qmlRegisterType<sort_filter>("QSortFilter", 1, 0, "QSortFilter");

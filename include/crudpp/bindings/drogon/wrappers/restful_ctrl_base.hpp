@@ -32,7 +32,10 @@ class restful_ctrl_base : public RestfulController
 
                                            if constexpr (same_as<decltype(f.value), string>)
                                                crit = crit ||
-                                                      Criteria(f.c_name(), CompareOperator::Like, p);
+                                                      Criteria(
+                                                          std::remove_reference_t<decltype(f)>::c_name(),
+                                                          CompareOperator::Like,
+                                                          p);
                                        }
                                        );
         }

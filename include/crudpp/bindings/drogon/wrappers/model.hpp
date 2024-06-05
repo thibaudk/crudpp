@@ -35,7 +35,7 @@ public:
     static const t_trait::pk_n_type primaryKeyName;
     using PrimaryKeyType = typename t_trait::pk_v_type;
 
-    const internal::Traits<model<T>, crudpp::r_primary_key<T>>::type getPrimaryKey() const
+    const constexpr internal::Traits<model<T>, crudpp::r_primary_key<T>>::type getPrimaryKey() const
     { return t_trait::pk_value(aggregate); }
 
     explicit model(const Row& r, const ssize_t indexOffset = 0) noexcept
@@ -116,7 +116,7 @@ public:
 
         boost::pfr::for_each_field(aggregate,
                                    [&ret](const crudpp::r_c_n_v auto& f)
-                                   { ret[f.c_name()] = to_drgn(f.value); });
+                                   { ret[std::remove_reference_t<decltype(f)>::c_name()] = to_drgn(f.value); });
         return ret;
     }
 
@@ -159,7 +159,7 @@ public:
                                        if (!dirtyFlag_[i])
                                            return;
 
-                                       sql += f.c_name();
+                                       sql += std::remove_reference_t<decltype(f)>::c_name();
                                        sql += ',';
                                        values.append("?,");
                                        // ++parametersCount;
@@ -182,6 +182,8 @@ public:
         return sql;
     }
 
+    // FIXME : can't be a consteval for some reason
+    // static consteval std::vector<std::string> insertColumns()
     static const constexpr std::vector<std::string> insertColumns()
     {
         using namespace std;
@@ -189,9 +191,9 @@ public:
 
         return [] <size_t... I> (T&& t, index_sequence<I...>)
                -> vector<string>
-        { return {pfr::get<I>(t).c_name() ...}; }
-               (T{},
-                make_index_sequence<pfr::tuple_size_v<T>>{});
+        { return {remove_reference_t<decltype(pfr::get<I>(t))>::c_name() ...}; }
+        (T{},
+         make_index_sequence<pfr::tuple_size_v<T>>{});
     }
 
     T& get_aggregate() { return aggregate; }
@@ -234,7 +236,7 @@ private:
                                            return;
 
                                        if (dirtyFlag_[i])
-                                           ret.push_back(f.c_name());
+                                           ret.push_back(std::remove_reference_t<decltype(f)>::c_name());
                                    });
         return ret;
     }

@@ -12,7 +12,7 @@ struct row_handler
 
     void operator()(auto& f) noexcept
     {
-        if (!vis.row[f.c_name()].isNull())
+        if (!vis.row[std::remove_reference_t<decltype(f)>::c_name()].isNull())
             vis(f);
     }
 

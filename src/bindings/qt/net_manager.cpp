@@ -66,7 +66,7 @@ void net_manager::authenticate(const QString& identifier, const QString& secret)
         QJsonDocument{json}.toJson(),
         [this] (const QJsonObject& obj)
         {
-            // singleton<property_holder<USER_CLASS>>::instance().read(obj);
+            singleton<property_holder<USER_CLASS>>::instance().read(obj);
             emit loggedIn(true);
         },
         "Authentication",

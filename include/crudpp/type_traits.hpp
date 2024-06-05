@@ -9,7 +9,7 @@ template <class C, typename T>
 T get_mp_type(T C::*v);
 
 template <typename T>
-const constexpr std::size_t pk_size()
+consteval std::size_t pk_size()
 {
     if constexpr (r_composite_primary_key<T>)
         return std::tuple_size_v<decltype(T::primary_key())>;
@@ -30,7 +30,7 @@ struct base_trait
     using pk_n_type = Name_t;
     using pk_v_type = decltype(pk_type::value);
 
-    static constexpr auto pk_name()
+    static consteval auto pk_name()
     {
         if constexpr(r_c_name<pk_type>)
             return pk_type::c_name();
@@ -49,13 +49,14 @@ struct base_trait<T, Name_t, Container_t, false>
 {
     using pk_n_type = Container_t;
 
+    // FIXME : can't be a consteval till all pk_name() are
+    // static consteval pk_n_type pk_name()
     static const constexpr pk_n_type pk_name()
     {
         using namespace std;
 
         return [] <size_t... I> (auto&& tp, index_sequence<I...>)
                -> pk_n_type
-        // FIXME: simingly useless decltype ?
         { return {decltype(get_mp_type(get<I>(tp)))::c_name() ...}; }
         (T::primary_key(),
          make_index_sequence<pk_size<T>()>{});
@@ -74,7 +75,7 @@ struct base_trait<T, Name_t, Container_t, false>
     using pk_v_type = decltype(pk_value(T{}));
 
 private:
-    static const constexpr auto pk_type_()
+    static consteval auto pk_type_()
     {
         using namespace std;
 
@@ -105,8 +106,8 @@ struct trait<T, Name_t, Container_t, false>
     using pk_n_type = Name_t;
     using pk_v_type = void;
 
-    static const constexpr auto pk_name() { return ""; };
-    static const constexpr void pk_value(const T&) {};
+    static consteval auto pk_name() { return ""; };
+    static consteval void pk_value(const T&) {};
 };
 
 template <typename T,

@@ -12,10 +12,10 @@ struct model final : public base_wrapper<T>
     model(const QJsonObject& json) { this->read(json); }
     model() = default;
 
-    static const constexpr int flagged_for_update_role()
+    static consteval int flagged_for_update_role()
     { return boost::pfr::tuple_size<T>::value + Qt::UserRole; }
 
-    static const constexpr int loading_role() { return flagged_for_update_role() + 1; }
+    static consteval int loading_role() { return flagged_for_update_role() + 1; }
 
     static QHash<int, QByteArray> roleNames()
     {
@@ -25,7 +25,7 @@ struct model final : public base_wrapper<T>
 
         boost::pfr::for_each_field(T{},
                                    [](const crudpp::r_c_name auto& f, size_t i)
-                                   { rn[i + Qt::UserRole] = f.c_name(); }
+                                   { rn[i + Qt::UserRole] = std::remove_reference_t<decltype(f)>::c_name(); }
                                    );
 
         rn[flagged_for_update_role()] = "flagged_for_update";
