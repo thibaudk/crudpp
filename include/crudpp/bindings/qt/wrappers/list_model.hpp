@@ -52,7 +52,7 @@ public:
                 read(bytes);
                 setLoading(false);
             },
-            QString::fromStdString(table + "get error"),
+            QString::fromStdString(table + " get error"),
             [this] () { setLoading(false); });
     }
     W_INVOKABLE(get)
@@ -80,7 +80,7 @@ public:
                 read(bytes);
                 setLoading(false);
             },
-            QString::fromStdString(table + "search error"),
+            QString::fromStdString(table + " search error"),
             [this] () { setLoading(false); },
             p.c_str());
     }

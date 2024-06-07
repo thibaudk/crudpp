@@ -39,12 +39,6 @@ int main(int argc, char* argv[])
     b.init();
     b.registerQml<CLASSES_STRING>();
 
-    qmlRegisterUncreatableType<singleton<property_holder<USER_CLASS>>>("QappUser",
-                                                                       1,
-                                                                       0,
-                                                                       "QappUser",
-                                                                       "");
-
     b.context()->setContextProperty("appUser",
                                     &singleton<property_holder<USER_CLASS>>::instance());
 

@@ -38,7 +38,7 @@ struct String
 };
 
 template <crudpp::r_c_name T>
-constexpr auto get_property_changed_name()
+consteval auto get_property_changed_name()
 {
     constexpr size_t length{std::char_traits<char>::length(T::c_name()) + 7};
     String<length + 1> result{};
@@ -132,7 +132,7 @@ public:
                 read(bytes);
                 setLoading(false);
             },
-            QString::fromStdString(std::string{T::table()} + "get error"),
+            QString::fromStdString(std::string{T::table()} + " get error"),
             [this] () { setLoading(false); });
     }
     W_INVOKABLE(get)

@@ -5,8 +5,17 @@ project(crudpp VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED 20)
 
-set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
+set(CRUDPP_HEADERS
+    ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts.hpp
+    ${CRUDPP_SOURCE_DIR}/include/crudpp/macros.hpp
+    ${CRUDPP_SOURCE_DIR}/include/crudpp/type_traits.hpp
+    ${CRUDPP_SOURCE_DIR}/include/crudpp/utils.hpp
+    ${CRUDPP_SOURCE_DIR}/include/singleton.hpp
+    CACHE INTERNAL ""
+)
+add_custom_target(crudpp SOURCES ${CRUDPP_HEADERS})
+set(BINDING_HEADERS ${CRUDPP_SOURCE_DIR}/include/crudpp/bindings CACHE INTERNAL "")
 
 function(make_all)
     option(PFR_PATH "Path to the independent Boost::pfr repository (boostorg/pfr)")
@@ -49,3 +58,4 @@ endfunction()
 if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
     add_subdirectory(example)
 endif()
+

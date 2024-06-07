@@ -5,13 +5,33 @@ set(CMAKE_CXX_STANDARD_REQUIRED 20)
 
 include(CheckIncludeFileCXX)
 
+set(DRGN_HEADERS
+    ${BINDING_HEADERS}/drogon/visitors/json_handler.hpp
+    ${BINDING_HEADERS}/drogon/visitors/json_reader.hpp
+    ${BINDING_HEADERS}/drogon/visitors/offset_row_handler.hpp
+    ${BINDING_HEADERS}/drogon/visitors/offset_row_reader.hpp
+    ${BINDING_HEADERS}/drogon/visitors/row_handler.hpp
+    ${BINDING_HEADERS}/drogon/visitors/row_reader.hpp
+    ${BINDING_HEADERS}/drogon/wrappers/model.hpp
+    ${BINDING_HEADERS}/drogon/wrappers/restful_ctrl_auth.hpp
+    ${BINDING_HEADERS}/drogon/wrappers/restful_ctrl_base.hpp
+    ${BINDING_HEADERS}/drogon/wrappers/restful_ctrl_w_spk.hpp
+    ${BINDING_HEADERS}/drogon/wrappers/restful_ctrl.hpp
+    ${BINDING_HEADERS}/drogon/ctrl_macro.hpp
+    ${BINDING_HEADERS}/drogon/utils.hpp
+)
+set(CRUDPP_HEADERS ${CRUDPP_HEADERS} PARENT_SCOPE)
+
 string(REPLACE ";" ")(" BOOST_FORMATED_CLASSES "(${CRUDPP_CLASSES})")
 
 add_compile_definitions(SERVER
                         DROGON
                         BOOST_FORMATED_CLASSES=${BOOST_FORMATED_CLASSES})
 
-add_executable(${PROJECT_NAME} main.cc)
+add_executable(${PROJECT_NAME}
+    ${DRGN_HEADERS}
+    main.cc
+)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 

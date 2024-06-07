@@ -3,6 +3,20 @@ project(${PROJECT_NAME})
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED 20)
 
+set(QT_HEADERS
+    ${BINDING_HEADERS}/qt/interface/bridge.hpp
+    ${BINDING_HEADERS}/qt/interface/net_manager.hpp
+    ${BINDING_HEADERS}/qt/interface/net_manager.hpp
+    ${BINDING_HEADERS}/qt/wrappers/base_wrapper.hpp
+    ${BINDING_HEADERS}/qt/wrappers/list_model.hpp
+    ${BINDING_HEADERS}/qt/wrappers/model.hpp
+    ${BINDING_HEADERS}/qt/wrappers/property_holder.hpp
+    ${BINDING_HEADERS}/qt/wrappers/sort_filter.hpp
+    ${BINDING_HEADERS}/qt/json_reader.hpp
+    ${BINDING_HEADERS}/qt/utils.hpp
+
+)
+
 string(REPLACE ";" "," CLASSES_STRING "${CRUDPP_CLASSES}")
 
 add_compile_definitions(CLIENT
@@ -20,17 +34,18 @@ if(IS_DIRECTORY ${CRUDPP_CLIENT_RESOURCE_DIR})
     file(GLOB_RECURSE QRC_FILE
         ${CRUDPP_CLIENT_RESOURCE_DIR}/${PROJECT_NAME}.qrc)
 
-    message("QRC_FILE =" ${QRC_FILE})
+    message("QRC_FILE = " ${QRC_FILE})
 
     if(WIN32)
         file(GLOB_RECURSE RC_FILE
             ${CRUDPP_CLIENT_RESOURCE_DIR}/${PROJECT_NAME}.rc)
 
-        message("RC_FILE =" ${RC_FILE})
+        message("RC_FILE = " ${RC_FILE})
     endif()
 endif()
 
 set(PROJECT_SOURCES
+    ${QT_HEADERS}
     utils.cpp
     net_manager.cpp
     bridge.cpp
