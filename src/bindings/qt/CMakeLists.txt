@@ -36,6 +36,15 @@ if(IS_DIRECTORY ${CRUDPP_CLIENT_RESOURCE_DIR})
 
     message("QRC_FILE = " ${QRC_FILE})
 
+    # file(GLOB_RECURSE RESSOURCES RELATIVE
+    #     ${CRUDPP_CLIENT_RESOURCE_DIR}/*.qml
+    #     ${CRUDPP_CLIENT_RESOURCE_DIR}/*.svg
+    #     ${CRUDPP_CLIENT_RESOURCE_DIR}/*.png
+    #     ${CRUDPP_CLIENT_RESOURCE_DIR}/*.jpeg
+    # )
+
+    # message("RESSOURCES = " ${RESSOURCES})
+
     if(WIN32)
         file(GLOB_RECURSE RC_FILE
             ${CRUDPP_CLIENT_RESOURCE_DIR}/${PROJECT_NAME}.rc)
@@ -59,10 +68,12 @@ endif()
 if(WIN32 AND EXISTS ${RC_FILE})
     qt_add_executable(${PROJECT_NAME}
         WIN32 ${RC_PATH}
+        MACOSX_BUNDLE
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES})
 else()
     qt_add_executable(${PROJECT_NAME}
+        WIN32 MACOSX_BUNDLE
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES})
 endif()
@@ -77,6 +88,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::qtquickcontrols2plugin
     Qt6::qtquickcontrols2basicstyleplugin
     Qt6::qtquickcontrols2materialstyleplugin)
+
+# qt6_add_resources(${PROJECT_NAME} ${CRUDPP_CLIENT_RESOURCE_DIR}
+#     PREFIX
+#     "/"
+#     FILES
+#     ${RESSOURCES}
+# )
 
 qt_import_qml_plugins(${PROJECT_NAME})
 
