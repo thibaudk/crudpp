@@ -28,12 +28,10 @@ void bridge::init()
 
 QQmlContext* bridge::context() { return engine->rootContext(); }
 
-void bridge::onLogin(bool success, const QString& errorString) const
+void bridge::onLogin()
 {
-    QMetaObject::invokeMethod(qmlObject,
-                              "onLogin",
-                              Q_ARG(bool, success),
-                              Q_ARG(QString, errorString));
+    QMetaObject::invokeMethod(qmlObject, "onLogin");
+    decrement_load();
 }
 
 void bridge::onException(const QString& prefix, const QString& errorString)
@@ -58,8 +56,9 @@ void bridge::setHost(const QString &newHost) const
 }
 #endif
 
-void bridge::authenticate(const QString& username, const QString& password) const
+void bridge::authenticate(const QString& username, const QString& password)
 {
+    increment_load();
     net_manager::instance().authenticate(username, password);
 }
 

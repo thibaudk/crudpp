@@ -36,7 +36,7 @@ public:
 
     QQmlContext* context();
 
-    void onLogin(bool success, const QString& errorString) const;
+    void onLogin();
 
     void onException(const QString& prefix, const QString& errorString);
 
@@ -45,7 +45,7 @@ public:
     W_INVOKABLE(setHost)
 #endif
 
-    void authenticate(const QString& username, const QString& password) const;
+    void authenticate(const QString& username, const QString& password);
     W_INVOKABLE(authenticate)
 
     void updatePwd(const QString& newPwd) const;

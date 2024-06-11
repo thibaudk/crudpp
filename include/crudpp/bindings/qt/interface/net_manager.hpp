@@ -33,8 +33,8 @@ public:
 
     void authenticate(const QString& identifier, const QString& secret);
 
-    void loggedIn(bool success, const QString& errorString = "")
-    W_SIGNAL(loggedIn, success, errorString)
+    void loggedIn()
+    W_SIGNAL(loggedIn)
 
     void replyError(const QString& prefix = "", const QString& errorString = "")
     W_SIGNAL(replyError, prefix, errorString)

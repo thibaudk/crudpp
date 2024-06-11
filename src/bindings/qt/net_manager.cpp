@@ -67,10 +67,9 @@ void net_manager::authenticate(const QString& identifier, const QString& secret)
         [this] (const QJsonObject& obj)
         {
             singleton<property_holder<USER_CLASS>>::instance().read(obj);
-            emit loggedIn(true);
+            emit loggedIn();
         },
-        "Authentication",
-        [this] () { emit loggedIn(false); });
+        "Authentication");
 }
 
 void net_manager::downloadFile(const char* key,
