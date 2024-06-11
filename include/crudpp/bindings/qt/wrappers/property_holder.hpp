@@ -133,7 +133,9 @@ public:
                 setLoading(false);
             },
             QString::fromStdString(std::string{T::table()} + " get error"),
-            [this] () { setLoading(false); });
+            [this] ()
+            { setLoading(false); }
+            );
     }
     W_INVOKABLE(get)
 
@@ -197,125 +199,61 @@ public:
 
     void save()
     {
-        setLoading(true);
-
         if (!this->flagged_for_update())
-        {
-            setLoading(false);
             return;
-        }
-
-        QJsonObject obj{};
-        this->write(obj);
 
         // update if the item was already inserted
-        if (this->inserted())
-        {
-            net_manager::instance().putToKey(key().c_str(),
-                QJsonDocument{obj}.toJson(),
-                [this] (const QJsonObject& rep)
-                {
-                    using namespace crudpp;
-
-                    const auto id{t_trait<T>::pk_value(this->aggregate)};
-
-                    for (auto* p : instances)
-                        if (t_trait<T>::pk_value(p->get_aggregate()) == id)
-                            p->from_oter(this);
-
-                    for (auto* m : list_model<T>::instances)
-                    {
-                        for (int i{0}; i < m->size(); i++)
-                        {
-                            auto& item{m->item_at(i)};
-
-                            if (t_trait<T>::pk_value(item.get_aggregate()) == id)
-                            {
-                                item.set(this->aggregate);
-                                m->dataChangedAt(i);
-                                break;
-                            }
-                        }
-                    }
-
-                    reset_flags();
-                    setLoading(false);
-                },
-                "save error",
-                [this] ()
-                { setLoading(false); });
-        }
-        else // insert otherwise
-        {
-            net_manager::instance().postToKey(T::table(),
-                QJsonDocument{obj}.toJson(),
-                [this/*, obj*/] (const QJsonObject& rep)
-                {
-                    read(rep);
-
-                    // VERIFY: is this necessary ?
-                    // auto map{rep.toVariantMap()};
-                    // map.insert(obj.toVariantMap());
-                    // const auto json{QJsonObject::fromVariantMap(map)};
-
-                    // for (auto* m : list_model<T>::instances)
-                    //     m->append(model<T>{json});
-
-                    setLoading(false);
-                },
-                "save error",
-                [this] ()
-                { setLoading(false); });
-        }
+        this->inserted() ? update() : insert();
     }
     W_INVOKABLE(save)
 
+    void save_queued()
+    {
+        if (!this->flagged_for_update())
+        {
+            bridge::instance().dequeue();
+            return;
+        }
+
+        if (this->inserted())
+        {
+            update();
+            // updates are not considered relevant in the QML queue
+            // therefore dequeue is called directly
+            // outside of the callback
+            bridge::instance().dequeue();
+        }
+        else
+            insert(true);
+    }
+    W_INVOKABLE(save_queued)
+
     void remove()
     {
-        setLoading(true);
-
         // delete on the server if it exists
         if (this->inserted())
         {
-            net_manager::instance().deleteToKey(key().c_str(),
-                [this](const QJsonValue& rep)
-                {
-                    using namespace crudpp;
-
-                    const auto id{t_trait<T>::pk_value(this->aggregate)};
-
-                    for (auto* p : instances)
-                        if (t_trait<T>::pk_value(p->get_aggregate()) == id)
-                            p->clear();
-
-                    for (auto* m : list_model<T>::instances)
-                    {
-                        for (int i{0}; i < m->size(); i++)
-                        {
-                            auto& item{m->item_at(i)};
-
-                            if (t_trait<T>::pk_value(item.get_aggregate()) == id)
-                            {
-                                m->removeItem(i);
-                                break;
-                            }
-                        }
-                    }
-
-                    clear();
-                    setLoading(false);
-                },
-                "Remove Error",
-                [this] ()
-                { setLoading(false); });
-
+            del();
             return;
         }
         // only remove localy otherwise
         clear();
-        setLoading(false);
     }
     W_INVOKABLE(remove)
+
+    void remove_queued()
+    {
+        // delete on the server if it exists
+        if (this->inserted())
+        {
+            del(true);
+            return;
+        }
+        // only remove localy otherwise
+        clear();
+        bridge::instance().dequeue();
+    }
+    W_INVOKABLE(remove_queued)
 
     void loadingChanged()
     W_SIGNAL(loadingChanged)
@@ -367,6 +305,111 @@ private:
     const std::string key()
     {
         return crudpp::make_key(std::move(this->get_aggregate()));
+    }
+
+    void insert(bool queued = false)
+    {
+        bridge::instance().increment_load();
+
+        QJsonObject obj{};
+        this->write(obj);
+
+        net_manager::instance().postToKey(T::table(),
+            QJsonDocument{obj}.toJson(),
+            [this/*, obj*/, queued] (const QJsonObject& rep)
+            {
+                read(rep);
+
+                // VERIFY: is this necessary ?
+                // auto map{rep.toVariantMap()};
+                // map.insert(obj.toVariantMap());
+                // const auto json{QJsonObject::fromVariantMap(map)};
+
+                // for (auto* m : list_model<T>::instances)
+                //     m->append(model<T>{json});
+
+                bridge::instance().decrement_load();
+                if (queued) bridge::instance().dequeue();
+            },
+            "save error");
+    }
+
+    void update()
+    {
+        setLoading(true);
+
+        QJsonObject obj{};
+        this->write(obj);
+
+        net_manager::instance().putToKey(key().c_str(),
+            QJsonDocument{obj}.toJson(),
+            [this] (const QJsonObject& rep)
+            {
+                using namespace crudpp;
+
+                const auto id{t_trait<T>::pk_value(this->aggregate)};
+
+                for (auto* p : instances)
+                    if (t_trait<T>::pk_value(p->get_aggregate()) == id)
+                        p->from_oter(this);
+
+                for (auto* m : list_model<T>::instances)
+                {
+                    for (int i{0}; i < m->size(); i++)
+                    {
+                        auto& item{m->item_at(i)};
+
+                        if (t_trait<T>::pk_value(item.get_aggregate()) == id)
+                        {
+                            item.set(this->aggregate);
+                            m->dataChangedAt(i);
+                            break;
+                        }
+                    }
+                }
+
+                reset_flags();
+                setLoading(false);
+            },
+            "save error",
+            [this] ()
+            { setLoading(false); });
+    }
+
+    void del(bool queued = false)
+    {
+        bridge::instance().increment_load();
+
+        net_manager::instance().deleteToKey(key().c_str(),
+            [this, queued](const QJsonValue& rep)
+            {
+                using namespace crudpp;
+
+                const auto id{t_trait<T>::pk_value(this->aggregate)};
+
+                for (auto* p : instances)
+                    if (t_trait<T>::pk_value(p->get_aggregate()) == id)
+                        p->clear();
+
+                for (auto* m : list_model<T>::instances)
+                {
+                    for (int i{0}; i < m->size(); i++)
+                    {
+                        auto& item{m->item_at(i)};
+
+                        if (t_trait<T>::pk_value(item.get_aggregate()) == id)
+                        {
+                            m->removeItem(i);
+                            break;
+                        }
+                    }
+                }
+
+                clear();
+                bridge::instance().decrement_load();
+                if (queued) bridge::instance().dequeue();
+            },
+            "Remove Error");
     }
 
     template <size_t I>

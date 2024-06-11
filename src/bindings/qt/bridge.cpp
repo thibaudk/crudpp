@@ -26,7 +26,9 @@ void bridge::init()
             &bridge::onException);
 }
 
-void bridge::onLogin(bool success, const QString &errorString) const
+QQmlContext* bridge::context() { return engine->rootContext(); }
+
+void bridge::onLogin(bool success, const QString& errorString) const
 {
     QMetaObject::invokeMethod(qmlObject,
                               "onLogin",
@@ -34,8 +36,15 @@ void bridge::onLogin(bool success, const QString &errorString) const
                               Q_ARG(QString, errorString));
 }
 
-void bridge::onException(const QString &prefix, const QString &errorString) const
+void bridge::onException(const QString& prefix, const QString& errorString)
 {
+    items_loading = 0;
+    if (loading)
+    {
+        loading = false;
+        emit loadingChanged();
+    }
+
     QMetaObject::invokeMethod(qmlObject,
                               "onException",
                               Q_ARG(QString, prefix),
@@ -49,12 +58,12 @@ void bridge::setHost(const QString &newHost) const
 }
 #endif
 
-void bridge::authenticate(const QString &username, const QString &password) const
+void bridge::authenticate(const QString& username, const QString& password) const
 {
     net_manager::instance().authenticate(username, password);
 }
 
-void bridge::updatePwd(const QString &newPwd) const
+void bridge::updatePwd(const QString& newPwd) const
 {
     QJsonObject json;
     json["password"] = newPwd;
@@ -70,18 +79,57 @@ void bridge::resetPwd(int id) const
     changePwd("resetPassword", json);
 }
 
+void bridge::setQmlObject(QObject* obj) noexcept { qmlObject = obj; }
+
+bool bridge::hasFlag(int value, int flag) const noexcept { return value & flag; }
+
+void bridge::increment_load()
+{
+    items_loading++;
+    if (loading) return;
+    loading = true;
+    emit loadingChanged();
+}
+
+void bridge::decrement_load()
+{
+    if (items_loading < 1) return;
+    items_loading--;
+
+    if (items_loading) return;
+    loading = false;
+    emit loadingChanged();
+}
+
+void bridge::dequeue() const
+{
+    QMetaObject::invokeMethod(qmlObject, "dequeue");
+}
+
+bool bridge::getLoading() const { return loading; }
+
+float bridge::getDownloadProgress() const { return downloadProgress; }
+
 void bridge::setDownloadProgress(float newDownloadProgress)
 {
+    if (newDownloadProgress == downloadProgress) return;
     downloadProgress = newDownloadProgress;
     emit downloadProgressChanged();
 }
+
+bridge::bridge()
+    : engine {new QQmlApplicationEngine}
+    , loading{false}
+    , items_loading{0}
+    , downloadProgress{-1.f}
+{}
 
 void bridge::changePwd(const char *key, const QJsonObject &json) const
 {
     net_manager::instance().putToKey(key,
         QJsonDocument(json).toJson(),
         [this] (const QJsonObject& rep)
-        { emit loaded(); },
+        {},
         "changePwd error");
 }
 

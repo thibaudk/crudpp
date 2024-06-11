@@ -34,12 +34,11 @@ public:
     bridge(bridge const&) = delete;
     void operator = (bridge const&) = delete;
 
-    QQmlContext* context() { return engine->rootContext(); }
+    QQmlContext* context();
 
     void onLogin(bool success, const QString& errorString) const;
 
-    void onException(const QString& prefix,
-                     const QString& errorString) const;
+    void onException(const QString& prefix, const QString& errorString);
 
 #ifndef EMSCRIPTEN
     void setHost(const QString& newHost) const;
@@ -55,35 +54,44 @@ public:
     void resetPwd(int id) const;
     W_INVOKABLE(resetPwd)
 
-    void setQmlObject(QObject* obj) noexcept { qmlObject = obj; }
+    void setQmlObject(QObject* obj) noexcept;
 
-    bool hasFlag(int value, int flag) const noexcept { return value & flag; }
+    bool hasFlag(int value, int flag) const noexcept;
     W_INVOKABLE(hasFlag)
 
     void logout() const
     W_SIGNAL(logout)
 
-    void loaded() const
-    W_SIGNAL(loaded)
+    void increment_load();
+    void decrement_load();
+    void dequeue() const;
 
-    float getDownloadProgress() const { return downloadProgress; }
+    bool getLoading() const;
+    void loadingChanged()
+    W_SIGNAL(loadingChanged)
+
+    W_PROPERTY(bool, loading
+                          READ getLoading
+                              NOTIFY loadingChanged)
+
+    float getDownloadProgress() const;
     void setDownloadProgress(float newDownloadProgress);
     void downloadProgressChanged()
     W_SIGNAL(downloadProgressChanged)
 
     W_PROPERTY(float, downloadProgress
-                      READ getDownloadProgress
-                      WRITE setDownloadProgress
-                      NOTIFY downloadProgressChanged)
+                          READ getDownloadProgress
+                              NOTIFY downloadProgressChanged)
 
-    QQmlApplicationEngine* engine{new QQmlApplicationEngine{}};
+    QQmlApplicationEngine* engine;
 
 private:
-    bridge() {}
+    bridge();
 
     QObject* qmlObject;
-
-    float downloadProgress{-1.f};
+    bool loading;
+    int items_loading;
+    float downloadProgress;
 
     void changePwd(const char* key, const QJsonObject& json) const;
 
