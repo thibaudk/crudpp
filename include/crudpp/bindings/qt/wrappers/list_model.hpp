@@ -91,7 +91,7 @@ public:
     }
     W_INVOKABLE(search)
 
-    void addWith(const QJsonObject& obj)
+    void add_with(const QJsonObject& obj)
     {
         bridge::instance().increment_load();
 
@@ -102,12 +102,25 @@ public:
                 append(Type{rep});
                 bridge::instance().decrement_load();
             },
-            "AddWith error",
-            [this] ()
-            { bridge::instance().decrement_load(); }
-            );
+            "add_with error");
     }
-    W_INVOKABLE(addWith)
+    W_INVOKABLE(add_with)
+
+    void add_with_queued(const QJsonObject& obj)
+    {
+        bridge::instance().increment_load();
+
+        net_manager::instance().postToKey(T::table(),
+            QJsonDocument{obj}.toJson(),
+            [this] (const QJsonObject& rep)
+            {
+                append(Type{rep});
+                bridge::instance().decrement_load();
+                bridge::instance().dequeue();
+            },
+            "add_with_queued error");
+    }
+    W_INVOKABLE(add_with_queued)
 
     void appendItems(int number = 1)
     {
@@ -391,7 +404,7 @@ private:
                 bridge::instance().decrement_load();
                 if (queued) bridge::instance().dequeue();
             },
-            "save error");
+            "insert error");
     }
 
     void update(Type& item, int row)
@@ -431,7 +444,7 @@ private:
                 item.reset_flags();
                 setLoading(row, false);
             },
-            "save error",
+            "update error",
             [row, this]()
             { setLoading(row, false); }
             );
@@ -470,7 +483,7 @@ private:
                 bridge::instance().decrement_load();
                 if (queued) bridge::instance().dequeue();
             },
-            "Remove Error");
+            "del Error");
     }
 
     QVector<Type> m_items{};
