@@ -101,7 +101,8 @@ template <typename T, typename Agg>
 concept is_primary_key = is_single_primary_key<T, Agg> || is_composite_primary_key<T, Agg>;
 
 template <typename T>
-concept is_foreign_key = std::is_member_object_pointer_v<decltype(T::foreign_key())>;
+concept is_foreign_key = std::is_member_object_pointer_v<
+    decltype(std::remove_cvref_t<T>::foreign_key())>;
 
 template <typename T>
 concept r_c_name = requires()
