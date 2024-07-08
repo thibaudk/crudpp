@@ -50,15 +50,16 @@ void net_manager::init()
 
 }
 
+#ifdef USER_CLASS
 void net_manager::authenticate(const QString& identifier, const QString& secret)
 {
-    USER_CLASS usr{};
+    user u{};
 
     QJsonObject json;
-    json[usr.username.c_name()] = identifier;
-    json[usr.password.c_name()] = secret;
+    json[u.username.c_name()] = identifier;
+    json[u.password.c_name()] = secret;
 
-    std::string url{usr.table()};
+    std::string url{u.table()};
     url += "/auth";
 
     authenticating = true;
@@ -66,11 +67,12 @@ void net_manager::authenticate(const QString& identifier, const QString& secret)
         QJsonDocument{json}.toJson(),
         [this] (const QJsonObject& obj)
         {
-            singleton<property_holder<USER_CLASS>>::instance().read(obj);
+            singleton<property_holder<user>>::instance().read(obj);
             emit loggedIn();
         },
         "Authentication");
 }
+#endif
 
 void net_manager::downloadFile(const char* key,
                                const QString& path,

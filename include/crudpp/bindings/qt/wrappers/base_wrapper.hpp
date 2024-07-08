@@ -5,7 +5,8 @@
 #include <QJsonObject>
 
 #include <crudpp/utils.hpp>
-#include <crudpp/concepts.hpp>
+#include <crudpp/concepts/permissions.hpp>
+#include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/qt/utils.hpp>
 #include <crudpp/bindings/qt/json_reader.hpp>
 
@@ -26,10 +27,12 @@ struct base_wrapper
         crudpp::for_each_index<T>(
             [&obj, this] (const auto i)
             {
-                json_reader vis{.json = obj};
                 auto& field{boost::pfr::get<i()>(aggregate)};
+                using f_type = std::remove_reference_t<decltype(field)>;
+                if constexpr(crudpp::has_writeonly_flag<f_type>) return;
 
-                const auto name{std::remove_reference_t<decltype(field)>::c_name()};
+                json_reader vis{.json = obj};
+                const auto name{f_type::c_name()};
 
                 if (vis.json.contains(name))
                     if (!vis.json[name].isNull())
@@ -49,8 +52,8 @@ struct base_wrapper
             {
                 using namespace boost::pfr;
                 const auto field{get<i()>(aggregate)};
-                using f_type = decltype(field);
-
+                using f_type = std::remove_reference_t<decltype(field)>;
+                if constexpr(crudpp::has_readonly_flag<f_type>) return;
 
                 if constexpr(is_single_primary_key<f_type, T>)
                 {
@@ -64,7 +67,7 @@ struct base_wrapper
                     if (field.value == prev_field.value) return;
                 }
 
-                obj[std::remove_reference_t<f_type>::c_name()] = to_qjson(to_qt(field.value));
+                obj[f_type::c_name()] = to_qjson(to_qt(field.value));
             });
     }
 

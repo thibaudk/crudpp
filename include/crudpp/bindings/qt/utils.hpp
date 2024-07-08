@@ -6,7 +6,7 @@
 #include <QDate>
 #include <QJsonValue>
 
-#include <crudpp/concepts.hpp>
+#include <crudpp/concepts/required.hpp>
 
 namespace qt
 {

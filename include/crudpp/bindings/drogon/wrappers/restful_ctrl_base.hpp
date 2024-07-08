@@ -3,7 +3,7 @@
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
 
-#include <crudpp/concepts.hpp>
+#include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/drogon/wrappers/model.hpp>
 
 using namespace drogon;
@@ -49,7 +49,7 @@ public:
     {
         auto dbClientPtr = getDbClient();
         Mapper<model<T>> mapper(dbClientPtr);
-        auto &parameters = req->parameters();
+        auto& parameters = req->parameters();
         int found_params{0};
 
         auto iter = parameters.find("sort");

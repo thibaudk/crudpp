@@ -1,6 +1,6 @@
 #pragma once
 
-#include <crudpp/bindings/drogon/wrappers/restful_ctrl_base.hpp>
+#include <crudpp/bindings/drogon/wrappers/restful_ctrl.hpp>
 
 // single primary key and no authentication
 template <typename T>

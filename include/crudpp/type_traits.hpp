@@ -1,6 +1,6 @@
 #pragma once
 
-#include "concepts.hpp"
+#include <crudpp/concepts/required.hpp>
 
 namespace crudpp
 {

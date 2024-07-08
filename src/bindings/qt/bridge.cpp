@@ -15,10 +15,12 @@ void bridge::init()
     qmlRegisterUncreatableType<bridge>("Interface", 1, 0, "Bridge", "");
     context()->setContextProperty("bridge", this);
 
+#ifdef USER_CLASS
     connect(&net_manager::instance(),
             &net_manager::loggedIn,
             this,
             &bridge::onLogin);
+#endif
 
     connect(&net_manager::instance(),
             &net_manager::replyError,
@@ -27,12 +29,6 @@ void bridge::init()
 }
 
 QQmlContext* bridge::context() { return engine->rootContext(); }
-
-void bridge::onLogin()
-{
-    QMetaObject::invokeMethod(qmlObject, "onLogin");
-    decrement_load();
-}
 
 void bridge::onException(const QString& prefix, const QString& errorString)
 {
@@ -56,10 +52,17 @@ void bridge::setHost(const QString &newHost) const
 }
 #endif
 
+#ifdef USER_CLASS
 void bridge::authenticate(const QString& username, const QString& password)
 {
     increment_load();
     net_manager::instance().authenticate(username, password);
+}
+
+void bridge::onLogin()
+{
+    QMetaObject::invokeMethod(qmlObject, "onLogin");
+    decrement_load();
 }
 
 void bridge::updatePwd(const QString& newPwd) const
@@ -77,6 +80,7 @@ void bridge::resetPwd(int id) const
 
     changePwd("resetPassword", json);
 }
+#endif
 
 void bridge::setQmlObject(QObject* obj) noexcept { qmlObject = obj; }
 

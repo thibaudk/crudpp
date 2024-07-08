@@ -2,7 +2,7 @@
 
 #include <QJsonObject>
 
-#include <crudpp/concepts.hpp>
+#include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/qt/utils.hpp>
 
 namespace qt

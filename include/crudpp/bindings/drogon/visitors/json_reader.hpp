@@ -4,7 +4,7 @@
 
 #include <json/value.h>
 
-#include <crudpp/concepts.hpp>
+#include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/drogon/utils.hpp>
 
 namespace drgn

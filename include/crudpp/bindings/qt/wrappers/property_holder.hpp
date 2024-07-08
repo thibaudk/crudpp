@@ -10,7 +10,7 @@
 
 #include <wobjectcpp.h>
 
-#include <crudpp/concepts.hpp>
+#include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/qt/utils.hpp>
 #include <crudpp/bindings/qt/interface/bridge.hpp>
 #include "base_wrapper.hpp"
@@ -99,9 +99,12 @@ public:
             [&obj, this] (const auto i)
             {
                 using namespace boost;
-                json_reader vis{.json = obj};
                 auto& field{pfr::get<i()>(this->aggregate)};
-                const auto name = std::remove_reference_t<decltype(field)>::c_name();
+                using f_type = std::remove_reference_t<decltype(field)>;
+                if constexpr(crudpp::has_writeonly_flag<f_type>) return;
+
+                json_reader vis{.json = obj};
+                const auto name = f_type::c_name();
 
                 if (vis.json.contains(name))
                 {

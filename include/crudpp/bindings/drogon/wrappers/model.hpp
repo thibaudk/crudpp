@@ -13,7 +13,7 @@
 #include <json/value.h>
 
 #include <crudpp/utils.hpp>
-#include <crudpp/concepts.hpp>
+#include <crudpp/concepts/required.hpp>
 #include <crudpp/type_traits.hpp>
 #include <crudpp/bindings/drogon/visitors/json_handler.hpp>
 #include <crudpp/bindings/drogon/visitors/row_handler.hpp>

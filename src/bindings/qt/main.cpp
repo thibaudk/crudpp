@@ -39,8 +39,10 @@ int main(int argc, char* argv[])
     b.init();
     b.registerQml<CLASSES_STRING>();
 
+#ifdef USER_CLASS
     b.context()->setContextProperty("appUser",
-                                    &singleton<property_holder<USER_CLASS>>::instance());
+                                    &singleton<property_holder<user>>::instance());
+#endif
 
     qmlRegisterType<sort_filter>("QSortFilter", 1, 0, "QSortFilter");
 

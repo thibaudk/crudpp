@@ -2,12 +2,14 @@ cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 project(crudpp VERSION 0.0.1 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED 20)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 set(CRUDPP_HEADERS
-    ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts.hpp
+    ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts/types.hpp
+    ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts/required.hpp
+    ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts/permissions.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/macros.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/type_traits.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/utils.hpp
@@ -27,12 +29,16 @@ function(make_all)
 
     include_directories(${CRUDPP_SOURCE_DIR}/include)
 
-    set(ONE_VALUE_ARGS INCLUDE USER_CLASS CLIENT_RESOURCE_DIR)
+    set(ONE_VALUE_ARGS INCLUDE CLIENT_RESOURCE_DIR)
+
     set(MULTI_VALUE_ARGS CLASSES)
     cmake_parse_arguments(CRUDPP "" "${ONE_VALUE_ARGS}" "${MULTI_VALUE_ARGS}" ${ARGN})
 
-    add_compile_definitions(USER_CLASS=${CRUDPP_USER_CLASS})
-    list(APPEND CRUDPP_CLASSES ${CRUDPP_USER_CLASS})
+    if("user" IN_LIST CRUDPP_CLASSES)
+        add_compile_definitions(USER_CLASS=true)
+    else()
+        add_compile_definitions(USER_CLASS=true)
+    endif()
 
     add_compile_definitions(INCLUDE=${CRUDPP_INCLUDE})
 

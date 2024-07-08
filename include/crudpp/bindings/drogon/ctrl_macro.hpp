@@ -4,11 +4,11 @@
 
 #include <drogon/HttpController.h>
 
-#include <crudpp/bindings/drogon/wrappers/restful_ctrl.hpp>
-#include <crudpp/bindings/drogon/wrappers/restful_ctrl_auth.hpp>
 #include <crudpp/bindings/drogon/wrappers/restful_ctrl_w_spk.hpp>
+#include <crudpp/bindings/drogon/wrappers/restful_ctrl_auth.hpp>
+#include <crudpp/bindings/drogon/wrappers/restful_ctrl.hpp>
+#include <crudpp/concepts/required.hpp>
 #include <crudpp/utils.hpp>
-#include <crudpp/concepts.hpp>
 
 using namespace drogon;
 using namespace crudpp;

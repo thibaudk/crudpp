@@ -8,6 +8,12 @@
 
 namespace crudpp
 {
+template <typename T,
+         typename Name_t,
+         typename Container_t,
+         bool>
+struct trait;
+
 template <typename T, typename ...Exc_T>
 concept same_as = (std::same_as<T, Exc_T> || ...);
 
@@ -25,7 +31,7 @@ template <typename T, typename ...Exc_T>
 concept different = !same_as<T, Exc_T...>;
 
 template <template <std::size_t> typename T>
-concept r_size_template = requires
+concept is_size_template = requires
 { typename T<0>; };
 
 // adapted from https://stackoverflow.com/a/68444475
@@ -58,30 +64,6 @@ concept mop_tuple_like = requires()
              has_tuple_element<T, N>) && ...);
 } (T{}, std::make_index_sequence<std::tuple_size_v<T>>());
 
-template <typename T>
-concept r_table = requires()
-{
-    { T::table() } -> std::convertible_to<const char*>;
-};
-
-template <typename T>
-concept r_single_primary_key = std::is_member_object_pointer_v<decltype(T::primary_key())>;
-
-template <typename T>
-concept r_composite_primary_key = requires()
-{
-    { T::primary_key() } -> mop_tuple_like;
-};
-
-template <typename T>
-concept r_primary_key = r_composite_primary_key<T> || r_single_primary_key<T>;
-
-template <typename T,
-         typename Name_t,
-         typename Container_t,
-         bool>
-struct trait;
-
 template <typename T, typename Agg>
 concept is_single_primary_key = std::same_as<
     std::remove_cvref_t<T>,
@@ -103,40 +85,5 @@ concept is_primary_key = is_single_primary_key<T, Agg> || is_composite_primary_k
 template <typename T>
 concept is_foreign_key = std::is_member_object_pointer_v<
     decltype(std::remove_cvref_t<T>::foreign_key())>;
-
-template <typename T>
-concept r_c_name = requires()
-{
-    { T::c_name() } -> std::same_as<const char*>;
-};
-
-template <typename T>
-concept r_name = requires()
-{
-    { T::name() } -> std::same_as<const char*>;
-};
-
-template <typename T>
-concept r_value = requires(T t)
-{
-    { t.value } -> suported;
-};
-
-template <typename T>
-concept r_c_n_v = r_c_name<T> && r_value<T>;
-
-template <typename T>
-concept r_session_id = std::is_class<decltype(T::session_id)>();
-
-template <typename T>
-concept r_username = std::is_class_v<decltype(T::username)>;
-
-template <typename T>
-concept r_password = std::is_class_v<decltype(T::password)>;
-
-template <typename T>
-concept authenticates = r_primary_key<T> &&
-                        r_username<T> &&
-                        r_password<T>;
 
 } // namespace crudpp

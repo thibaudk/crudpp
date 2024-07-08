@@ -5,7 +5,7 @@
 
 #include <wobjectdefs.h>
 
-#include <crudpp/concepts.hpp>
+#include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/qt/utils.hpp>
 
 class QQmlContext;
@@ -36,8 +36,6 @@ public:
 
     QQmlContext* context();
 
-    void onLogin();
-
     void onException(const QString& prefix, const QString& errorString);
 
 #ifndef EMSCRIPTEN
@@ -45,14 +43,18 @@ public:
     W_INVOKABLE(setHost)
 #endif
 
+#ifdef USER_CLASS
     void authenticate(const QString& username, const QString& password);
     W_INVOKABLE(authenticate)
+
+    void onLogin();
 
     void updatePwd(const QString& newPwd) const;
     W_INVOKABLE(updatePwd)
 
     void resetPwd(int id) const;
     W_INVOKABLE(resetPwd)
+#endif
 
     void setQmlObject(QObject* obj) noexcept;
 

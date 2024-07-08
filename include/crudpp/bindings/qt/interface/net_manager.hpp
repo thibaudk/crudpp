@@ -31,10 +31,15 @@ public:
     net_manager(net_manager const&) = delete;
     void operator = (net_manager const&) = delete;
 
+#ifdef USER_CLASS
     void authenticate(const QString& identifier, const QString& secret);
 
     void loggedIn()
     W_SIGNAL(loggedIn)
+
+    void userChanged(int newId)
+    W_SIGNAL(userChanged, newId)
+#endif
 
     void replyError(const QString& prefix = "", const QString& errorString = "")
     W_SIGNAL(replyError, prefix, errorString)
@@ -70,12 +75,6 @@ public:
                      const QString&& errorPrefix = "",
                      const std::function<void ()>&& errorCallback = [](){});
 
-    void userChanged(int newId)
-    W_SIGNAL(userChanged, newId)
-
-    void clearanceChanged(int newClearance)
-    W_SIGNAL(clearanceChanged, newClearance)
-
 private:
     net_manager() {}
     QNetworkRequest rqst{};
@@ -83,7 +82,10 @@ private:
 #ifndef EMSCRIPTEN
     QString prefix;
 #endif
+
+#ifdef USER_CLASS
     bool authenticating{false};
+#endif
 
     void setCallback(QNetworkReply* reply,
                      const std::function<void (const QByteArray &)>&& callback);
