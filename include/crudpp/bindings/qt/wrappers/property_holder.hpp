@@ -10,6 +10,7 @@
 
 #include <wobjectcpp.h>
 
+#include <concat.hpp>
 #include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/qt/utils.hpp>
 #include <crudpp/bindings/qt/interface/bridge.hpp>
@@ -26,35 +27,6 @@ constexpr auto get_property_name() -> w_cpp::StringView
 {
     return {T::c_name(),
             T::c_name() + (std::char_traits<char>::length(T::c_name()))};
-}
-
-// constexpr char* concatenation adapted from https://stackoverflow.com/a/53190554/14999126
-// http://coliru.stacked-crooked.com/a/3f557060cc18719e
-
-template <size_t N>
-struct String
-{
-    char c[N];
-};
-
-template <crudpp::r_c_name T>
-consteval auto get_property_changed_name()
-{
-    constexpr size_t length{std::char_traits<char>::length(T::c_name()) + 7};
-    String<length + 1> result{};
-    result.c[length] = '\0';
-
-    char* dst = result.c;
-
-    const char* src{T::c_name()};
-    for (; *src != '\0'; src++, dst++)
-        *dst = *src;
-
-    const char* changed{"Changed"};
-    for (; *changed != '\0'; changed++, dst++)
-        *dst = *changed;
-
-    return result;
 }
 
 template <typename T>
@@ -427,10 +399,17 @@ private:
     template<size_t I, class = std::enable_if_t<(I < boost::pfr::tuple_size_v<T>)>>
     struct property_changed_signals
     {
-        constexpr static auto base_name{get_property_changed_name<property_at<I>>()};
-        constexpr static auto signal{w_cpp::makeSignalBuilder(w_cpp::viewLiteral(base_name.c),
-                                                              &property_holder::property_changed<I>)
-                                                             .build()};
+        struct property_changed_name
+        {
+            static consteval auto left() { return property_at<I>::c_name(); }
+            static consteval auto right() { return "Changed"; }
+        };
+
+        static constexpr auto base_name{concat<property_changed_name>()};
+        static constexpr auto signal{w_cpp::makeSignalBuilder(
+                                         w_cpp::viewLiteral(base_name.c),
+                                         &property_holder::property_changed<I>
+                                         ).build()};
     };
     W_CPP_SIGNAL(property_changed_signals)
 
@@ -453,7 +432,7 @@ private:
     template <size_t I, class = std::enable_if_t<(I < boost::pfr::tuple_size_v<T>)>>
     struct register_properties
     {
-        constexpr static auto property{w_cpp::makeProperty<QVariant>(
+        static constexpr auto property{w_cpp::makeProperty<QVariant>(
                                            get_property_name<property_at<I>>(),
                                            w_cpp::viewLiteral("QVariant")
                                            ).setGetter(&property_holder::get_property_value<I>)

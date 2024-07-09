@@ -1,6 +1,10 @@
+#ifdef USER_CLASS
+
 #pragma once
 
 #include <crudpp/bindings/drogon/visitors/json_handler.hpp>
+
+#include "restful_ctrl.hpp"
 
 // single primary_key and authenticating
 template <typename T>
@@ -116,3 +120,5 @@ struct restful_ctrl<T, true, true> : public restful_ctrl<T, true, false>
             });
     }
 };
+
+#endif // USER_CLASS

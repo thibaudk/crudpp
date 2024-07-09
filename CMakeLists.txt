@@ -1,19 +1,22 @@
-cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30 FATAL_ERROR)
 
 project(crudpp VERSION 0.0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(BOOST_VERSION 1.83)
 
 set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 set(CRUDPP_HEADERS
+    ${CRUDPP_SOURCE_DIR}/include/concat.hpp
+    ${CRUDPP_SOURCE_DIR}/include/singleton.hpp
+    ${CRUDPP_SOURCE_DIR}/include/member_function_traits.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts/types.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts/required.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts/permissions.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/macros.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/type_traits.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/utils.hpp
-    ${CRUDPP_SOURCE_DIR}/include/singleton.hpp
     CACHE INTERNAL ""
 )
 add_custom_target(crudpp SOURCES ${CRUDPP_HEADERS})
@@ -24,7 +27,7 @@ function(make_all)
     if(IS_DIRECTORY ${PFR_PATH})
         include_directories(${PFR_PATH}/include)
     else()
-        find_package(Boost REQUIRED)
+        find_package(Boost ${BOOST_VERSION} COMPONENTS PFR)
     endif()
 
     include_directories(${CRUDPP_SOURCE_DIR}/include)
@@ -43,9 +46,10 @@ function(make_all)
     add_compile_definitions(INCLUDE=${CRUDPP_INCLUDE})
 
     find_package(Drogon CONFIG)
-    if(${Drogon_FOUND} AND NOT IS_DIRECTORY ${PFR_PATH})
+    if(${Drogon_FOUND} AND ${Boost_FOUND})
         # Boost preprocessor is also required for the Drogon binding
         # Only add if Boost is FOUND
+        find_package(Boost ${BOOST_VERSION} COMPONENTS preprocessor)
         add_subdirectory(${CRUDPP_SOURCE_DIR}/src/bindings/drogon
             ${CMAKE_BINARY_DIR}/drogon)
     endif()
