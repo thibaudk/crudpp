@@ -14,7 +14,7 @@
     //user: User name
     "user": "example",
     //password or passwd: Password
-    "password": "",
+    "password": "example",
     //client_encoding: The character set used by drogon_ctl. it is empty string by default which 
     //means use the default character set.
     //"client_encoding": "",
@@ -22,22 +22,22 @@
     // "tables": [],
     //convert: the value can be changed by a function call before it is stored into database or
     //after it is read from database
-    "convert": {
-      "enabled": false,
-      "items":[{
-          "table": "user",
-          "column": "password",
-          "method": {
-            //after_db_read: name of the method which is called after reading from database, signature: void([const] std::shared_ptr [&])
-            "after_db_read": "decrypt_password",
-            //before_db_write: name of the method which is called before writing to database, signature: void([const] std::shared_ptr [&])
-            "before_db_write": "encrypt_password"
-          },
-          "includes": [
-            "\"file_local_search_path.h\"","<file_in_global_search_path.h>"
-          ]
-      }]
-    },
+    // "convert": {
+    //   "enabled": false,
+    //   "items":[{
+    //       "table": "user",
+    //       "column": "password",
+    //       "method": {
+    //         //after_db_read: name of the method which is called after reading from database, signature: void([const] std::shared_ptr [&])
+    //         "after_db_read": "decrypt_password",
+    //         //before_db_write: name of the method which is called before writing to database, signature: void([const] std::shared_ptr [&])
+    //         "before_db_write": "encrypt_password"
+    //       },
+    //       "includes": [
+    //         "\"file_local_search_path.h\"","<file_in_global_search_path.h>"
+    //       ]
+    //   }]
+    // },
     "relationships": {
         "enabled": true,
         "items": [{
@@ -101,8 +101,7 @@
         "db_client": {
             //name: Name of the client,'default' by default
             "name": "default",
-            //is_fast: 
-            "is_fast": false
+            "is_fast": true
         },
         // directory: The directory where the controller source files are stored.
         "directory": "controllers",

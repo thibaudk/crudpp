@@ -48,10 +48,10 @@ class CartsProducts
         static const std::string _product_id;
     };
 
-    const static int primaryKeyNumber;
-    const static std::string tableName;
-    const static bool hasPrimaryKey;
-    const static std::vector<std::string> primaryKeyName;
+    static const int primaryKeyNumber;
+    static const std::string tableName;
+    static const bool hasPrimaryKey;
+    static const std::vector<std::string> primaryKeyName;
     using PrimaryKeyType = std::tuple<int32_t,int32_t>;//cart_id,product_id
     PrimaryKeyType getPrimaryKey() const;
 

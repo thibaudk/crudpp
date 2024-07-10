@@ -56,7 +56,7 @@
             "passwd": "examples",
             //is_fast: false by default, if it is true, the client is faster but user can't call
             //any synchronous interface of it.
-            // "is_fast": false,
+            "is_fast": true,
             //client_encoding: The character set used by the client. it is empty string by default which 
             //means use the default character set.
             //"client_encoding": "",
