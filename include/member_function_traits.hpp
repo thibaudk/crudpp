@@ -3,9 +3,11 @@
 // member function trait adapted from https://stackoverflow.com/a/9779391/14999126
 // and https://stackoverflow.com/a/9065203/14999126
 
+#include <type_traits>
 #include <tuple>
 
 template <typename T>
+    requires std::is_member_function_pointer_v<T>
 struct member_function_traits;
 
 template <typename T, typename R>

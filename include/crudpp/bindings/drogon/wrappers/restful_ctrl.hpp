@@ -27,6 +27,8 @@ struct restful_ctrl : public restful_ctrl_base<T>
     void update_by(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback) override
     {
+        // if constexpr (std::is_member_function_pointer_v<delctype(&T::permissions)>)
+
         if constexpr (crudpp::r_composite_primary_key<T>)
         {
             auto jsonPtr=req->jsonObject();
