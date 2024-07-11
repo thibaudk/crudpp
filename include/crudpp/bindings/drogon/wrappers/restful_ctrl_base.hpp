@@ -2,6 +2,7 @@
 
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
+#include <drogon/orm/CoroMapper.h>
 
 #include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/drogon/wrappers/model.hpp>
@@ -15,9 +16,9 @@ class restful_ctrl_base : public RestfulController
     using callback_ptr =
         const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>>;
 
-    orm::Criteria make_criteria(const SafeStringMap<std::string>& parameters, int found_params = 0)
+    Criteria make_criteria(const SafeStringMap<std::string>& parameters, int found_params = 0)
     {
-        orm::Criteria crit;
+        Criteria crit;
 
         auto iter = parameters.find("*");
         if (iter != parameters.end())
@@ -48,26 +49,26 @@ public:
              std::function<void(const HttpResponsePtr &)> &&callback)
     {
         auto dbClientPtr = getDbClient();
-        Mapper<model<T>> mapper(dbClientPtr);
+        CoroMapper<model<T>> mapper(dbClientPtr);
         auto& parameters = req->parameters();
         int found_params{0};
 
         auto iter = parameters.find("sort");
-        if(iter != parameters.end())
+        if (iter != parameters.end())
         {
             found_params++;
 
             auto sortFields = drogon::utils::splitString(iter->second, ",");
-            for(auto &field : sortFields)
+            for (auto &field : sortFields)
             {
-                if(field.empty())
+                if (field.empty())
                     continue;
-                if(field[0] == '+')
+                if (field[0] == '+')
                 {
                     field = field.substr(1);
                     mapper.orderBy(field, SortOrder::ASC);
                 }
-                else if(field[0] == '-')
+                else if (field[0] == '-')
                 {
                     field = field.substr(1);
                     mapper.orderBy(field, SortOrder::DESC);
@@ -79,11 +80,12 @@ public:
             }
         }
         iter = parameters.find("offset");
-        if(iter != parameters.end())
+        if (iter != parameters.end())
         {
             found_params++;
 
-            try{
+            try
+            {
                 auto offset = std::stoll(iter->second);
                 mapper.offset(offset);
             }
@@ -94,15 +96,16 @@ public:
             }
         }
         iter = parameters.find("limit");
-        if(iter != parameters.end())
+        if (iter != parameters.end())
         {
             found_params++;
 
-            try{
+            try
+            {
                 auto limit = std::stoll(iter->second);
                 mapper.limit(limit);
             }
-            catch(...)
+            catch (...)
             {
                 error(callback, k400BadRequest);
                 return;
@@ -114,64 +117,97 @@ public:
                 std::move(callback));
 
         auto jsonPtr = req->jsonObject();
-        if(jsonPtr && jsonPtr->isMember("filter"))
+        if (jsonPtr && jsonPtr->isMember("filter"))
         {
-            try{
-                auto criteria = makeCriteria((*jsonPtr)["filter"])
-                                && make_criteria(parameters, found_params);
+            // async_run([] -> Task<> { co_return; });
 
-                mapper.findBy(criteria,
-                    [req, callbackPtr, this](const std::vector<model<T>> &v) {
-                        Json::Value ret;
-                        ret.resize(0);
-                        for (auto &obj : v)
-                        {
-                            ret.append(makeJson(req, obj));
-                        }
-                        (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
-                    },
-                    [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
-            }
-            catch(const std::exception &e)
-            {
-                LOG_ERROR << e.what();
-                error(callback, e.what(), k400BadRequest);
-                return;
-            }
+            auto criteria = makeCriteria((*jsonPtr)["filter"])
+                            && make_criteria(parameters, found_params);
+
+            async_run([req, callbackPtr, jsonPtr, mapper, criteria, this]
+                      mutable -> Task<>
+                      {
+                          try
+                          {
+                              auto v = co_await mapper.findBy(criteria);
+
+                              Json::Value ret;
+                              ret.resize(0);
+                              for (const auto& obj : v)
+                              {
+                                  ret.append(makeJson(req, obj));
+                              }
+
+                              (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
+                          }
+                          catch (const DrogonDbException& e)
+                          {
+                              internal_error(e, callbackPtr);
+                          }
+                          catch (const std::exception &e)
+                          {
+                              LOG_ERROR << e.what();
+                              error(callbackPtr, e.what(), k400BadRequest);
+                          }
+
+                          co_return;
+                      });
         }
         else
         {
             if (parameters.size() == found_params)
             {
-                mapper.findAll(
-                    [req, callbackPtr, this](const std::vector<model<T>> &v)
-                    {
-                        Json::Value ret;
-                        ret.resize(0);
-                        for (auto &obj : v)
-                        {
-                            ret.append(makeJson(req, obj));
-                        }
-                        (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
-                    },
-                    [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
+                async_run([req, callbackPtr, mapper, this]
+                          mutable -> Task<>
+                          {
+                              try
+                              {
+                                  auto v = co_await mapper.findAll();
+
+                                  Json::Value ret;
+                                  ret.resize(0);
+                                  for (const auto& obj : v)
+                                  {
+                                      ret.append(makeJson(req, obj));
+                                  }
+
+                                  (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
+                              }
+                              catch (const DrogonDbException& e)
+                              {
+                                  internal_error(e, callbackPtr);
+                              }
+
+                              co_return;
+                          });
             }
             else
             {
                 auto criteria{make_criteria(parameters, found_params)};
 
-                mapper.findBy(criteria,
-                    [req, callbackPtr, this](const std::vector<model<T>> &v)
-                    {
-                        Json::Value ret;
-                        ret.resize(0);
-                        for (auto &obj : v)
-                        {
-                            ret.append(makeJson(req, obj));
-                        }
-                        (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
-                    },
-                    [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
+                async_run([req, callbackPtr, mapper, criteria, this]
+                          mutable -> Task<>
+                          {
+                              try
+                              {
+                                  auto v = co_await mapper.findBy(criteria);
+
+                                  Json::Value ret;
+                                  ret.resize(0);
+                                  for (const auto& obj : v)
+                                  {
+                                      ret.append(makeJson(req, obj));
+                                  }
+
+                                  (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
+                              }
+                              catch (const DrogonDbException& e)
+                              {
+                                  internal_error(e, callbackPtr);
+                              }
+
+                              co_return;
+                          });
             }
         }
     }
@@ -199,7 +235,7 @@ public:
                 std::make_shared<std::function<void(const HttpResponsePtr &)>>(
                     std::move(callback));
 
-            drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
+            Mapper<model<T>> mapper(dbClientPtr);
             mapper.insert(
                 object,
                 [req, callbackPtr, this](model<T> newObject){
@@ -235,12 +271,9 @@ public:
     }
 
 protected:
-    // const std::string dbClientName_{"default"};
-
-    orm::DbClientPtr getDbClient()
+    DbClientPtr getDbClient()
     {
-        // return drogon::app().getDbClient(dbClientName_);
-        return drogon::app().getDbClient();
+        return drogon::app().getFastDbClient();
     }
 
     bool read_json(const std::function<void(const HttpResponsePtr &)>& callback,
