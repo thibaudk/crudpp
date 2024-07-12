@@ -41,11 +41,18 @@ struct restful_ctrl : public restful_ctrl_base<T>
             model<T> object;
             this->read_json(callback, jsonPtr, object);
 
-            auto callbackPtr =
-                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                    std::move(callback));
-
-            this->db_update(object, callbackPtr);
+            async_run(
+                [
+                    object,
+                    callbackPtr =
+                    std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                        std::move(callback)),
+                    this
+            ] -> Task<>
+                {
+                    co_await this->db_update(object, callbackPtr);
+                    co_return;
+                });
         }
         else
             this->error(callback, k404NotFound);
@@ -84,17 +91,25 @@ struct restful_ctrl : public restful_ctrl_base<T>
                 return;
             }
 
+            // FIXME: bad way to check for
             if (decltype(id){} == id)
             {
                 this->error(callback, "composite key not set in parameters", k400BadRequest);
                 return;
             }
 
-            auto callbackPtr =
-                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                    std::move(callback));
-
-            this->db_delete(id, callbackPtr);
+            async_run(
+                [
+                    id,
+                    callbackPtr =
+                    std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                        std::move(callback)),
+                    this
+            ] -> Task<>
+                {
+                    co_await this->db_delete(id, callbackPtr);
+                    co_return;
+                });
         }
         else
             this->error(callback, k404NotFound);

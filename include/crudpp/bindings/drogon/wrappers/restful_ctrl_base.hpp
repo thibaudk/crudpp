@@ -45,8 +45,8 @@ class restful_ctrl_base : public RestfulController
     }
 
 public:
-    void get(const HttpRequestPtr &req,
-             std::function<void(const HttpResponsePtr &)> &&callback)
+    void get(const HttpRequestPtr& req,
+             std::function<void(const HttpResponsePtr &)>&& callback)
     {
         auto dbClientPtr = getDbClient();
         CoroMapper<model<T>> mapper(dbClientPtr);
@@ -89,7 +89,7 @@ public:
                 auto offset = std::stoll(iter->second);
                 mapper.offset(offset);
             }
-            catch(...)
+            catch (...)
             {
                 error(callback, k400BadRequest);
                 return;
@@ -119,45 +119,43 @@ public:
         auto jsonPtr = req->jsonObject();
         if (jsonPtr && jsonPtr->isMember("filter"))
         {
-            // async_run([] -> Task<> { co_return; });
+            async_run(
+                [
+                    callbackPtr,
+                    mapper,
+                    criteria = makeCriteria((*jsonPtr)["filter"])
+                               && make_criteria(parameters, found_params),
+                    this
+            ] mutable -> Task<>
+                {
+                    try
+                    {
+                        auto v = co_await mapper.findBy(criteria);
 
-            auto criteria = makeCriteria((*jsonPtr)["filter"])
-                            && make_criteria(parameters, found_params);
+                        Json::Value ret;
+                        ret.resize(0);
 
-            async_run([req, callbackPtr, jsonPtr, mapper, criteria, this]
-                      mutable -> Task<>
-                      {
-                          try
-                          {
-                              auto v = co_await mapper.findBy(criteria);
+                        for (const auto& obj : v)
+                            ret.append(obj.toJson());
 
-                              Json::Value ret;
-                              ret.resize(0);
-                              for (const auto& obj : v)
-                              {
-                                  ret.append(makeJson(req, obj));
-                              }
+                        (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
+                    }
+                    catch (const DrogonDbException& e)
+                    { internal_error(e, callbackPtr); }
+                    catch (const std::exception &e)
+                    {
+                        LOG_ERROR << e.what();
+                        error(callbackPtr, e.what(), k400BadRequest);
+                    }
 
-                              (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
-                          }
-                          catch (const DrogonDbException& e)
-                          {
-                              internal_error(e, callbackPtr);
-                          }
-                          catch (const std::exception &e)
-                          {
-                              LOG_ERROR << e.what();
-                              error(callbackPtr, e.what(), k400BadRequest);
-                          }
-
-                          co_return;
-                      });
+                    co_return;
+                });
         }
         else
         {
             if (parameters.size() == found_params)
             {
-                async_run([req, callbackPtr, mapper, this]
+                async_run([callbackPtr, mapper, this]
                           mutable -> Task<>
                           {
                               try
@@ -166,10 +164,9 @@ public:
 
                                   Json::Value ret;
                                   ret.resize(0);
+
                                   for (const auto& obj : v)
-                                  {
-                                      ret.append(makeJson(req, obj));
-                                  }
+                                      ret.append(obj.toJson());
 
                                   (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
                               }
@@ -183,28 +180,29 @@ public:
             }
             else
             {
-                auto criteria{make_criteria(parameters, found_params)};
-
-                async_run([req, callbackPtr, mapper, criteria, this]
-                          mutable -> Task<>
-                          {
+                async_run(
+                    [
+                        req,
+                        callbackPtr,
+                        mapper,
+                        criteria = make_criteria(parameters, found_params),
+                        this
+                ] mutable -> Task<>
+                    {
                               try
                               {
                                   auto v = co_await mapper.findBy(criteria);
 
                                   Json::Value ret;
                                   ret.resize(0);
+
                                   for (const auto& obj : v)
-                                  {
                                       ret.append(makeJson(req, obj));
-                                  }
 
                                   (*callbackPtr)(HttpResponse::newHttpJsonResponse(ret));
                               }
                               catch (const DrogonDbException& e)
-                              {
-                                  internal_error(e, callbackPtr);
-                              }
+                              { internal_error(e, callbackPtr); }
 
                               co_return;
                           });
@@ -229,22 +227,30 @@ public:
 
         try
         {
-            model<T> object = model<T>(*jsonPtr);
-            auto dbClientPtr = this->getDbClient();
-            auto callbackPtr =
-                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                    std::move(callback));
+            async_run(
+                [
+                    object = model<T>(*jsonPtr),
+                    callbackPtr =
+                    std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                        std::move(callback)),
+                    this
+            ] -> Task<>
+                {
+                    auto dbClientPtr = this->getDbClient();
+                    CoroMapper<model<T>> mapper(dbClientPtr);
 
-            Mapper<model<T>> mapper(dbClientPtr);
-            mapper.insert(
-                object,
-                [req, callbackPtr, this](model<T> newObject){
-                    (*callbackPtr)(HttpResponse::newHttpJsonResponse(
-                        this->makeJson(req, newObject)));
-                },
-                [callbackPtr, this](const DrogonDbException &e){ internal_error(e, callbackPtr); });
+                    try
+                    {
+                        auto v = co_await mapper.insert(object);
+                        (*callbackPtr)(HttpResponse::newHttpJsonResponse(v.toJson()));
+                    }
+                    catch (const DrogonDbException& e)
+                    { internal_error(e, callbackPtr); }
+
+                    co_return;
+                });
         }
-        catch(const Json::Exception &e)
+        catch (const Json::Exception &e)
         {
             LOG_ERROR << e.what();
             error(callback, "Field type error", k400BadRequest);
@@ -300,52 +306,58 @@ protected:
         return true;
     }
 
-    void db_update(const model<T>& object, callback_ptr callbackPtr)
+    Task<> db_update(const model<T>& object, callback_ptr callbackPtr)
     {
         auto dbClientPtr = this->getDbClient();
+        drogon::orm::CoroMapper<model<T>> mapper(dbClientPtr);
 
-        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
+        try
+        {
+            const size_t count = co_await mapper.update(object);
 
-        mapper.update(
-            object,
-            [callbackPtr, this](const size_t count)
+            if (count == 1)
             {
-                if(count == 1)
-                {
-                    auto resp = HttpResponse::newHttpResponse();
-                    resp->setStatusCode(k202Accepted);
-                    (*callbackPtr)(resp);
-                }
-                else if(count == 0)
-                    error(callbackPtr, "No resources are updated", k404NotFound);
-                else
-                {
-                    LOG_FATAL << "More than one resource is updated: " << count;
-                    internal_error(callbackPtr);
-                }
-            },
-            [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
+                auto resp = HttpResponse::newHttpResponse();
+                resp->setStatusCode(k202Accepted);
+                (*callbackPtr)(resp);
+            }
+            else if (count == 0)
+                error(callbackPtr, "No resources are updated", k404NotFound);
+            else
+            {
+                LOG_FATAL << "More than one resource is updated: " << count;
+                internal_error(callbackPtr);
+            }
+        }
+        catch (const DrogonDbException &e)
+        { internal_error(e, callbackPtr); };
+
+        co_return;
     }
 
-    void db_delete(const typename model<T>::PrimaryKeyType& id, callback_ptr callbackPtr)
+    Task<> db_delete(const typename model<T>::PrimaryKeyType& id, callback_ptr callbackPtr)
     {
         auto dbClientPtr = this->getDbClient();
+        drogon::orm::CoroMapper<model<T>> mapper(dbClientPtr);
 
-        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
-        mapper.deleteByPrimaryKey(
-            id,
-            [callbackPtr, this](const size_t count) {
-                if(count == 1)
-                    error(callbackPtr, k204NoContent);
-                else if(count == 0)
-                    error(callbackPtr, "No resources deleted", k404NotFound);
-                else
-                {
-                    LOG_FATAL << "Delete more than one records: " << count;
-                    internal_error(callbackPtr);
-                }
-            },
-            [callbackPtr, this](const DrogonDbException &e) { internal_error(e, callbackPtr); });
+        try
+        {
+            const size_t count = co_await mapper.deleteByPrimaryKey(id);
+
+            if (count == 1)
+                error(callbackPtr, k204NoContent);
+            else if (count == 0)
+                error(callbackPtr, "No resources deleted", k404NotFound);
+            else
+            {
+                LOG_FATAL << "Delete more than one records: " << count;
+                internal_error(callbackPtr);
+            }
+        }
+        catch (const DrogonDbException &e)
+        { internal_error(e, callbackPtr); };
+
+        co_return;
     }
 
     void internal_error(const DrogonDbException &e, callback_ptr callbackPtr) const

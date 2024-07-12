@@ -6,42 +6,51 @@
 template <typename T>
 struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
 {
-    virtual void auth(const HttpRequestPtr &req,
-                      std::function<void(const HttpResponsePtr &)> &&callback)
+    virtual void auth(const HttpRequestPtr& req,
+                      std::function<void(const HttpResponsePtr &)>&& callback)
     {
         this->error(callback, k404NotFound);
     }
 
-    void get_one(const HttpRequestPtr &req,
-                std::function<void(const HttpResponsePtr &)> &&callback,
-                typename model<T>::PrimaryKeyType &&id)
+    void get_one(const HttpRequestPtr& req,
+                 std::function<void(const HttpResponsePtr &)>&& callback,
+                 typename model<T>::PrimaryKeyType&& id)
     {
-        auto dbClientPtr = this->getDbClient();
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-        drogon::orm::Mapper<model<T>> mapper(dbClientPtr);
-        mapper.findByPrimaryKey(
-            id,
-            [req, callbackPtr, this](model<T> r) {
-                (*callbackPtr)(HttpResponse::newHttpJsonResponse(this->makeJson(req, r)));
-            },
-            [callbackPtr, this](const DrogonDbException &e) {
-                const drogon::orm::UnexpectedRows *s=
-                    dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
-                if(s)
+        async_run(
+            [
+                callbackPtr =
+                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                    std::move(callback)),
+                id,
+                this
+        ] -> Task<>
+            {
+                auto dbClientPtr = this->getDbClient();
+                drogon::orm::CoroMapper<model<T>> mapper(dbClientPtr);
+                try
                 {
-                    this->error(callbackPtr, k404NotFound);
-                    return;
+                    auto r = co_await mapper.findByPrimaryKey(id);
+                    (*callbackPtr)(HttpResponse::newHttpJsonResponse(r.toJson()));
+
+                }
+                catch (const DrogonDbException& e)
+                {
+                    const drogon::orm::UnexpectedRows *s=
+                        dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
+
+                    if (s)
+                        this->error(callbackPtr, k404NotFound);
+                    else
+                        this->internal_error(e, callbackPtr);
                 }
 
-                this->internal_error(e, callbackPtr);
+                co_return;
             });
     }
 
-    void update_one(const HttpRequestPtr &req,
-                   std::function<void(const HttpResponsePtr &)> &&callback,
-                   typename model<T>::PrimaryKeyType &&id)
+    void update_one(const HttpRequestPtr& req,
+                   std::function<void(const HttpResponsePtr &)>&& callback,
+                   typename model<T>::PrimaryKeyType&& id)
     {
         auto jsonPtr=req->jsonObject();
         if(!jsonPtr)
@@ -60,21 +69,35 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
             return;
         }
 
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        this->db_update(object, callbackPtr);
+        async_run(
+            [
+                object,
+                callbackPtr =
+                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                    std::move(callback)),
+                this
+        ] -> Task<>
+            {
+                co_await this->db_update(object, callbackPtr);
+                co_return;
+            });
     }
 
-    void delete_one(const HttpRequestPtr &req,
-                   std::function<void(const HttpResponsePtr &)> &&callback,
-                   typename model<T>::PrimaryKeyType &&id)
+    void delete_one(const HttpRequestPtr& req,
+                   std::function<void(const HttpResponsePtr &)>&& callback,
+                   typename model<T>::PrimaryKeyType&& id)
     {
-        auto callbackPtr =
-            std::make_shared<std::function<void(const HttpResponsePtr &)>>(
-                std::move(callback));
-
-        this->db_delete(id, callbackPtr);
+        async_run(
+            [
+                callbackPtr =
+                std::make_shared<std::function<void(const HttpResponsePtr &)>>(
+                    std::move(callback)),
+                id,
+                this
+        ] -> Task<>
+            {
+                co_await this->db_delete(id, callbackPtr);
+                co_return;
+            });
     }
 };

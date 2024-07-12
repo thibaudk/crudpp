@@ -4,13 +4,10 @@
 
 #include <boost/pfr/core.hpp>
 
-#include <drogon/orm/Row.h>
-#include <drogon/orm/Mapper.h>
-#include <drogon/orm/BaseBuilder.h>
-#ifdef __cpp_impl_coroutine
-#include <drogon/orm/CoroMapper.h>
-#endif
 #include <json/value.h>
+#include <drogon/orm/Row.h>
+#include <drogon/orm/CoroMapper.h>
+#include <drogon/orm/BaseBuilder.h>
 
 #include <crudpp/utils.hpp>
 #include <crudpp/concepts/required.hpp>
@@ -115,7 +112,7 @@ public:
         Json::Value ret;
 
         boost::pfr::for_each_field(aggregate,
-                                   [&ret](const crudpp::r_c_n_v auto& f)
+                                   [&ret] (const crudpp::r_c_n_v auto& f)
                                    { ret[std::remove_reference_t<decltype(f)>::c_name()] = to_drgn(f.value); });
         return ret;
     }
