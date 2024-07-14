@@ -13,7 +13,6 @@ set(DRGN_HEADERS
     ${BINDING_HEADERS}/drogon/visitors/row_handler.hpp
     ${BINDING_HEADERS}/drogon/visitors/row_reader.hpp
     ${BINDING_HEADERS}/drogon/wrappers/model.hpp
-    ${BINDING_HEADERS}/drogon/wrappers/restful_ctrl_auth.hpp
     ${BINDING_HEADERS}/drogon/wrappers/restful_ctrl_base.hpp
     ${BINDING_HEADERS}/drogon/wrappers/restful_ctrl_w_spk.hpp
     ${BINDING_HEADERS}/drogon/wrappers/restful_ctrl.hpp
@@ -22,16 +21,28 @@ set(DRGN_HEADERS
 )
 set(CRUDPP_HEADERS ${CRUDPP_HEADERS} PARENT_SCOPE)
 
-string(REPLACE ";" ")(" BOOST_FORMATED_CLASSES "(${CRUDPP_CLASSES})")
+# remove user of exists and fromat to use with boost preprocessor
+if(${USER_CLASS})
+    string(REPLACE "user;" "" BOOST_FORMATED_CLASSES "${CRUDPP_CLASSES}")
+    string(REPLACE ";" ")(" BOOST_FORMATED_CLASSES "(${BOOST_FORMATED_CLASSES})")
+
+    add_executable(${PROJECT_NAME}
+        ${DRGN_HEADERS}
+        user_ctrl.cpp
+        main.cc
+    )
+else()
+    string(REPLACE ";" ")(" BOOST_FORMATED_CLASSES "(${CRUDPP_CLASSES})")
+
+    add_executable(${PROJECT_NAME}
+        ${DRGN_HEADERS}
+        main.cc
+    )
+endif()
 
 add_compile_definitions(SERVER
                         DROGON
                         BOOST_FORMATED_CLASSES=${BOOST_FORMATED_CLASSES})
-
-add_executable(${PROJECT_NAME}
-    ${DRGN_HEADERS}
-    main.cc
-)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 

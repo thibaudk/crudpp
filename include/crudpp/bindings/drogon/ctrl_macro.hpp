@@ -5,17 +5,12 @@
 #include <drogon/HttpController.h>
 
 #include <crudpp/bindings/drogon/wrappers/restful_ctrl_w_spk.hpp>
-#include <crudpp/bindings/drogon/wrappers/restful_ctrl_auth.hpp>
 #include <crudpp/bindings/drogon/wrappers/restful_ctrl.hpp>
 #include <crudpp/concepts/required.hpp>
-#include <crudpp/utils.hpp>
-
-using namespace drogon;
-using namespace crudpp;
 
 #define CTRL(T)                                                                            \
-struct T##_ctrl final : public HttpController<T##_ctrl>                                    \
-                      , private restful_ctrl<T, r_single_primary_key<T>, authenticates<T>> \
+struct T##_ctrl final : public drogon::HttpController<T##_ctrl>                            \
+                      , private restful_ctrl<T, crudpp::r_single_primary_key<T>>           \
 {                                                                                          \
     METHOD_LIST_BEGIN                                                                      \
     ADD_METHOD_TO(T##_ctrl::create, std::string{"/"} + T::table(), Post);                  \
@@ -25,7 +20,6 @@ struct T##_ctrl final : public HttpController<T##_ctrl>                         
     ADD_METHOD_TO(T##_ctrl::get_one, std::string{"/"} + T::table() + "/{}", Get);          \
     ADD_METHOD_TO(T##_ctrl::update_one, std::string{"/"} + T::table() + "/{}", Put);       \
     ADD_METHOD_TO(T##_ctrl::delete_one, std::string{"/"} + T::table() + "/{}", Delete);    \
-    ADD_METHOD_TO(T##_ctrl::auth, std::string{"/"} + T::table() + "/auth", Post);          \
     METHOD_LIST_END                                                                        \
 };
 

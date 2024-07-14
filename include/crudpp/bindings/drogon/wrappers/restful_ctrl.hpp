@@ -2,16 +2,10 @@
 
 #include <crudpp/bindings/drogon/wrappers/restful_ctrl_base.hpp>
 
-// no single primary key and no authentication
-template <typename T, bool has_single_primary_key = false, bool authenticating = false>
+// no single primary key
+template <typename T, bool has_single_primary_key = false>
 struct restful_ctrl : public restful_ctrl_base<T>
 {
-    virtual void auth(const HttpRequestPtr &req,
-                      std::function<void(const HttpResponsePtr &)> &&callback)
-    {
-        this->error(callback, k404NotFound);
-    }
-
     void get_one(const HttpRequestPtr &req,
                 std::function<void(const HttpResponsePtr &)> &&callback)
     {
@@ -27,8 +21,6 @@ struct restful_ctrl : public restful_ctrl_base<T>
     void update_by(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback) override
     {
-        // if constexpr (std::is_member_function_pointer_v<delctype(&T::permissions)>)
-
         if constexpr (crudpp::r_composite_primary_key<T>)
         {
             auto jsonPtr=req->jsonObject();

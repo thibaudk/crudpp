@@ -2,16 +2,10 @@
 
 #include <crudpp/bindings/drogon/wrappers/restful_ctrl.hpp>
 
-// single primary key and no authentication
+// single primary key
 template <typename T>
-struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
+struct restful_ctrl<T, true> : public restful_ctrl_base<T>
 {
-    virtual void auth(const HttpRequestPtr& req,
-                      std::function<void(const HttpResponsePtr &)>&& callback)
-    {
-        this->error(callback, k404NotFound);
-    }
-
     void get_one(const HttpRequestPtr& req,
                  std::function<void(const HttpResponsePtr &)>&& callback,
                  typename model<T>::PrimaryKeyType&& id)
@@ -26,6 +20,12 @@ struct restful_ctrl<T, true, false> : public restful_ctrl_base<T>
         ] -> Task<>
             {
                 auto dbClientPtr = this->getDbClient();
+
+                if constexpr(requires { std::is_member_function_pointer_v<decltype(&T::permission)>; })
+                {
+                    using permission_t = member_function_traits<decltype(&T::permission)>;
+                }
+
                 drogon::orm::CoroMapper<model<T>> mapper(dbClientPtr);
                 try
                 {
