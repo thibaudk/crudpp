@@ -21,12 +21,7 @@ struct restful_ctrl<T, true> : public restful_ctrl_base<T>
             {
                 auto dbClientPtr = this->getDbClient();
 
-                if constexpr(requires { std::is_member_function_pointer_v<decltype(&T::permission)>; })
-                {
-                    using permission_t = member_function_traits<decltype(&T::permission)>;
-                }
-
-                drogon::orm::CoroMapper<model<T>> mapper(dbClientPtr);
+                orm::CoroMapper<model<T>> mapper(dbClientPtr);
                 try
                 {
                     auto r = co_await mapper.findByPrimaryKey(id);
@@ -35,8 +30,8 @@ struct restful_ctrl<T, true> : public restful_ctrl_base<T>
                 }
                 catch (const DrogonDbException& e)
                 {
-                    const drogon::orm::UnexpectedRows *s=
-                        dynamic_cast<const drogon::orm::UnexpectedRows *>(&e.base());
+                    const orm::UnexpectedRows *s=
+                        dynamic_cast<const orm::UnexpectedRows *>(&e.base());
 
                     if (s)
                         this->error(callbackPtr, k404NotFound);

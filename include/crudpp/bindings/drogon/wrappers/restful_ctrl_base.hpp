@@ -9,6 +9,11 @@
 #include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/drogon/wrappers/model.hpp>
 
+#ifdef USER_CLASS
+#include <crudpp/macros.hpp>
+#include STRINGIFY_MACRO(INCLUDE)
+#endif
+
 using namespace drogon;
 using namespace drgn;
 
@@ -16,7 +21,7 @@ template <typename T>
 class restful_ctrl_base : public RestfulController
 {
     using callback_ptr =
-        const std::shared_ptr<std::function<void (const std::shared_ptr<drogon::HttpResponse> &)>>;
+        const std::shared_ptr<std::function<void (const std::shared_ptr<HttpResponse> &)>>;
 
     Criteria make_criteria(const SafeStringMap<std::string>& parameters, int found_params = 0)
     {
@@ -61,11 +66,43 @@ public:
             {
                 auto dbClientPtr = getDbClient();
 
-                if constexpr(requires { std::is_member_function_pointer_v<decltype(&T::permission)>; })
-                {
-                    using permission_t = member_function_traits<decltype(&T::permission)>;
-                    typename permission_t::return_type t{};
-                }
+//                 if constexpr(requires { std::is_function_v<decltype(T::permission)>; })
+//                 {
+//                     using permission_t = member_function_traits<decltype(T::permission)>;
+
+// #ifdef USER_CLASS
+//                     if constexpr(std::same_as<typename permission_t::arg_type, user*>)
+//                     {
+//                         user* u{nullptr};
+
+//                         CoroMapper<model<user>> mapper(dbClientPtr);
+
+//                         try
+//                         {
+//                             u = &co_await mapper.findBy(Criteria("session_id",
+//                                                                  CompareOperator::EQ,
+//                                                                  req->session()->sessionId()));
+//                         }
+//                         catch (const DrogonDbException& e)
+//                         {
+//                             const orm::UnexpectedRows *s=
+//                                 dynamic_cast<const orm::UnexpectedRows *>(&e.base());
+
+//                             if (!s)
+//                                 this->internal_error(e, callbackPtr);
+//                         }
+
+//                         auto p = T::permission(u);
+
+//                         if (p == permission_t::return_type::writeonly
+//                                 || p == permission_t::return_type::none)
+//                         {
+//                             error(callbackPtr, k401Unauthorized);
+//                             co_return;
+//                         }
+//                     }
+// #endif
+//                 }
 
                 CoroMapper<model<T>> mapper(dbClientPtr);
                 auto& parameters = req->parameters();
@@ -299,7 +336,7 @@ protected:
     Task<> db_update(const model<T>& object, callback_ptr callbackPtr)
     {
         auto dbClientPtr = this->getDbClient();
-        drogon::orm::CoroMapper<model<T>> mapper(dbClientPtr);
+        orm::CoroMapper<model<T>> mapper(dbClientPtr);
 
         try
         {
@@ -328,7 +365,7 @@ protected:
     Task<> db_delete(const typename model<T>::PrimaryKeyType& id, callback_ptr callbackPtr)
     {
         auto dbClientPtr = this->getDbClient();
-        drogon::orm::CoroMapper<model<T>> mapper(dbClientPtr);
+        orm::CoroMapper<model<T>> mapper(dbClientPtr);
 
         try
         {

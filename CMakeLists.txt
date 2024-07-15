@@ -10,6 +10,7 @@ set(CRUDPP_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "")
 set(CRUDPP_HEADERS
     ${CRUDPP_SOURCE_DIR}/include/concat.hpp
     ${CRUDPP_SOURCE_DIR}/include/singleton.hpp
+    ${CRUDPP_SOURCE_DIR}/include/function_traits.hpp
     ${CRUDPP_SOURCE_DIR}/include/member_function_traits.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts/types.hpp
     ${CRUDPP_SOURCE_DIR}/include/crudpp/concepts/required.hpp
