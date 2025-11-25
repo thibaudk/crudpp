@@ -14,7 +14,6 @@ set(QT_HEADERS
     ${BINDING_HEADERS}/qt/wrappers/sort_filter.hpp
     ${BINDING_HEADERS}/qt/json_reader.hpp
     ${BINDING_HEADERS}/qt/utils.hpp
-
 )
 
 string(REPLACE ";" "," CLASSES_STRING "${CRUDPP_CLASSES}")

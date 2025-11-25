@@ -90,7 +90,7 @@ public:
 };
 
 template <typename T,
-         typename Name_t = const char*,
+         typename Name_t = std::string_view,
          typename Container_t = std::array<Name_t, pk_size<T>()>,
          bool has_primary_key = true>
 struct trait : base_trait<T, Name_t, Container_t, r_single_primary_key<T>>

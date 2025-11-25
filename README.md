@@ -15,3 +15,7 @@ Write framework agnostic classes, then compile to a client app, and a server con
 Only MariaDb is curently suported, and all tables need to be created manually. \
 All QML files need to be written manually and provided as EXTRA_CLIENT_SOURCES in cmake. \
 See the advancement of the project [here](https://github.com/users/thibaudk/projects/3/views/1).
+
+## Future improvements
+
+* Consider [REST API Design Best Practices](https://www.moesif.com/blog/technical/api-design/REST-API-Design-Best-Practices-for-Sub-and-Nested-Resources/)

@@ -1,12 +1,13 @@
 #pragma once
 
-#include <member_function_traits.hpp>
-
 #include <drogon/HttpController.h>
 #include <drogon/orm/RestfulController.h>
 #include <drogon/orm/CoroMapper.h>
 
+#include <static_function_traits.hpp>
+
 #include <crudpp/concepts/required.hpp>
+#include <crudpp/concepts/permissions.hpp>
 #include <crudpp/bindings/drogon/wrappers/model.hpp>
 
 #ifdef USER_CLASS
@@ -23,7 +24,8 @@ class restful_ctrl_base : public RestfulController
     using callback_ptr =
         const std::shared_ptr<std::function<void (const std::shared_ptr<HttpResponse> &)>>;
 
-    Criteria make_criteria(const SafeStringMap<std::string>& parameters, int found_params = 0)
+    Criteria make_criteria(const SafeStringMap<std::string>& parameters,
+                           int found_params = 0)
     {
         Criteria crit;
 
@@ -33,17 +35,20 @@ class restful_ctrl_base : public RestfulController
             found_params++;
 
             boost::pfr::for_each_field(T{},
-                                       [&parameters, &crit, p = '%' + iter->second + '%']
+                                       [&parameters,
+                                        &crit,
+                                        p = '%' + iter->second + '%']
                                        (const crudpp::r_c_n_v auto & f)
                                        {
                                            using namespace std;
 
                                            if constexpr (same_as<decltype(f.value), string>)
-                                               crit = crit ||
-                                                      Criteria(
-                                                          std::remove_reference_t<decltype(f)>::c_name(),
-                                                          CompareOperator::Like,
-                                                          p);
+                                               crit =
+                                                   crit ||
+                                                   Criteria(
+                                                       std::remove_reference_t<decltype(f)>::c_name(),
+                                                       CompareOperator::Like,
+                                                       p);
                                        }
                                        );
         }
@@ -66,43 +71,56 @@ public:
             {
                 auto dbClientPtr = getDbClient();
 
-//                 if constexpr(requires { std::is_function_v<decltype(T::permission)>; })
-//                 {
-//                     using permission_t = member_function_traits<decltype(T::permission)>;
+                if constexpr(crudpp::has_permission_func<T>)
+                {
+                    using permission_t = static_function_traits<decltype(T::permission)>;
+                    typename permission_t::return_type p;
 
-// #ifdef USER_CLASS
-//                     if constexpr(std::same_as<typename permission_t::arg_type, user*>)
-//                     {
-//                         user* u{nullptr};
+#ifdef USER_CLASS
+                    if constexpr(
+                        std::same_as<user,
+                                     std::remove_pointer_t<typename permission_t::arg_type>>)
+                    {
+                        CoroMapper<model<user>> mapper(dbClientPtr);
 
-//                         CoroMapper<model<user>> mapper(dbClientPtr);
+                        try
+                        {
+                            auto u = co_await mapper.findOne(Criteria("session_id",
+                                                                 CompareOperator::EQ,
+                                                                 req->session()->sessionId()));
 
-//                         try
-//                         {
-//                             u = &co_await mapper.findBy(Criteria("session_id",
-//                                                                  CompareOperator::EQ,
-//                                                                  req->session()->sessionId()));
-//                         }
-//                         catch (const DrogonDbException& e)
-//                         {
-//                             const orm::UnexpectedRows *s=
-//                                 dynamic_cast<const orm::UnexpectedRows *>(&e.base());
+                            p = T::permission(&u.get_aggregate());
+                        }
+                        catch (const DrogonDbException& e)
+                        {
+                            const orm::UnexpectedRows *s=
+                                dynamic_cast<const orm::UnexpectedRows *>(&e.base());
 
-//                             if (!s)
-//                                 this->internal_error(e, callbackPtr);
-//                         }
+                            if (!s)
+                            {
+                                this->internal_error(e, callbackPtr);
+                                co_return;
+                            }
 
-//                         auto p = T::permission(u);
+                            p = T::permission(nullptr);
+                        }
 
-//                         if (p == permission_t::return_type::writeonly
-//                                 || p == permission_t::return_type::none)
-//                         {
-//                             error(callbackPtr, k401Unauthorized);
-//                             co_return;
-//                         }
-//                     }
-// #endif
-//                 }
+                        if constexpr (crudpp::has_writeonly_flag<typename permission_t::return_type>)
+                            if (p == permission_t::return_type::writeonly)
+                            {
+                                error(callbackPtr, k401Unauthorized);
+                                co_return;
+                            }
+
+                        if constexpr (crudpp::has_none_flag<typename permission_t::return_type>)
+                            if (p == permission_t::return_type::none)
+                            {
+                                error(callbackPtr, k401Unauthorized);
+                                co_return;
+                            }
+                    }
+#endif
+                }
 
                 CoroMapper<model<T>> mapper(dbClientPtr);
                 auto& parameters = req->parameters();
