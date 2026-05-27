@@ -14,19 +14,21 @@
 #include <crudpp/concepts/required.hpp>
 #include <crudpp/bindings/qt/utils.hpp>
 #include <crudpp/bindings/qt/interface/bridge.hpp>
-#include "base_wrapper.hpp"
+
 #include "model.hpp"
 #include "list_model.hpp"
+#include "base_wrapper.hpp"
 
 namespace qt
 {
 class net_manager;
 
 template <crudpp::r_c_name T>
-constexpr auto get_property_name() -> w_cpp::StringView
+static consteval auto get_property_name() -> w_cpp::StringView
 {
-    return {T::c_name(),
-            T::c_name() + (std::char_traits<char>::length(T::c_name()))};
+    constexpr auto name{T::c_name()};
+    return {name,
+            name + std::char_traits<char>::length(name)};
 }
 
 template <typename T>
@@ -93,7 +95,6 @@ public:
 
         reset_flags();
         this->m_inserted = true;
-
         emit flaggedChanged();
     }
 
